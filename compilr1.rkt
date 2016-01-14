@@ -13,7 +13,7 @@
          (let* ([newx (gensym x)]
                [newlist (cons `(,x . ,newx) alist)])
            `(let ([,newx ,((uniquify alist) e)])
-              ,((uniquify newlist) ,body)))]
+              ,((uniquify newlist) body)))]
         [`(program ,e) `(program ,((uniquify alist) e))]
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
