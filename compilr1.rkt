@@ -17,3 +17,13 @@
         [`(program ,e) `(program ,((uniquify alist) e))]
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
+
+(define (flatten e)
+  (match e
+    ;[(? fixnum?) e]
+    ;[`(read) `(read)]
+    [`(- ,e1) `(- ,(flatten e1))]
+    [`(+ ,e1 ,e2) __]
+    [`(program ,e) `(program ,(flatten e))]
+    [`(let ([,x ,e]) ,body) __]
+    ))
