@@ -20,7 +20,7 @@
 
 (define (flattenhelper e)
   (match e
-    [(? fixnum?) (values e '() '())]
+    [(or (? fixnum?) (? symbol?)) (values e '() '())]
     [`(- ,e1) (let [(newvar (gensym))]
                 (let-values ([(e^ statements^ alist) (flattenhelper e1)])
                   (values newvar (append statements^ `((assign ,newvar (- ,e^)))) (cons newvar alist))))]
@@ -31,5 +31,5 @@
                               (append stmt1^ (append stmt2^ `((assign ,newvar (+ ,e1^ ,e2^)))))
                               (append (cons newvar alist1^) alist2^))))]
     ;[`(program ,e) `(program ,(flatten e))]
-    ;[`(let ([,x ,e]) ,body) __]
+    [`(let ([,x ,e]) ,body) ]
     ))
