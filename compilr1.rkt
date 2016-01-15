@@ -18,12 +18,18 @@
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
 
-(define (flatten e)
+(define (flattenhelper e)
   (match e
-    ;[(? fixnum?) e]
-    ;[`(read) `(read)]
-    [`(- ,e1) `(- ,(flatten e1))]
-    [`(+ ,e1 ,e2) __]
-    [`(program ,e) `(program ,(flatten e))]
-    [`(let ([,x ,e]) ,body) __]
+    [(? fixnum?) (values e '() '())]
+    [`(- ,e1) (let [(newvar (gensym))]
+                (let-values ([(e^ statements^ alist) (flattenhelper e1)])
+                  (values newvar (append statements^ `((assign ,newvar (- ,e^)))) (cons newvar alist))))]
+    [`(+ ,e1 ,e2) (let [(newvar (gensym))]
+                    (let-values (((e1^ stmt1^ alist1^) (flattenhelper e1))
+                                 ((e2^ stmt2^ alist2^) (flattenhelper e2)))
+                      (values newvar
+                              (append stmt1^ (append stmt2^ `((assign ,newvar (+ ,e1^ ,e2^)))))
+                              (append (cons newvar alist1^) alist2^))))]
+    ;[`(program ,e) `(program ,(flatten e))]
+    ;[`(let ([,x ,e]) ,body) __]
     ))
