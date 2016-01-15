@@ -18,18 +18,26 @@
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
 
-(define (flattenhelper e)
+(define (flatten e)
   (match e
     [(or (? fixnum?) (? symbol?)) (values e '() '())]
     [`(- ,e1) (let [(newvar (gensym))]
-                (let-values ([(e^ statements^ alist) (flattenhelper e1)])
+                (let-values ([(e^ statements^ alist) (flatten e1)])
                   (values newvar (append statements^ `((assign ,newvar (- ,e^)))) (cons newvar alist))))]
     [`(+ ,e1 ,e2) (let [(newvar (gensym))]
-                    (let-values (((e1^ stmt1^ alist1^) (flattenhelper e1))
-                                 ((e2^ stmt2^ alist2^) (flattenhelper e2)))
+                    (let-values (((e1^ stmt1^ alist1^) (flatten e1))
+                                 ((e2^ stmt2^ alist2^) (flatten e2)))
                       (values newvar
                               (append stmt1^ (append stmt2^ `((assign ,newvar (+ ,e1^ ,e2^)))))
                               (append (cons newvar alist1^) alist2^))))]
-    ;[`(program ,e) `(program ,(flatten e))]
-    [`(let ([,x ,e]) ,body) ]
+    [`(program ,e) (let-values ([(e^ stmt^ alist^) (flatten e)])
+                     `(program ,alist^ ,@stmt^ (return ,e^)))]
+    [`(let ([,x ,e]) ,body) (let-values
+                                ([(xe^ stmtx^ alistx^) (flatten e)]
+                                 [(be^ stmtb^ alistb^) (flatten body)])
+                              (values be^
+                                      (append stmtx^ (append `((assign ,x ,xe^)) stmtb^))
+                                      (append alistx^ alistb^)))]
     ))
+
+
