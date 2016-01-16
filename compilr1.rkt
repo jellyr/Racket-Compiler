@@ -46,3 +46,26 @@
                                         (append alistx^ alistb^))))]))
 
 
+
+(define (select-instructions-assign e)
+  (match e
+    [(? fixnum?) `(int ,e)]
+    [(? symbol?) `(var ,e)]
+    [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign e1) (var ,var)) . (neq (var ,var)))]
+    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) __]
+    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) __]
+    [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign e1) (var ,var)) . (addq (select-instructions-assign e2) (var ,var)))]
+    ))
+
+(define (select-instructions e)
+  (match e
+    
+    
+    ;[`(read) __]
+    
+    
+    ;[`(assign ,var ,e^) (select-instrctions e^)]
+    [`(program ,e) __]
+    []
+    [`(let ([,x ,e]) ,body) __]))
+
