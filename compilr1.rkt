@@ -18,6 +18,7 @@
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
 
+
 (define (flatten e)
   (match e
     [(or (? fixnum?) (? symbol?)) (values e '() '())]
@@ -35,9 +36,11 @@
     [`(let ([,x ,e]) ,body) (let-values
                                 ([(xe^ stmtx^ alistx^) (flatten e)]
                                  [(be^ stmtb^ alistb^) (flatten body)])
-                              (values be^
-                                      (append stmtx^ (append `((assign ,x ,xe^)) stmtb^))
-                                      (append alistx^ alistb^)))]
-    ))
+                              (let* [(xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
+                                     (alistx^ (cons x (if (null? alistx^) alistx^ (cdr alistx^))))
+                                     (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
+                                (values be^
+                                        (append stmtx^ (append `((assign ,x ,xe^)) stmtb^))
+                                        (append alistx^ alistb^))))]))
 
 
