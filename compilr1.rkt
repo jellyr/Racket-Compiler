@@ -54,13 +54,29 @@
     [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign e1) (var ,var)) (negq (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) `((addq ,(select-instructions-assign e2) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) `((addq ,(select-instructions-assign e1) (var ,var)))]
-    [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign e1) (var ,var)) (addq (select-instructions-assign e2) (var ,var)))]
+    [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign e1) (var ,var)) (addq ,(select-instructions-assign e2) (var ,var)))]
     [`(return ,e1) `((addq ,(select-instructions-assign e1) (reg rax)))]
     [else `(,e)]
     ))
 
 (define (select-instructions e)
+  (append-map select-instructions-assign e))
+
+; starti == -1
+(define (assign-homes-env alist starti)
   (cond
-    ((null? e) '())
-    (else (append (select-instructions-assign (car e)) (select-instructions (cdr e))))))
+    [(null? alist) '()]
+    [else (append `((,(car alist) . (stack ,(* 8 starti)))) (assign-homes-env (cdr alist) (sub1 starti)))]))
+
+(define (assign-homes-var e env)
+  (match e
+    [`(var ,e1) (lookup e1 env)]
+    [`(movq ,e1 ,e2) `(movq ,(assign-homes-var e1 env) ,(assign-homes-var e2 env))]
+    [`(negq ,e1) `(negq ,(assign-homes-var e1 env))]
+    [`(addq ,e1 ,e2) `(addq ,(assign-homes-var e1 env) ,(assign-homes-var e2 env))]
+    [else e]))
+
+(define (assign-homes e)
+  (let ([env (assign-homes-env (cadr e) -1)])
+    (map (curryr assign-homes-var env) e)))
 
