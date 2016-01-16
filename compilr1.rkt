@@ -22,6 +22,8 @@
 (define (flatten e)
   (match e
     [(or (? fixnum?) (? symbol?)) (values e '() '())]
+    [`(read) (let [(newvar (gensym))]
+               (values newvar  `((assign ,newvar (read))) `(,newvar)))]
     [`(- ,e1) (let [(newvar (gensym))]
                 (let-values ([(e^ statements^ alist) (flatten e1)])
                   (values newvar (append statements^ `((assign ,newvar (- ,e^)))) (cons newvar alist))))]
