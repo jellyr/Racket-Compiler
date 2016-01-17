@@ -50,12 +50,7 @@
 (define (select-instructions-assign e)
   (match e
     [(? fixnum?) `(int ,e)]
-<<<<<<< HEAD
-    [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)] 
-=======
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
-    [`(assign ,var ,e1) `((movq ,(select-instructions-assign e1) (var ,var)))]
->>>>>>> 647cd1f264ec9b9b40eee2fee85745d5f736aa07
     [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign e1) (var ,var)) (negq (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) `((addq ,(select-instructions-assign e2) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) `((addq ,(select-instructions-assign e1) (var ,var)))]
@@ -105,7 +100,6 @@
     [`(addq ,e1 ,e2) (format "addq	~s, ~s\n\t" (print-helper e1) (print-helper e2))]
     ))
 
-<<<<<<< HEAD
 (define (print e)
   (string-append
  (format "	.globl main
@@ -119,13 +113,3 @@ main:
 	addq	$~a, %rsp
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
-=======
-(define (patch-instructions-helper e)
-  (match e
-    [`(movq ,e1 ,e2)#:when (and (eqv? (car e1) 'stack) (eqv? (car e2) 'stack))
-     `((movq ,e1 (req rax))  (movq (req rax) ,e2))]
-    [else `(,e)]))
-
-(define (patch-instructions e)
-  (append-map patch-instructions-helper e))
->>>>>>> 647cd1f264ec9b9b40eee2fee85745d5f736aa07
