@@ -51,6 +51,7 @@
   (match e
     [(? fixnum?) `(int ,e)]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
+    [`(assign ,var ,e1) `((movq ,(select-instructions-assign e1) (var ,var)))]
     [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign e1) (var ,var)) (negq (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) `((addq ,(select-instructions-assign e2) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) `((addq ,(select-instructions-assign e1) (var ,var)))]
