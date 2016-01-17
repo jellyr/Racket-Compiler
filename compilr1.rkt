@@ -81,3 +81,11 @@
   (let ([env (assign-homes-env (cadr e) -1)])
     (map (curryr assign-homes-var env) e)))
 
+(define (patch-instructions-helper e)
+  (match e
+    [`(movq ,e1 ,e2)#:when (and (eqv? (car e1) 'stack) (eqv? (car e2) 'stack))
+     `((movq ,e1 (req rax))  (movq (req rax) ,e2))]
+    [else `(,e)]))
+
+(define (patch-instructions e)
+  (append-map patch-instructions-helper e))
