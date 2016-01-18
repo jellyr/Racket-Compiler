@@ -111,7 +111,7 @@
 main:
 	pushq	%rbp
 	movq	%rsp, %rbp
-	subq	$~a, %rsp" (* 8 (cadr e)))
+	subq	$~a, %rsp\n\t" (* 8 (cadr e)))
  (string-join (map print-helper (cddr e)))
  (format "	movq	%rax, %rdi
 	callq	print_int
