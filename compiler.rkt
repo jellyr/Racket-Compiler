@@ -100,7 +100,8 @@
     [`(int ,e1) (format "$~a" e1)]
     [`(reg ,e1) (format "%~a" e1)]
     [`(movq ,e1 ,e2) (string-append "movq	" (print-helper e1) ", " (print-helper e2)" \n\t")]
-    [`(negq ,e1) (string-append "negq	"(print-helper e1)" \n\t" )]
+    [`(negq ,e1) (string-append "negq	" (print-helper e1) " \n\t" )]
+    [`(callq ,e1) (string-append "callq	" (print-helper e1) " \n\t" )]
     [`(addq ,e1 ,e2) (string-append "addq	" (print-helper e1) ", " (print-helper e2) " \n\t")]
     [else (format "~s" e)]
     ))
