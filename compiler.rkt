@@ -99,9 +99,9 @@
     [`(stack ,e1) (format "~a(%rbp)" e1)]
     [`(int ,e1) (format "$~a" e1)]
     [`(reg ,e1) (format "%~a" e1)]
-    [`(movq ,e1 ,e2) (format "movq	~s, ~s\n\t" (print-helper e1) (print-helper e2))]
-    [`(negq ,e1) (format "negq	~s\n\t" (print-helper e1))]
-    [`(addq ,e1 ,e2) (format "addq	~s, ~s\n\t" (print-helper e1) (print-helper e2))]
+    [`(movq ,e1 ,e2) (string-append "movq	" (print-helper e1) ", " (print-helper e2)" \n\t")]
+    [`(negq ,e1) (string-append "negq	"(print-helper e1)" \n\t" )]
+    [`(addq ,e1 ,e2) (string-append "addq	" (print-helper e1) ", " (print-helper e2) " \n\t")]
     [else (format "~s" e)]
     ))
 
