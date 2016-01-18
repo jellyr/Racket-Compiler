@@ -3,6 +3,8 @@
 (require "interp.rkt")
 (require "utilities.rkt")
 
+(provide r1-passes)
+
 (define uniquify
   (lambda (alist)
     (lambda (e)
@@ -51,11 +53,13 @@
   (match e
     [(? fixnum?) `(int ,e)]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
+    [`(assign ,var (read)) `((callq read_int) (movq (reg rax) (var ,var)))]
     [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign e1) (var ,var)) (negq (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) `((addq ,(select-instructions-assign e2) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) `((addq ,(select-instructions-assign e1) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign e1) (var ,var)) (addq ,(select-instructions-assign e2) (var ,var)))]
     [`(return ,e1) `((movq ,(select-instructions-assign e1) (reg rax)))]
+    ;; 
     [`(assign ,var ,e1) `((movq ,(select-instructions-assign e1) (var ,var)))]
     [else `(,e)]))
 
@@ -87,7 +91,7 @@
     [`(addq (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (addq (reg rax) (stack ,e2)))]
     [else `(,e)]))
 
-(define (patch-instr e)
+(define (patch-instructions e)
     (append-map patch-instr-helper e))
 
 (define (print-helper e)
@@ -98,9 +102,10 @@
     [`(movq ,e1 ,e2) (format "movq	~s, ~s\n\t" (print-helper e1) (print-helper e2))]
     [`(negq ,e1) (format "negq	~s\n\t" (print-helper e1))]
     [`(addq ,e1 ,e2) (format "addq	~s, ~s\n\t" (print-helper e1) (print-helper e2))]
+    [else (format "~s" e)]
     ))
 
-(define (print e)
+(define (print-x86 e)
   (string-append
  (format "	.globl main
 main:
@@ -113,3 +118,10 @@ main:
 	addq	$~a, %rsp
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
+
+(define r1-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
+                    ("flatten" ,flatten ,interp-C)
+                    ("select instructions" ,select-instructions ,interp-x86)
+                    ("assign homes" ,assign-homes ,interp-x86)
+                    ("patch instructions" ,patch-instructions ,interp-x86)
+                    ("print x86" ,print-x86 #f)))
