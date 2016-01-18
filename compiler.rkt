@@ -49,22 +49,31 @@
 
 
 
-(define (select-instructions-assign e)
+(define (select-instructions-assign ret-v e)
   (match e
     [(? fixnum?) `(int ,e)]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
-    [`(assign ,var (read)) `((callq read_int) (movq (reg rax) (var ,var)))]
-    [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign e1) (var ,var)) (negq (var ,var)))]
-    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) `((addq ,(select-instructions-assign e2) (var ,var)))]
-    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) `((addq ,(select-instructions-assign e1) (var ,var)))]
-    [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign e1) (var ,var)) (addq ,(select-instructions-assign e2) (var ,var)))]
-    [`(return ,e1) `((movq ,(select-instructions-assign e1) (reg rax)))]
+    [`(assign ,var (read)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+                             `((callq read_int) (movq (reg rax) ,vare)))]
+    [`(assign ,var (- ,e1)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+                              `((movq ,(select-instructions-assign ret-v e1) ,vare) (negq ,vare)))]
+    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+                                                     `((addq ,(select-instructions-assign ret-v e2) ,vare)))]
+    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+                                                     `((addq ,(select-instructions-assign ret-v e1) ,vare)))]
+    [`(assign ,var (+ ,e1 ,e2)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+                                  `((movq ,(select-instructions-assign ret-v e1) ,vare) (addq ,(select-instructions-assign ret-v e2) ,vare)))]
+    [`(return ,e1) (if (fixnum? ret-v) `((movq ,(select-instructions-assign ret-v e1) (reg rax))) `())]
     ;; 
-    [`(assign ,var ,e1) `((movq ,(select-instructions-assign e1) (var ,var)))]
+    [`(assign ,var ,e1) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+                          `((movq ,(select-instructions-assign ret-v e1) ,vare)))]
+    [(? list?) (list (remove ret-v e))]
     [else `(,e)]))
 
+
 (define (select-instructions e)
-  (append-map select-instructions-assign e))
+  (let ([ret-var (last (last e))])
+    (append-map (curry select-instructions-assign ret-var) e)))
 
 ; starti == -1
 (define (assign-homes-env alist starti)
