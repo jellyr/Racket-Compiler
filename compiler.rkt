@@ -1,5 +1,6 @@
 #lang racket
 (require racket/fixnum)
+(require racket/set)
 (require "interp.rkt")
 (require "utilities.rkt")
 
@@ -74,6 +75,25 @@
 (define (select-instructions e)
   (let ([ret-var (last (last e))])
     (append-map (curry select-instructions-assign ret-var) e)))
+
+;;;;;;
+(define (uncover-live-unwrap e)
+  (match e
+    [`(var ,e1) (set e1)]
+    [else (set)]))
+
+;; lak ---> lak-1
+;; lak is a set
+(define (uncover-live-helper e lak)
+  (match e
+    (match e
+      [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
+    ; [`(negq ,e1) ()]
+      [`(addq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
+      [`(subq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
+      [else (set)])))
+
+(define (uncover-live e) e)
 
 ; starti == -1
 (define (assign-homes-env alist starti)
