@@ -80,6 +80,7 @@
 (define (uncover-live-unwrap e)
   (match e
     [`(var ,e1) (set e1)]
+    [`(reg ,r) (set r)]
     [else (set)]))
 
 ;; lak ---> lak-1
@@ -90,7 +91,7 @@
     ; [`(negq ,e1) ()]
     [`(addq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     [`(subq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
-    [else (set)]))
+    [else (uncover-live-unwrap e)]))
 
 (define (uncover-live e)
   (let [(setlist (map set->list
@@ -98,7 +99,7 @@
                                (cons (uncover-live-helper x (car r)) r))
                              `(,(set))
                              (cddr e))))]
-    `(,(car e) ,(list (cadr e) (cdr setlist)) ,(cddr e))))
+    `(,(car e) ,(list (cadr e) (cdr setlist)) ,@(cddr e))))
 
 ; starti == -1
 (define (assign-homes-env alist starti)
@@ -157,6 +158,7 @@ main:
 (define r1-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flatten" ,flatten ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
-                    ("assign homes" ,assign-homes ,interp-x86)
+                    ("uncover-live" ,uncover-live ,interp-x86)
+                    ;("assign homes" ,assign-homes ,interp-x86)
                     ("patch instructions" ,patch-instructions ,interp-x86)
                     ("print x86" ,print-x86 #f)))
