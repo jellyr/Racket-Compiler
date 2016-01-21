@@ -86,14 +86,19 @@
 ;; lak is a set
 (define (uncover-live-helper e lak)
   (match e
-    (match e
-      [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
+    [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     ; [`(negq ,e1) ()]
-      [`(addq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
-      [`(subq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
-      [else (set)])))
+    [`(addq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
+    [`(subq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
+    [else (set)]))
 
-(define (uncover-live e) e)
+(define (uncover-live e)
+  (let [(setlist (map set->list
+                      (foldr (lambda (x r)
+                               (cons (uncover-live-helper x (car r)) r))
+                             `(,(set))
+                             (cddr e))))]
+    `(,(car e) ,(list (cadr e) (cdr setlist)) ,(cddr e))))
 
 ; starti == -1
 (define (assign-homes-env alist starti)
