@@ -6,6 +6,12 @@
 
 (provide r1-passes)
 
+(define (int? e)
+  (eqv? (car e) 'int))
+
+(define (var? e)
+  (eqv? (car e) 'var))
+
 (define uniquify
   (lambda (alist)
     (lambda (e)
@@ -20,7 +26,6 @@
         [`(program ,e) `(program ,((uniquify alist) e))]
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
-
 
 (define (flatten e)
   (match e
@@ -100,6 +105,39 @@
                              `(,(set))
                              (cddr e))))]
     `(,(car e) ,(list (cadr e) (cdr setlist)) ,@(cddr e))))
+
+;;;;;;;;;;
+
+(define (build-interference-unwrap e)
+  (match e
+    [`(var ,e1) e1]
+    [else e]))
+
+
+
+;; a list 
+;; first part: a list of tuple (v, w) if v inference with w
+;; second part: a set of varibles if they are inferenced with other
+;; lak is a list here
+(define (build-interference-helper e lak)
+  (match e
+    
+    [`(movq ,e1 ,e2)#:when (and (var? e1) (var? e2))
+     (let* ([s (build-interference-unwrap e1)]
+            [d (build-interference-unwrap e2)]
+            [edgestmt (foldl
+                      (lambda (v r)
+                        (if (or (eqv? s v) (eqv? d v))
+                            r
+                            (cons `(,d . ,v) r))) '() lak)])
+       (if (null? edgestmt)
+           (list '() (set))
+           (list edgestmt (set-add (list->set lak) d))))]
+    
+    [`(addq ,e1 ,e2)#:when (and (var? e1) (var? e2))
+     (if )]
+    [else `(() . ,(set))]
+    ))
 
 ; starti == -1
 (define (assign-homes-env alist starti)
