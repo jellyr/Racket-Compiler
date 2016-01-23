@@ -6,6 +6,8 @@
 
 (provide r1-passes)
 
+
+
 (define (int? e)
   (eqv? (car e) 'int))
 
@@ -111,9 +113,10 @@
 (define (build-interference-unwrap e)
   (match e
     [`(var ,e1) e1]
+    [`(reg ,r) r]
     [else e]))
 
-
+      
 
 ;; a list 
 ;; first part: a list of tuple (v, w) if v inference with w
@@ -122,7 +125,7 @@
 (define (build-interference-helper e lak)
   (match e
     
-    [`(movq ,e1 ,e2)#:when (and (var? e1) (var? e2))
+    [`(movq ,e1 ,e2)#:when (var? e2)
      (let* ([s (build-interference-unwrap e1)]
             [d (build-interference-unwrap e2)]
             [edgestmt (foldl
@@ -134,8 +137,19 @@
            (list '() (set))
            (list edgestmt (set-add (list->set lak) d))))]
     
-    [`(addq ,e1 ,e2)#:when (and (var? e1) (var? e2))
-     (if )]
+    [`(addq ,e1 ,e2)#:when (var? e2)
+     (let* ([s (build-interference-unwrap e1)]
+            [d (build-interference-unwrap e2)]
+            [edgestmt (foldl
+                      (lambda (v r)
+                        (if  (eqv? d v)
+                            r
+                            (cons `(,d . ,v) r))) '() lak)])
+       (if (null? edgestmt)
+           (list '() (set))
+           (list edgestmt (set-add (list->set lak) d))))]
+    ;[`(callq ,label) (cartesian-product)]
+    
     [else `(() . ,(set))]
     ))
 
