@@ -142,6 +142,13 @@
     (map (curry build-interference-helper graph) instr lak)
     `(,(car e) (,(caadr e) ,graph) ,@instr)))
 
+(define (highest-sasturation graph)
+  (foldr (lambda (v r)
+           (if (> (set-count (cadr v)) (set-count (cadr r)))
+               v
+               r)) (list '() (set)) (in-dict-pairs graph)))
+
+
 
 (define (allocate-registers-help e something***) 1)
 
