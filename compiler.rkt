@@ -153,6 +153,11 @@
     [else `(() . ,(set))]
     ))
 
+(define (cross-product ls1 ls2)
+  (append-map (lambda (v1)
+                (append-map (lambda (v2)
+                              `((,v1 . ,v2))) ls2)) ls1))
+
 ; starti == -1
 (define (assign-homes-env alist starti)
   (cond
