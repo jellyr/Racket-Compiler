@@ -148,7 +148,7 @@
        (if (null? edgestmt)
            (list '() (set))
            (list edgestmt (set-add (list->set lak) d))))]
-    ;[`(callq ,label) (cartesian-product)]
+    [`(callq ,label) (list (cross-product (set->list caller-save) lak))]
     
     [else `(() . ,(set))]
     ))
@@ -157,6 +157,12 @@
   (append-map (lambda (v1)
                 (append-map (lambda (v2)
                               `((,v1 . ,v2))) ls2)) ls1))
+
+(define (buid-interference e)
+  1)
+
+
+(define (allocate-registers-help e something***) 1)
 
 ; starti == -1
 (define (assign-homes-env alist starti)
