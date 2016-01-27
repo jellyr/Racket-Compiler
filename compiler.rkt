@@ -14,6 +14,9 @@
 (define (var? e)
   (eqv? (car e) 'var))
 
+(define (reg? e)
+  (eqv? (car e) 'reg))
+
 (define uniquify
   (lambda (alist)
     (lambda (e)
@@ -116,45 +119,28 @@
     [`(reg ,r) r]
     [else e]))
 
-      
-
-;; a list 
-;; first part: a list of tuple (v, w) if v inference with w
-;; second part: a set of varibles if they are inferenced with other
-;; lak is a list here
 (define (build-interference-helper graph e lak)
   (match e
-    
-    [`(movq ,e1 ,e2)#:when (var? e2)
+    [`(movq ,e1 ,e2)#:when (or (var? e2) (reg? e2))
      (let ([s (build-interference-unwrap e1)]
            [d (build-interference-unwrap e2)])
-       (map
-        (lambda (v)
-          (cond
-            [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)])) lak))]
-    
-    [`(addq ,e1 ,e2)#:when (var? e2)
+       (map (lambda (v) (cond
+                          [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)])) lak))]
+    [`(addq ,e1 ,e2)#:when (or (var? e2) (reg? e2))
       (let ([s (build-interference-unwrap e1)]
             [d (build-interference-unwrap e2)])
-        (map
-         (lambda (v)
-          (cond
-            [(not (eqv? d v)) (add-edge graph d v)])) lak))]
-    [`(callq ,label) (map (lambda (tuple)
-                            (match tuple
-                              [`(,a . ,d) (add-edge graph a d)])) (cross-product (set->list caller-save) lak))]
-    ;[else `(() . ,(set))]
-    ))
+        (map (lambda (v) (cond
+                           [(not (eqv? d v)) (add-edge graph d v)])) lak))]
+    [`(callq ,label) (map (lambda (v1) (map (lambda (v2) (add-edge graph v1 v2)) (set->list caller-save)))
+                          lak)]
+    [else '()]))
 
-(define (cross-product ls1 ls2)
-  (append-map (lambda (v1)
-                (append-map (lambda (v2)
-                              `((,v1 . ,v2))) ls2)) ls1))
-
-(define (buid-interference e)
+(define (build-interference e)
   (let* ([lak (cadadr e)]
-         [instr (cddr e)])
-    (map ))
+         [instr (cddr e)]
+         [graph (make-graph '())])
+    (map (curry build-interference-helper graph) instr lak)
+    `(,(car e) (,(caadr e) ,graph) ,@instr)))
 
 
 (define (allocate-registers-help e something***) 1)
