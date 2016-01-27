@@ -122,35 +122,28 @@
 ;; first part: a list of tuple (v, w) if v inference with w
 ;; second part: a set of varibles if they are inferenced with other
 ;; lak is a list here
-(define (build-interference-helper e lak)
+(define (build-interference-helper graph e lak)
   (match e
     
     [`(movq ,e1 ,e2)#:when (var? e2)
-     (let* ([s (build-interference-unwrap e1)]
-            [d (build-interference-unwrap e2)]
-            [edgestmt (foldl
-                      (lambda (v r)
-                        (if (or (eqv? s v) (eqv? d v))
-                            r
-                            (cons `(,d . ,v) r))) '() lak)])
-       (if (null? edgestmt)
-           (list '() (set))
-           (list edgestmt (set-add (list->set lak) d))))]
+     (let ([s (build-interference-unwrap e1)]
+           [d (build-interference-unwrap e2)])
+       (map
+        (lambda (v)
+          (cond
+            [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)])) lak))]
     
     [`(addq ,e1 ,e2)#:when (var? e2)
-     (let* ([s (build-interference-unwrap e1)]
-            [d (build-interference-unwrap e2)]
-            [edgestmt (foldl
-                      (lambda (v r)
-                        (if  (eqv? d v)
-                            r
-                            (cons `(,d . ,v) r))) '() lak)])
-       (if (null? edgestmt)
-           (list '() (set))
-           (list edgestmt (set-add (list->set lak) d))))]
-    [`(callq ,label) (list (cross-product (set->list caller-save) lak))]
-    
-    [else `(() . ,(set))]
+      (let ([s (build-interference-unwrap e1)]
+            [d (build-interference-unwrap e2)])
+        (map
+         (lambda (v)
+          (cond
+            [(not (eqv? d v)) (add-edge graph d v)])) lak))]
+    [`(callq ,label) (map (lambda (tuple)
+                            (match tuple
+                              [`(,a . ,d) (add-edge graph a d)])) (cross-product (set->list caller-save) lak))]
+    ;[else `(() . ,(set))]
     ))
 
 (define (cross-product ls1 ls2)
@@ -159,7 +152,9 @@
                               `((,v1 . ,v2))) ls2)) ls1))
 
 (define (buid-interference e)
-  1)
+  (let* ([lak (cadadr e)]
+         [instr (cddr e)])
+    (map ))
 
 
 (define (allocate-registers-help e something***) 1)
