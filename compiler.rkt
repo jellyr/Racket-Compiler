@@ -142,12 +142,27 @@
     (map (curry build-interference-helper graph) instr lak)
     `(,(car e) (,(caadr e) ,graph) ,@instr)))
 
+; foldr: contract violation
+;   expected: list?
+;   given: #<sequence>
+;   argument position: 3rd
+;   other arguments...:
+;    #<procedure:...523/compiler.rkt:146:9>
+;    (list 'none (set))
 (define (highest-sasturation graph)
   (foldr (lambda (v r)
            (if (> (set-count (cadr v)) (set-count (cadr r)))
                v
-               r)) (list '() (set)) (in-dict-pairs graph)))
+               r)) (list 'none (set)) (in-dict-pairs graph)))
 
+;; -- Small change made to saturation
+;; -- Got an error when running ur function above
+;; -- Just check and let me know
+(define (highest-saturation graph)
+  (foldr (lambda (v r)
+           (if (> (set-count (cdr v)) (set-count (cdr r)))
+               v
+               r)) (cons 'none (set))  (hash->list graph)))
 
 
 (define (allocate-registers-help e something***) 1)
