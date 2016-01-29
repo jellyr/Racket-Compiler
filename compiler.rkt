@@ -116,7 +116,7 @@
 (define (build-interference-unwrap e)
   (match e
     [`(var ,e1) e1]
-    [`(reg ,r) r]
+   ; [`(reg ,r) r] ;; removed rax from interference graph
     [else e]))
 
 (define (build-interference-helper graph e lak)
@@ -176,7 +176,9 @@
                                                 res) constrain-graph (set->list (cdr node))))))))
 
 ;; stacki = -1 ;
-(define (allocate-registers-env alist stacki) 1)
+(define (allocate-reg-stack graph)
+  
+  )
 
 (define (allocate-var e env)
   (match e
@@ -187,7 +189,8 @@
     [else e]))
 
 (define (allocate-registers e)
-  (let ([env (allocate-registers-env (cadr e) -1)]
+  (let ([assign-list (allocate-register-helper (caddr e) '() (make-graph '()))]
+        [env (allocate-registers-env assign-list)]
         [prog (car e)])
     `(,prog ,(* 8 (length (cadr e))) . ,(cddr (map (curryr allocate-var env) e)))))
 
