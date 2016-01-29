@@ -142,26 +142,13 @@
     (map (curry build-interference-helper graph) instr lak)
     `(,(car e) (,(caadr e) ,graph) ,@instr)))
 
-; foldr: contract violation
-;   expected: list?
-;   given: #<sequence>
-;   argument position: 3rd
-;   other arguments...:
-;    #<procedure:...523/compiler.rkt:146:9>
-;    (list 'none (set))
-(define (highest-sasturation graph)
-  (foldr (lambda (v r)
-           (if (> (set-count (cadr v)) (set-count (cadr r)))
-               v
-               r)) (list 'none (set)) (in-dict-pairs graph)))
-
 ;; -- Small change made to saturation
 ;; -- Got an error when running ur function above
 ;; -- Just check and let me know
 (define (highest-saturation graph ol)
   (foldr (lambda (v r)
            (if (and (> (set-count (cdr v)) (set-count (cdr r)))
-                    (not (findf (lambda (val)
+                    (not (findf (lambda (val) ;; is this look up?
                               (eq? (car v) val)) ol)))
                v
                r)) (cons 'none (set))  (hash->list graph)))
@@ -170,14 +157,15 @@
 (define (allocate-registers-helper graph rlist)
   (let* ([node (highest-saturation graph (map car (car rlist)))]
          [badcolor (cadr rlist)]
-         [colvals (set 0 1 2 3 4 5 6 7 8 9 10 11 12)]
+         [colvals (list->set (range 13))]
+         ;; make comment for minvalue
          [minvalue (car (take (sort (set->list (set-subtract colvals (hash-ref! badcolor (car node) (set))))  <) 1))])
     (cond
       ((eq? 'none (car node)) (car rlist))
-      (else (allocate-registers-helper graph `(((,(car node) . ,minvalue) . ,(car rlist)) ,(foldl (lambda (gr res)
-                                                                                                    (begin
-                                                                                                      (hash-set! res gr (set-add (hash-ref! res gr (set)) minvalue))
-                                                                                                      res)) badcolor (set->list (cdr node)))))))))
+      (else (allocate-registers-helper graph
+                     `(((,(car node) . ,minvalue) . ,(car rlist)) ,(foldl (lambda (gr res)
+                                                                            (hash-set! res gr (set-add (hash-ref! res gr (set)) minvalue))
+                                                                            res) badcolor (set->list (cdr node)))))))))
 
 (define (allocate-registers e)
   1)
