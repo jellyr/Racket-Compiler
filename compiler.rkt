@@ -142,30 +142,35 @@
     (map (curry build-interference-helper graph) instr lak)
     `(,(car e) (,(caadr e) ,graph) ,@instr)))
 
-;; -- Small change made to saturation
-;; -- Got an error when running ur function above
-;; -- Just check and let me know
+
+
+;; ol : ommit list
 (define (highest-saturation graph ol)
   (foldr (lambda (v r)
            (if (and (> (set-count (cdr v)) (set-count (cdr r)))
-                    (not (findf (lambda (val) ;; is this look up?
-                              (eq? (car v) val)) ol)))
+                    (not (findf (lambda (val) (eq? (car v) val)) ol)))
                v
-               r)) (cons 'none (set))  (hash->list graph)))
+               r)) (cons 'none (set)) (hash->list graph)))
+
+;; optimial with cps;;
+(define (assign-minicolor node constrain-graph)
+  (define colorvals (range 13))
+  (define contrains (hash-ref! constrain-graph (car node) (set)))
+  (car (dropf colorvals (curry set-member? contrains))))
 
 
-(define (allocate-registers-helper graph rlist)
-  (let* ([node (highest-saturation graph (map car (car rlist)))]
-         [badcolor (cadr rlist)]
-         [colvals (list->set (range 13))]
-         ;; make comment for minvalue
-         [minvalue (car (take (sort (set->list (set-subtract colvals (hash-ref! badcolor (car node) (set))))  <) 1))])
+;; make nicerrrrr
+(define (allocate-registers-helper graph assign-list constrain-graph)
+  (let* ([node (highest-saturation graph (map car assign-list))]
+         [minvalue (assign-minicolor node constrain-graph)])
     (cond
-      ((eq? 'none (car node)) (car rlist))
+      ((eq? 'none (car node)) assign-list)
       (else (allocate-registers-helper graph
-                     `(((,(car node) . ,minvalue) . ,(car rlist)) ,(foldl (lambda (gr res)
-                                                                            (hash-set! res gr (set-add (hash-ref! res gr (set)) minvalue))
-                                                                            res) badcolor (set->list (cdr node)))))))))
+                                       `((,(car node) . ,minvalue) . ,assign-list)
+                                       (foldl (lambda (gr res)
+                                                (hash-set! res gr (set-add (hash-ref! res gr (set)) minvalue))
+                                                res) constrain-graph (set->list (cdr node))))))))
+
 
 (define (allocate-registers e)
   1)

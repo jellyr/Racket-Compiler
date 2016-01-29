@@ -17,6 +17,16 @@
             (movq (var z) (reg rax))
             (subq (var y) (reg rax))))
 
+(define graph1
+      (make-hash '()))
+(add-edge graph1 'a 'b)
+(add-edge graph1 'a 'c)
+(add-edge graph1 'a 'd)
+(add-edge graph1 'b 'd)
+
+
+
+
 (interp-tests "assignment2" r1-passes interp-scheme "r1" (range 1 20))
 
 (display "assignemnt2 tests passed!") (newline)
