@@ -158,14 +158,27 @@
 ;; -- Small change made to saturation
 ;; -- Got an error when running ur function above
 ;; -- Just check and let me know
-(define (highest-saturation graph)
+(define (highest-saturation graph ol)
   (foldr (lambda (v r)
-           (if (> (set-count (cdr v)) (set-count (cdr r)))
+           (if (and (> (set-count (cdr v)) (set-count (cdr r)))
+                    (not (findf (lambda (val)
+                              (eq? (car v) val)) ol)))
                v
                r)) (cons 'none (set))  (hash->list graph)))
 
 
-(define (allocate-registers-help e something***) 1)
+(define (allocate-registers-helper graph rlist)
+  (let* ([node (highest-saturation graph (map car (car rlist)))]
+         [badcolor (cadr rlist)]
+         [colvals (set 0 1 2 3 4 5 6 7 8 9 10 11 12)]
+         [minvalue (car (take (sort (set->list (set-subtract colvals (hash-ref! badcolor (car node) (set))))  <) 1))])
+    `(((,(car node) . ,minvalue) . ,(car rlist)) ,(foldl (lambda (gr res)
+                                                              (begin
+                                                                (hash-set! res gr (set-add (hash-ref! res gr (set)) minvalue))
+                                                                res)) badcolor (set->list (cdr node))))))
+
+(define (allocate-registers e)
+  1)
 
 ; starti == -1
 (define (assign-homes-env alist starti)
