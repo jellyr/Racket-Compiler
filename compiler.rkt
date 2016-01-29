@@ -153,10 +153,14 @@
                r)) (cons 'none (set)) (hash->list graph)))
 
 ;; optimial with cps;;
+;; vector->list general-registers
+;; we can make colorvars a lazylist if we want
 (define (assign-minicolor node constrain-graph)
   (define colorvals (range 13))
   (define contrains (hash-ref! constrain-graph (car node) (set)))
   (car (dropf colorvals (curry set-member? contrains))))
+
+
 
 
 ;; make nicerrrrr
@@ -171,28 +175,27 @@
                                                 (hash-set! res gr (set-add (hash-ref! res gr (set)) minvalue))
                                                 res) constrain-graph (set->list (cdr node))))))))
 
+;; stacki = -1 ;
+(define (allocate-registers-env alist stacki) 1)
 
-(define (allocate-registers e)
-  1)
-
-; starti == -1
-(define (assign-homes-env alist starti)
-  (cond
-    [(null? alist) '()]
-    [else (append `((,(car alist) . (stack ,(* 8 starti)))) (assign-homes-env (cdr alist) (sub1 starti)))]))
-
-(define (assign-homes-var e env)
+(define (allocate-var e env)
   (match e
     [`(var ,e1) (lookup e1 env)]
-    [`(movq ,e1 ,e2) `(movq ,(assign-homes-var e1 env) ,(assign-homes-var e2 env))]
-    [`(negq ,e1) `(negq ,(assign-homes-var e1 env))]
-    [`(addq ,e1 ,e2) `(addq ,(assign-homes-var e1 env) ,(assign-homes-var e2 env))]
+    [`(movq ,e1 ,e2) `(movq ,(allocate-var e1 env) ,(allocate-var e2 env))]
+    [`(negq ,e1) `(negq ,(allocate-var e1 env))]
+    [`(addq ,e1 ,e2) `(addq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [else e]))
 
-(define (assign-homes e)
-  (let ([env (assign-homes-env (cadr e) -1)]
+(define (allocate-registers e)
+  (let ([env (allocate-registers-env (cadr e) -1)]
         [prog (car e)])
-    `(,prog ,(length env) . ,(cddr (map (curryr assign-homes-var env) e)))))
+    `(,prog ,(* 8 (length (cadr e))) . ,(cddr (map (curryr allocate-var env) e)))))
+
+; starti == -1
+;; (define (assign-homes-env alist starti)
+;;   (cond
+;;     [(null? alist) '()]
+;;     [else (append `((,(car alist) . (stack ,(* 8 starti)))) (assign-homes-env (cdr alist) (sub1 starti)))]))
 
 (define (patch-instr-helper e)
   (match e
