@@ -175,11 +175,11 @@
 
 ;; stacki = -1 ;
 (define (allocate-reg-stack assign-list)
-  (define k 1) ;; (vector-length general-registers)
+  (define k (vector-length general-registers)) ;; (vector-length general-registers)
   (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
         [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
-    (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
-            (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))
+    (cons `(_stacklength . ,(length stacklist)) (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
+                    (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist))))
   )
 
 (define (allocate-var e env)
@@ -188,13 +188,15 @@
     [`(movq ,e1 ,e2) `(movq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(negq ,e1) `(negq ,(allocate-var e1 env))]
     [`(addq ,e1 ,e2) `(addq ,(allocate-var e1 env) ,(allocate-var e2 env))]
+    [`(subq ,e1 ,e2) `(subq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [else e]))
 
+;;; consider rax
 (define (allocate-registers e)
   (let* ([assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()))]
         [env (allocate-reg-stack assign-list)]
         [prog (car e)])
-    `(,prog ,(* 8 (length (caadr e))) . ,(cddr (map (curryr allocate-var env) e)))))
+    `(,prog ,(* 8 (lookup '_stacklength env)) . ,(cddr (map (curryr allocate-var env) e)))))
 
 ; starti == -1
 ;; (define (assign-homes-env alist starti)
