@@ -161,8 +161,6 @@
   (car (dropf colorvals (curry set-member? contrains))))
 
 
-
-
 ;; make nicerrrrr
 (define (allocate-registers-helper graph assign-list constrain-graph)
   (let* ([node (highest-saturation graph (map car assign-list))]
@@ -176,8 +174,12 @@
                                                 res) constrain-graph (set->list (cdr node))))))))
 
 ;; stacki = -1 ;
-(define (allocate-reg-stack graph)
-  
+(define (allocate-reg-stack assign-list)
+  (define k 1) ;; (vector-length general-registers)
+  (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
+        [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
+    (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
+            (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))
   )
 
 (define (allocate-var e env)
@@ -189,10 +191,10 @@
     [else e]))
 
 (define (allocate-registers e)
-  (let ([assign-list (allocate-register-helper (caddr e) '() (make-graph '()))]
-        [env (allocate-registers-env assign-list)]
+  (let* ([assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()))]
+        [env (allocate-reg-stack assign-list)]
         [prog (car e)])
-    `(,prog ,(* 8 (length (cadr e))) . ,(cddr (map (curryr allocate-var env) e)))))
+    `(,prog ,(* 8 (length (caadr e))) . ,(cddr (map (curryr allocate-var env) e)))))
 
 ; starti == -1
 ;; (define (assign-homes-env alist starti)
