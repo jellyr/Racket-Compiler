@@ -4,7 +4,7 @@
 (require "interp.rkt")
 (require "utilities.rkt")
 
-(provide r1-passes)
+(provide r2-passes)
 
 
 
@@ -116,7 +116,7 @@
 (define (build-interference-unwrap e)
   (match e
     [`(var ,e1) e1]
-   ; [`(reg ,r) r] ;; removed rax from interference graph
+    [`(reg ,r) r] ;; removed rax from interference graph
     [else e]))
 
 (define (build-interference-helper graph e lak)
@@ -179,8 +179,7 @@
   (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
         [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
     (cons `(_stacklength . ,(length stacklist)) (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
-                    (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist))))
-  )
+                    (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))))
 
 (define (allocate-var e env)
   (match e
@@ -193,7 +192,7 @@
 
 ;;; consider rax
 (define (allocate-registers e)
-  (let* ([assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()))]
+  (let* ([assign-list (allocate-registers-helper (hash-remove (cadadr e) 'rax) '() (make-graph '()))]
         [env (allocate-reg-stack assign-list)]
         [prog (car e)])
     `(,prog ,(* 8 (lookup '_stacklength env)) . ,(cddr (map (curryr allocate-var env) e)))))
@@ -239,10 +238,11 @@ main:
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
 
-(define r1-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
+(define r2-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flatten" ,flatten ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
                     ("uncover-live" ,uncover-live ,interp-x86)
-                    ;("assign homes" ,assign-homes ,interp-x86)
+                    ("build interference graph" ,build-interference ,interp-x86)
+                    ("register allocation" ,allocate-registers ,interp-x86)
                     ("patch instructions" ,patch-instructions ,interp-x86)
                     ("print x86" ,print-x86 #f)))
