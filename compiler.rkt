@@ -155,31 +155,41 @@
 ;; optimial with cps;;
 ;; vector->list general-registers
 ;; we can make colorvars a lazylist if we want
-(define (assign-minicolor node constrain-graph)
+;; phash == prefred hash table
+(define (assign-minicolor node graph assign-list constrain-graph phash)
   (define colorvals (range 13))
   (define contrains (hash-ref! constrain-graph (car node) (set)))
-  (car (dropf colorvals (curry set-member? contrains))))
+  (define preferlist (dropf (map (lambda (v) (with-handlers ([exn:fail? (lambda (exn) #f)])
+                                               (lookup v assign-list)))
+                                 (set->list (set-subtract (hash-ref! phash (car node) (set))
+                                                          (hash-ref graph (car node) (set)))))
+                            false?))
+  (if (null? preferlist)
+      (car (dropf colorvals (curry set-member? contrains)))
+      (car preferlist)))
 
 
 ;; make nicerrrrr
-(define (allocate-registers-helper graph assign-list constrain-graph)
+(define (allocate-registers-helper graph assign-list constrain-graph phash)
   (let* ([node (highest-saturation graph (map car assign-list))]
-         [minvalue (assign-minicolor node constrain-graph)])
+         [minvalue (assign-minicolor node graph assign-list constrain-graph phash)])
     (cond
       ((eq? 'none (car node)) assign-list)
       (else (allocate-registers-helper graph
                                        `((,(car node) . ,minvalue) . ,assign-list)
                                        (foldl (lambda (gr res)
                                                 (hash-set! res gr (set-add (hash-ref! res gr (set)) minvalue))
-                                                res) constrain-graph (set->list (cdr node))))))))
+                                                res) constrain-graph (set->list (cdr node)))
+                                       phash)))))
 
 ;; stacki = -1 ;
 (define (allocate-reg-stack assign-list)
   (define k (vector-length general-registers)) ;; (vector-length general-registers)
   (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
         [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
-    (cons `(_stacklength . ,(length stacklist)) (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
-                    (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))))
+    (cons `(_stacklength . ,(length stacklist)) ;; a hack way
+          (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
+                  (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))))
 
 (define (allocate-var e env)
   (match e
@@ -190,11 +200,24 @@
     [`(subq ,e1 ,e2) `(subq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [else e]))
 
+;; work for move biasing
+;; parameter: the instructions
+;; return a hash, for each value it prefer to assgin to, data structure is like{ "a" : ["b", "c"]}
+(define (allocate-prefer insts)
+  (define phash (make-hash))
+  (map (lambda (inst)
+         (match inst
+           [`(movq (var ,e1) (var ,e2))
+            (hash-set! phash e1 (set-add (hash-ref phash e1 (set)) e2))]
+           [else '()])) insts)
+  phash)
+
 ;;; consider rax
 (define (allocate-registers e)
-  (let* ([assign-list (allocate-registers-helper (hash-remove (cadadr e) 'rax) '() (make-graph '()))]
-        [env (allocate-reg-stack assign-list)]
-        [prog (car e)])
+  (let* ([phash (allocate-prefer (cddr e))]
+         [assign-list (allocate-registers-helper (hash-remove (cadadr e) 'rax) '() (make-graph '()) phash)]
+         [env (allocate-reg-stack assign-list)]
+         [prog (car e)])
     `(,prog ,(* 8 (lookup '_stacklength env)) . ,(cddr (map (curryr allocate-var env) e)))))
 
 ; starti == -1
