@@ -140,7 +140,7 @@
       (let ([d (build-interference-unwrap e2)])
         (map (lambda (v) (cond
                            [(not (eqv? d v)) (add-edge graph d v)])) lak))]
-    [`(callq ,label) (map (lambda (v1) (map (lambda (v2) (add-edge graph v1 v2)) (set->list caller-save)))
+    [`(callq ,label) (map (lambda (v1) (map (lambda (v2) (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2))) (set->list caller-save)))
                           lak)]
     [else '()]))
 
