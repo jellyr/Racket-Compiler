@@ -63,7 +63,7 @@
 (define (select-instructions-assign ret-v e)
   (match e
     [(? fixnum?) `(int ,e)]
-    [(? symbol?) #:when (eq? e ret-v) '(reg rax)]
+    ;[(? symbol?) #:when (eq? e ret-v) '(reg rax)]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
     [`(assign ,var (read)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
                              `((callq read_int) (movq (reg rax) ,vare)))]
