@@ -63,6 +63,7 @@
 (define (select-instructions-assign ret-v e)
   (match e
     [(? fixnum?) `(int ,e)]
+    [(? symbol?) #:when (eq? e ret-v) '(reg rax)]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
     [`(assign ,var (read)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
                              `((callq read_int) (movq (reg rax) ,vare)))]
@@ -82,9 +83,13 @@
     [else `(,e)]))
 
 
+
+
 (define (select-instructions e)
-  (let ([ret-var (last (last e))])
-    (append-map (curry select-instructions-assign ret-var) e)))
+  (let* ([ret-var (last (last e))]
+         [si (append-map (curry select-instructions-assign ret-var) e)])
+    si
+   ))
 
 ;;;;;;
 (define (uncover-live-unwrap e)
@@ -237,6 +242,8 @@
   (match e
     [`(movq (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (movq (reg rax) (stack ,e2)))]
     [`(addq (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (addq (reg rax) (stack ,e2)))]
+    [`(subq (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (addq (reg rax) (stack ,e2)))]
+    [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
     [else `(,e)]))
 
 (define (patch-instructions e)
