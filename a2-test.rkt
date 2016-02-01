@@ -68,7 +68,7 @@
 
 
 
-(interp-tests "assignment2 r1" r1-passes interp-scheme "r1" (range 1 20))
+(interp-tests "assignment2 r1" r1-passes interp-scheme "r1" (range 1 22))
 (display "assignemnt2 r1 tests passed!") (newline)
 
 (interp-tests "assignment2 r1a" r1-passes interp-scheme "r1a" (range 1 9))
