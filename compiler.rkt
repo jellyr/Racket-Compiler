@@ -126,6 +126,10 @@
 
 (define (build-interference-helper graph e lak)
   (match e
+    [`(movq (reg rax) (var ,d))
+     (append (map (lambda (v) (add-edge graph d v)) (set->list caller-save))
+             (map (lambda (v) (cond
+                                [(not (or (eqv? 'rax v) (eqv? d v))) (add-edge graph d v)])) lak))]
     [`(movq ,e1 ,e2)#:when (or (var? e2) (reg? e2))
      (let ([s (build-interference-unwrap e1)]
            [d (build-interference-unwrap e2)])
