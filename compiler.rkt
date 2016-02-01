@@ -4,7 +4,7 @@
 (require "interp.rkt")
 (require "utilities.rkt")
 
-(provide r2-passes)
+(provide r1-passes)
 
 
 
@@ -131,6 +131,10 @@
             [d (build-interference-unwrap e2)])
         (map (lambda (v) (cond
                            [(not (eqv? d v)) (add-edge graph d v)])) lak))]
+    [`(negq ,e2)#:when (or (var? e2) (reg? e2))
+      (let ([d (build-interference-unwrap e2)])
+        (map (lambda (v) (cond
+                           [(not (eqv? d v)) (add-edge graph d v)])) lak))]
     [`(callq ,label) (map (lambda (v1) (map (lambda (v2) (add-edge graph v1 v2)) (set->list caller-save)))
                           lak)]
     [else '()]))
@@ -171,7 +175,7 @@
 
 ;; make nicerrrrr
 (define (allocate-registers-helper graph assign-list constrain-graph phash)
-  (let* ([node (highest-saturation graph (map car assign-list))]
+  (let* ([node (highest-saturation graph (if (null? assign-list) '() (map car assign-list)))]
          [minvalue (assign-minicolor node graph assign-list constrain-graph phash)])
     (cond
       ((eq? 'none (car node)) assign-list)
@@ -193,7 +197,9 @@
 
 (define (allocate-var e env)
   (match e
-    [`(var ,e1) (lookup e1 env)]
+    ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1)) 
+    [`(var ,e1) (with-handlers ([exn:fail? (lambda (exn) '(reg rax))])
+                  (lookup e1 env))]
     [`(movq ,e1 ,e2) `(movq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(negq ,e1) `(negq ,(allocate-var e1 env))]
     [`(addq ,e1 ,e2) `(addq ,(allocate-var e1 env) ,(allocate-var e2 env))]
@@ -215,7 +221,8 @@
 ;;; consider rax
 (define (allocate-registers e)
   (let* ([phash (allocate-prefer (cddr e))]
-         [assign-list (allocate-registers-helper (hash-remove (cadadr e) 'rax) '() (make-graph '()) phash)]
+         ;;; (hash-remove (cadadr e) 'rax)
+         [assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()) phash)]
          [env (allocate-reg-stack assign-list)]
          [prog (car e)])
     `(,prog ,(* 8 (lookup '_stacklength env)) . ,(cddr (map (curryr allocate-var env) e)))))
@@ -261,7 +268,7 @@ main:
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
 
-(define r2-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
+(define r1-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flatten" ,flatten ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
                     ("uncover-live" ,uncover-live ,interp-x86)
