@@ -196,7 +196,7 @@
   (define k (vector-length general-registers)) ;; (vector-length general-registers)
   (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
         [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
-    (cons `(_stacklength . ,(length stacklist)) ;; a hack way
+    (cons `(_stacklength . ,(set-count (list->set (map cdr stacklist)))) ;; a hack way
           (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
                   (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))))
 
