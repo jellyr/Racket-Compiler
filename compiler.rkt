@@ -103,7 +103,7 @@
 (define (uncover-live-helper e lak)
   (match e
     [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
-    ; [`(negq ,e1) ()]
+    [`(callq read_int) (set-add lak 'rax)]
     [`(addq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     [`(subq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     [else (uncover-live-unwrap e)]))
