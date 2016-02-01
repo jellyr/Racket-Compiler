@@ -65,21 +65,21 @@
     [(? fixnum?) `(int ,e)]
     ;[(? symbol?) #:when (eq? e ret-v) '(reg rax)]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
-    [`(assign ,var (read)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+    [`(assign ,var (read)) (let ([vare `(var ,var)])
                              `((callq read_int) (movq (reg rax) ,vare)))]
-    [`(assign ,var (- ,e1)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+    [`(assign ,var (- ,e1)) (let ([vare `(var ,var)])
                               `((movq ,(select-instructions-assign ret-v e1) ,vare) (negq ,vare)))]
-    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) (let ([vare `(var ,var)])
                                                      `((addq ,(select-instructions-assign ret-v e2) ,vare)))]
-    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+    [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) (let ([vare `(var ,var)])
                                                      `((addq ,(select-instructions-assign ret-v e1) ,vare)))]
-    [`(assign ,var (+ ,e1 ,e2)) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+    [`(assign ,var (+ ,e1 ,e2)) (let ([vare `(var ,var)])
                                   `((movq ,(select-instructions-assign ret-v e1) ,vare) (addq ,(select-instructions-assign ret-v e2) ,vare)))]
-    [`(return ,e1) (if (fixnum? ret-v) `((movq ,(select-instructions-assign ret-v e1) (reg rax))) `())]
+    [`(return ,e1) `((movq ,(select-instructions-assign ret-v e1) (reg rax)))]
     ;; 
-    [`(assign ,var ,e1) (let ([vare (if (eqv? var ret-v) '(reg rax) `(var ,var))])
+    [`(assign ,var ,e1) (let ([vare `(var ,var)])
                           `((movq ,(select-instructions-assign ret-v e1) ,vare)))]
-    [(? list?) (list (remove ret-v e))]
+    ;[(? list?) (list (remove ret-v e))]
     [else `(,e)]))
 
 
