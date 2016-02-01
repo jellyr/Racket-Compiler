@@ -230,7 +230,7 @@
          [assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()) phash)]
          [env (allocate-reg-stack assign-list)]
          [prog (car e)])
-    `(,prog ,(* 8 (lookup '_stacklength env)) . ,(cddr (map (curryr allocate-var env) e)))))
+    `(,prog ,(lookup '_stacklength env) . ,(cddr (map (curryr allocate-var env) e)))))
 
 ; starti == -1
 ;; (define (assign-homes-env alist starti)
