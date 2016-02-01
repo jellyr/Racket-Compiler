@@ -240,10 +240,10 @@
 
 (define (patch-instr-helper e)
   (match e
+    [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
     [`(movq (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (movq (reg rax) (stack ,e2)))]
     [`(addq (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (addq (reg rax) (stack ,e2)))]
     [`(subq (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (addq (reg rax) (stack ,e2)))]
-    [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
     [else `(,e)]))
 
 (define (patch-instructions e)
