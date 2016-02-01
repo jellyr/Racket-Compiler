@@ -161,7 +161,7 @@
 ;; we can make colorvars a lazylist if we want
 ;; phash == prefred hash table
 (define (assign-minicolor node graph assign-list constrain-graph phash)
-  (define colorvals (range 13))
+  (define colorvals (range 100))
   (define contrains (hash-ref! constrain-graph (car node) (set)))
   (define preferlist (dropf (map (lambda (v) (with-handlers ([exn:fail? (lambda (exn) #f)])
                                                (lookup v assign-list)))
@@ -175,7 +175,7 @@
 
 ;; make nicerrrrr
 (define (allocate-registers-helper graph assign-list constrain-graph phash)
-  (let* ([node (highest-saturation graph (if (null? assign-list) '() (map car assign-list)))]
+  (let* ([node (highest-saturation graph (map car assign-list))]
          [minvalue (assign-minicolor node graph assign-list constrain-graph phash)])
     (cond
       ((eq? 'none (car node)) assign-list)
