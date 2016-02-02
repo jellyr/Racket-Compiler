@@ -183,7 +183,7 @@
                                  (hash-ref graph (car node) (set))))
   (define pset^ (unbox callq^))
   (define preferlist (dropf (map (lambda (v) (with-handlers ([exn:fail? (lambda (exn) #f)])
-                                               (lookup v assign-list)))
+                                               (and (lookup v assign-list) (set-member? contrains (car node)))))
                                  (set->list (if (set-member? pset^ (car node)) (set-subtract tempset1 pset^) tempset1)))
                             false?))
   (if (null? preferlist)
