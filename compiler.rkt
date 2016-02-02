@@ -103,7 +103,8 @@
 (define (uncover-live-helper e lak)
   (match e
     [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
-   ; [`(callq read_int) (set-add lak 'rax)]
+    ; [`(callq read_int) (set-add lak 'rax)]
+    [`(negq ,e1) (set-union lak (uncover-live-unwrap e1))]
     [`(addq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     [`(subq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     [else (uncover-live-unwrap e)]))
@@ -127,9 +128,9 @@
 (define (build-interference-helper graph e lak)
   (match e
     [`(movq (reg rax) (var ,d))
-     (append (map (lambda (v) (add-edge graph d v)) (set->list caller-save))
+     (append (map (lambda (v) (hash-set! graph d (set-add (hash-ref graph d (set)) v))) (set->list caller-save))
              (map (lambda (v) (cond
-                                [(not (or (eqv? 'rax v) (eqv? d v))) (add-edge graph d v)])) lak))]
+                                [(not (or (eqv? 'rax v) (eqv? d v))) (hash-set! graph d (set-add (hash-ref graph d (set)) v))])) lak))]
     [`(movq ,e1 ,e2)#:when (or (var? e2) (reg? e2))
      (let ([s (build-interference-unwrap e1)]
            [d (build-interference-unwrap e2)])
