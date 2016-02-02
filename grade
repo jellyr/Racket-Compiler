@@ -2,3 +2,12 @@ ASSIGNMENT 1:
 19/19 test cases interpreted successfully.
 19/19 test cases compiled and executed correctly.
 Great work!
+
+ASSIGNMENT 2:
+8/8 new test cases interpreted successfully.
+8/8 new test cases compiled and executed successfully.
+Register allocation and move biasing seems fine except that you only
+use callee-save registers. You get full credit for this assignment,
+but I very strongly suggest that you implement a solution to allow the
+use of caller-save registers going forwards.
+Regardless, well done.
