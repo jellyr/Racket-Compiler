@@ -118,7 +118,7 @@
 
 ;;;;;;;;;;
 
-(define callq^ (set))
+(define callq^ (box (set)))
 
 (define (build-interference-unwrap e)
   (match e
@@ -129,9 +129,9 @@
 (define (build-interference-helper graph e lak)
   (match e
     [`(movq (reg rax) (var ,d))
-     (let* ([specialset (set->list (set-union callq^ caller-save))])
+     (let* ([specialset (set->list (set-union (unbox callq^) caller-save))])
        (begin
-         (set! callq^ (set-add callq^ d))
+         (set-box! callq^ (set-add (unbox callq^) d))
          (map (lambda (v) (cond
                             [(not (eqv? d v)) (add-edge graph d v)])) specialset)
          (map (lambda (v) (cond
