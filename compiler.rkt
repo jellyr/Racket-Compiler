@@ -178,8 +178,9 @@
 ;; phash == prefred hash table
 (define (assign-minicolor node graph assign-list constrain-graph phash)
   (define colorvals (range 100))
+  (define calleecolor (set 0 9 10 11 12))
   (define contrains (hash-ref! constrain-graph (car node) (set)))
-  (define tempset1 (set-subtract (hash-ref! phash (car node) (set))
+  (define tempset1 (set-subtract (set-union calleecolor (hash-ref! phash (car node) (set)))
                                  (hash-ref graph (car node) (set))))
   (define pset^ (unbox callq^))
   (define preferlist (dropf (map (lambda (v) (with-handlers ([exn:fail? (lambda (exn) #f)])
