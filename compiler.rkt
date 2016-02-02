@@ -177,15 +177,15 @@
 ;; we can make colorvars a lazylist if we want
 ;; phash == prefred hash table
 (define (assign-minicolor node graph assign-list constrain-graph phash)
-  (define colorvals (range 100))
-  (define calleecolor (set 0 9 10 11 12))
+  (define calleecolor '(0 9 10 11 12))
+  (define colorvals (if (set-member? (unbox callq^) (car node)) (append calleecolor (range 100)) (range 100)))
   (define contrains (hash-ref! constrain-graph (car node) (set)))
-  (define tempset1 (set-subtract (set-union calleecolor (hash-ref! phash (car node) (set)))
+  (define tempset1 (set-subtract (hash-ref! phash (car node) (set))
                                  (hash-ref graph (car node) (set))))
-  (define pset^ (unbox callq^))
+  
   (define preferlist (dropf (map (lambda (v) (with-handlers ([exn:fail? (lambda (exn) #f)])
-                                               (and (lookup v assign-list) (set-member? contrains (car node)))))
-                                 (set->list (if (set-member? pset^ (car node)) (set-subtract tempset1 pset^) tempset1)))
+                                               (lookup v assign-list)))
+                                 (set->list tempset1))
                             false?))
   (if (null? preferlist)
       (car (dropf colorvals (curry set-member? contrains)))
@@ -207,12 +207,18 @@
 
 ;; stacki = -1 ;
 (define (allocate-reg-stack assign-list)
-  (define k (vector-length general-registers)) ;; (vector-length general-registers)
-  (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
+  (define testregister general-registers) ;;(list->vector (set->list callee-save))
+  (define k (vector-length testregister)) ;; (vector-length general-registers)
+  (define cerlen (set-count caller-save))
+  (define ceelen (set-count callee-save))
+  
+  (let ([reglist (filter (lambda (v) (and (< (cdr v) k))) assign-list)]
+        [calerlist (filter (lambda (v) (and (< (cdr v) k) (not (set-member? caller-save callq^)))) assign-list)]
+        [caleelist (filter (lambda (v) (and (< (cdr v) k) (set-member? callee-save callq^))) assign-list)]
         [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
     (cons `(_stacklength . ,(set-count (list->set (map cdr stacklist)))) ;; a hack way
           (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
-                  (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))))
+                  (map (lambda (v) `(,(car v) . (reg ,(vector-ref testregister (cdr v))))) reglist)))))
 
 (define (allocate-var e env)
   (match e
