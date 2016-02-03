@@ -17,6 +17,21 @@
 (define (reg? e)
   (eqv? (car e) 'reg))
 
+;; to read the type check paper
+;; see the 521 minikaren one
+
+(define (typecheck-R2 env e)
+  (match e
+    [(? fixnum?) 'Integer]
+    [(? boolean?) 'Boolean]
+    [(? symbol?) (lookup e env)]
+    [`(let ([x ,e]) ,body)
+     (define T (typecheck-R2 env e))
+     (define new-env (cons (cons x T) env))
+     (typecheck-R2 new-env body)]
+
+    ))
+
 (define uniquify
   (lambda (alist)
     (lambda (e)
