@@ -25,7 +25,7 @@
     [(? fixnum?) 'Integer]
     [(? boolean?) 'Boolean]
     [(? symbol?) (lookup e env)]
-    [`(let ([x ,e]) ,body)
+    [`(let ([,x ,e]) ,body)
      (define T (typecheck-R2 env e))
      (define new-env (cons (cons x T) env))
      (typecheck-R2 new-env body)]
@@ -56,9 +56,15 @@
                [(or (? fixnum?) (? symbol?) (? boolean?)) (values e '() '())]
                [`(read) (let [(newvar (gensym))]
                           (values newvar  `((assign ,newvar (read))) `(,newvar)))]
-               [`(- ,e1) (let [(newvar (gensym))]
-                           (let-values ([(e^ statements^ alist) ((flatten mode) e1)])
-                             (values newvar (append statements^ `((assign ,newvar (- ,e^)))) (cons newvar alist))))]
+               [`(- ,e1) (let-values ([(e^ statements^ alist) ((flatten mode) e1)])
+                           (if (eq? mode 0)
+                               (let [(newvar (gensym))]
+                                 (values newvar
+                                       (append statements^ `((assign ,newvar (- ,e^))))
+                                       (cons newvar alist)))
+                               (values `(- ,e^)
+                                       statements^
+                                       alist)))]
                [`(+ ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) ((flatten mode) e1))
                                           ((e2^ stmt2^ alist2^) ((flatten mode) e2)))
                                (if (eq? mode 0)
@@ -68,28 +74,34 @@
                                              (append (cons newvar alist1^) alist2^)))
                                    (values `(+ ,e1^ ,e2^)
                                            (append stmt1^ stmt2^)
-                                           (append alist1^ alist2^)))) ]
-               [`(eq ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) ((flatten mode) e1))
-                                           ((e2^ stmt2^ alist2^) ((flatten mode) e2)))                                
+                                           (append alist1^ alist2^))))]
+               [`(eq? ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) ((flatten mode) e1))
+                                           ((e2^ stmt2^ alist2^) ((flatten mode) e2)))
                                 (if (eq? mode 0)
                                     (let ([newvar (gensym)])
-                                      (values gensym
+                                      (values newvar
                                               (append stmt1^ (append stmt2^ `(assign ,newvar (eq? ,e1^ ,e2^))))
-                                              (append alist1^ alist2^)))                               
+                                              (append (cons newvar alist1^) alist2^)))
                                     (values `(eq? ,e1^ ,e2^)
-                                            (append stmt1^ stmt^2)
+                                            (append stmt1^ stmt2^)
                                             (append alist1^ alist2^))))]
                [`(if ,cnd ,thn ,els) (let-values (((ec stmtc alistc) ((flatten 1) cnd))
                                                   ((et stmtt alistt) ((flatten 1) thn))
                                                   ((ee stmte aliste) ((flatten 1) els)))
-                                       (values `(if ,ec ,(stmtt) ,(stmte))
-                                               (append stmtc (append `(if ,ec ,(stmtt) ,(stmte))))
-                                               (append alistc alistt aliste)))]
-               [`(and ,e1 ,e2) ((flatten 0) `(if (eq? ,e1 #t) ,e2 #f))]
+                                       (let ([newvar (gensym)])
+                                         (values newvar
+                                                 (append stmtc `((if ,ec ,(append stmtt `((assign ,newvar ,et))) ,(append stmte `((assign ,newvar ,ee))))))
+                                                 (append (cons newvar alistc) alistt aliste))))]
+               [`(and ,e1 ,e2) ((flatten mode) `(if (eq? ,e1 #t) ,e2 #f))]
                [`(not ,e1) (let-values (((ne nstmt nalist) ((flatten mode) e1)))
                              (if (eq? mode 0)
-                                 (values )
-                                 ()))]
+                                 (let ([newvar gensym])
+                                   (values newvar
+                                           (append nstmt `(assign ,newvar (not ,ne)))
+                                           (cons newvar nalist)))
+                                 (values `(not ,ne)
+                                         nstmt
+                                         nalist)))]
                [`(program ,e) (let-values ([(e^ stmt^ alist^) ((flatten mode) e)])
                                 `(program ,alist^ ,@stmt^ (return ,e^)))]
                [`(let ([,x ,e]) ,body) (let-values
