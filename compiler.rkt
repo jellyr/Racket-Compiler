@@ -189,9 +189,21 @@
   (match e
     [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     ; [`(callq read_int) (set-add lak 'rax)]
-    ;[`(negq ,e1) (set-union lak (uncover-live-unwrap e1))]
-    [`(addq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
-    [`(subq ,e1 ,e2) (set-union (set-union lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
+    ;[`(negq ,e1) (set-union lak (uncover-live-unwrap e1))
+    [`(if (eq? ,e1 ,e2) (,thn) (,els)) (let ([thnvars (if (var? thn)
+                                                          (uncover-live-unwrap thn)
+                                                          (uncover-live-helper thn lak))]
+                                             [elsvars (if (var? els)
+                                                          (uncover-live-unwrap els)
+                                                          (uncover-live-helper els lak))])
+                                         (set-union (uncover-live-unwrap e1)
+                                                    (uncover-live-unwrap e2)
+                                                    thnvars
+                                                    elsvars))]
+    [`(cmpq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
+    [`(movzbq ,e1 ,e2) (set-subtract lak (uncover-live-unwrap e2))]
+    [`(addq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
+    [`(subq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [else lak]))
 
 (define (uncover-live e)
