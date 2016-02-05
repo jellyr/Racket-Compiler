@@ -20,17 +20,48 @@
 ;; to read the type check paper
 ;; see the 521 minikaren one
 
+;; check R2 language
 (define (typecheck-R2 env e)
   (match e
     [(? fixnum?) 'Integer]
     [(? boolean?) 'Boolean]
     [(? symbol?) (lookup e env)]
+    [`(read) (error "implement me")]
+    [`(+ ,e1 ,e2)
+     (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
+       ['(Integer Integer) 'Integer]
+       [else (error "In +")])]
+    [`(- ,e1)
+     (match (typecheck-R2 env e1)
+       ['Integer 'Integer]
+       [else (error "in -")])]
+    (`(if ,econd ,ethen ,eelse)
+     (match (typecheck-R2 env econd)
+       ['Boolean (let ([tthen (typecheck-R2 env ethen)]
+                       [telse (typecheck-R2 env eelse)])
+                   (if (eqv? tthen eelse)
+                       tthen
+                       (error "in if")))]
+       [else (error "in if")]))
     [`(let ([,x ,e]) ,body)
      (define T (typecheck-R2 env e))
      (define new-env (cons (cons x T) env))
      (typecheck-R2 new-env body)]
-
-    ))
+    [`(not ,e)
+     (match (typecheck-R2 env e)
+       ['Boolean 'Boolean]
+       [else (error "in not")])]
+    [`(eq? ,e1 ,e2)
+     (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
+       ['(Boolean Boolean) 'Boolean]
+       [else (error "In eq?")])]
+    [`(and ,e1 ,e2)
+     (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
+       ['(Boolean Boolean) 'Boolean]
+       [else (error "In and")])]
+    [`(program ,body)
+     (typecheck-R2 '() body)
+     `(program ,body)]))
 
 (define uniquify
   (lambda (alist)
