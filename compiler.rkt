@@ -86,8 +86,8 @@
                                             (append stmt1^ stmt2^)
                                             (append alist1^ alist2^))))]
                [`(if ,cnd ,thn ,els) (let-values (((ec stmtc alistc) ((flatten 1) cnd))
-                                                  ((et stmtt alistt) ((flatten 1) thn))
-                                                  ((ee stmte aliste) ((flatten 1) els)))
+                                                  ((et stmtt alistt) ((flatten 0) thn))
+                                                  ((ee stmte aliste) ((flatten 0) els)))
                                        (let ([newvar (gensym)])
                                          (values newvar
                                                  (append stmtc `((if ,ec ,(append stmtt `((assign ,newvar ,et))) ,(append stmte `((assign ,newvar ,ee))))))
