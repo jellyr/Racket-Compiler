@@ -81,48 +81,48 @@
 
 ;;0 - Flatten till variables
 ;;1 - Flatten till expressions
-(define (flatten e)
+(define (flattens e)
   (match e
     [(or (? fixnum?) (? symbol?) (? boolean?)) (values e '() '())]
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
-    [`(- ,e1) (let-values ([(e^ statements^ alist) (flatten e1)])
+    [`(- ,e1) (let-values ([(e^ statements^ alist) (flattens e1)])
                 (let [(newvar (gensym))]
                   (values newvar
                           (append statements^ `((assign ,newvar (- ,e^))))
                           (cons newvar alist))))]
-    [`(+ ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flatten e1))
-                               ((e2^ stmt2^ alist2^) (flatten e2)))
+    [`(+ ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flattens e1))
+                               ((e2^ stmt2^ alist2^) (flattens e2)))
                     (let ([newvar (gensym)])
                       (values newvar
                               (append stmt1^ (append stmt2^ `((assign ,newvar (+ ,e1^ ,e2^)))))
                               (append (cons newvar alist1^) alist2^))))]
-    [`(eq? ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flatten e1))
-                                 ((e2^ stmt2^ alist2^) (flatten e2)))
+    [`(eq? ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flattens e1))
+                                 ((e2^ stmt2^ alist2^) (flattens e2)))
                       (let ([newvar (gensym)])
                         (values newvar
                                 (append stmt1^ stmt2^ `((assign ,newvar (eq? ,e1^ ,e2^))))
                                 (append (cons newvar alist1^) alist2^))))]
-    [`(if ,cnd ,thn ,els) (let-values (((ec stmtc alistc) (flatten cnd))
-                                       ((et stmtt alistt) (flatten thn))
-                                       ((ee stmte aliste) (flatten els)))
+    [`(if ,cnd ,thn ,els) (let-values (((ec stmtc alistc) (flattens cnd))
+                                       ((et stmtt alistt) (flattens thn))
+                                       ((ee stmte aliste) (flattens els)))
                             (let ([newvar (gensym)])
                               (values newvar
                                       (append stmtc `((if (eq? #t ,ec)
                                                           ,(append stmtt `((assign ,newvar ,et)))
                                                           ,(append stmte `((assign ,newvar ,ee))))))
                                       (append (cons newvar alistc) alistt aliste))))]
-    [`(and ,e1 ,e2) (flatten `(if (eq? ,e1 #t) ,e2 #f))]
-    [`(not ,e1) (let-values (((ne nstmt nalist) (flatten e1)))
+    [`(and ,e1 ,e2) (flattens `(if (eq? ,e1 #t) ,e2 #f))]
+    [`(not ,e1) (let-values (((ne nstmt nalist) (flattens e1)))
                   (let ([newvar gensym])
                     (values newvar
                             (append nstmt `(assign ,newvar (not ,ne)))
                             (cons newvar nalist))))]
-    [`(program ,e) (let-values ([(e^ stmt^ alist^) (flatten e)])
+    [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
                      `(program ,alist^ ,@stmt^ (return ,e^)))]
     [`(let ([,x ,e]) ,body) (let-values
-                                ([(xe^ stmtx^ alistx^) (flatten e)]
-                                 [(be^ stmtb^ alistb^) (flatten body)])
+                                ([(xe^ stmtx^ alistx^) (flattens e)]
+                                 [(be^ stmtb^ alistb^) (flattens body)])
                               (let* [(xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
                                      (alistx^ (cons x (if (null? alistx^) alistx^ (cdr alistx^))))
                                      (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
@@ -143,14 +143,14 @@
                                               (or (fixnum? e2) (boolean? e2)))
                                   `((movq ,(select-instructions-assign ret-v e2) (reg rax))
                                     (cmpq ,(select-instructions-assign ret-v e1) (reg rax))
-                                    (sete (byt-reg al))
+                                    (sete (byte-reg al))
                                     (movzbq (byte-reg al) (var ,var)))]
     [`(assign ,var (eq? ,e1 ,e2)) `(,(if (or (fixnum? e2) (boolean? e2))
                                          `(cmpq ,(select-instructions-assign ret-v e2)
                                                 ,(select-instructions-assign ret-v e1))
                                          `(cmpq ,(select-instructions-assign ret-v e1)
                                                 ,(select-instructions-assign ret-v e2)))
-                                    (sete (byt-reg al))
+                                    (sete (byte-reg al))
                                     (movzbq (byte-reg al) (var ,var)))]
     [`(if (eq? ,e1 ,e2) ,thn ,els) `((if (eq? ,(select-instructions-assign ret-v e1)
                                               ,(select-instructions-assign ret-v e2))
@@ -173,8 +173,7 @@
 (define (select-instructions e)
   (let* ([ret-var (last (last e))]
          [si (append-map (curry select-instructions-assign ret-var) e)])
-    si
-   ))
+    si))
 
 ;;;;;;
 (define (uncover-live-unwrap e)
@@ -190,29 +189,39 @@
     [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     ; [`(callq read_int) (set-add lak 'rax)]
     ;[`(negq ,e1) (set-union lak (uncover-live-unwrap e1))
-    [`(if (eq? ,e1 ,e2) (,thn) (,els)) (let ([thnvars (if (var? thn)
+    [`(if (eq? ,e1 ,e2) ,thn ,els) (let ([thnvars (if (var? (car thn))
                                                           (uncover-live-unwrap thn)
-                                                          (uncover-live-helper thn lak))]
-                                             [elsvars (if (var? els)
+                                                          (map set->list (map (curryr uncover-live-helper lak) thn)))]
+                                             [elsvars (if (var? (car els))
                                                           (uncover-live-unwrap els)
-                                                          (uncover-live-helper els lak))])
-                                         (set-union (uncover-live-unwrap e1)
-                                                    (uncover-live-unwrap e2)
-                                                    thnvars
-                                                    elsvars))]
+                                                          (map set->list (map (curryr uncover-live-helper lak) els)))])
+                                         (begin
+                                           (set! prog (map (lambda (x)
+                                                             (if (equal? x e)
+                                                                 `(if (eq? ,e1 ,e2)
+                                                                       ,@(map list thn thnvars)
+                                                                       ,@(map list els elsvars))
+                                                                 x)) prog))                                           
+                                           (set-union (uncover-live-unwrap e1)
+                                                     (uncover-live-unwrap e2)
+                                                     (list->set (flatten thnvars))
+                                                     (list->set (flatten elsvars)))))]
     [`(cmpq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [`(movzbq ,e1 ,e2) (set-subtract lak (uncover-live-unwrap e2))]
     [`(addq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [`(subq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [else lak]))
 
+(define prog '())
+
 (define (uncover-live e)
+  (set! prog (cddr e))
   (let [(setlist (map set->list
                       (foldr (lambda (x r)
                                (cons (uncover-live-helper x (car r)) r))
                              `(,(set))
                              (cddr e))))]
-    `(,(car e) ,(list (cadr e) (cdr setlist)) ,@(cddr e))))
+    `(,(car e) ,(list (cadr e) (cdr setlist)) ,@prog)))
 
 ;;;;;;;;;;
 
@@ -220,16 +229,17 @@
   (match e
     [`(var ,e1) e1]
     [`(reg ,r) r] ;; removed rax from interference graph
+    ['(byte-reg al) 'rax]
     [else e]))
 
 (define (build-interference-helper graph e lak)
   (match e
-    [`(movq ,e1 ,e2)#:when (or (var? e2) (reg? e2))
+    [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'movq) (eq? op 'movzbq)))
      (let ([s (build-interference-unwrap e1)]
            [d (build-interference-unwrap e2)])
        (map (lambda (v) (cond
                           [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)])) lak))]
-    [`(addq ,e1 ,e2)#:when (or (var? e2) (reg? e2))
+    [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'addq) (eq? op 'cmpq)))
       (let ([s (build-interference-unwrap e1)]
             [d (build-interference-unwrap e2)])
         (map (lambda (v) (cond
@@ -238,8 +248,11 @@
       (let ([d (build-interference-unwrap e2)])
         (map (lambda (v) (cond
                            [(not (eqv? d v)) (add-edge graph d v)])) lak))]
-    [`(callq ,label) (map (lambda (v1) (map (lambda (v2) (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2))) (set->list caller-save)))
-                          lak)]
+    [`(callq ,label) (map (lambda (v1)
+                            (map (lambda (v2)
+                                   (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
+                                 (set->list caller-save))) lak)]
+    [`(if ,cnd (,thn) (,els)) '()]
     [else '()]))
 
 (define (build-interference e)
@@ -306,10 +319,11 @@
     ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1)) 
     [`(var ,e1) (with-handlers ([exn:fail? (lambda (exn) '(reg rax))])
                   (lookup e1 env))]
-    [`(movq ,e1 ,e2) `(movq ,(allocate-var e1 env) ,(allocate-var e2 env))]
-    [`(negq ,e1) `(negq ,(allocate-var e1 env))]
-    [`(addq ,e1 ,e2) `(addq ,(allocate-var e1 env) ,(allocate-var e2 env))]
-    [`(subq ,e1 ,e2) `(subq ,(allocate-var e1 env) ,(allocate-var e2 env))]
+    [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
+    [`(,op ,e1) `(,op ,(allocate-var e1 env))]
+    [`(if ,cnd (,thn) (,els)) e]
+    ;[`(addq ,e1 ,e2) `(addq ,(allocate-var e1 env) ,(allocate-var e2 env))]
+    ;[`(subq ,e1 ,e2) `(subq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [else e]))
 
 ;; work for move biasing
@@ -377,7 +391,7 @@ main:
 	retq" (* 8 (cadr e)))))
 
 (define r1-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
-                    ("flatten" ,flatten ,interp-C)
+                    ("flattens" ,flattens ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
                     ("uncover-live" ,uncover-live ,interp-x86)
                     ("build interference graph" ,build-interference ,interp-x86)
