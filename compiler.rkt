@@ -130,8 +130,6 @@
                                         (append stmtx^ (append `((assign ,x ,xe^)) stmtb^))
                                         (append alistx^ alistb^))))]))
 
-
-
 (define (select-instructions-assign ret-v e)
   (match e
     [(? fixnum?) `(int ,e)]
@@ -199,8 +197,8 @@
                                            (set! prog (map (lambda (x)
                                                              (if (equal? x e)
                                                                  `(if (eq? ,e1 ,e2)
-                                                                       ,@(map list thn thnvars)
-                                                                       ,@(map list els elsvars))
+                                                                       ,(map list thn thnvars)
+                                                                       ,(map list els elsvars))
                                                                  x)) prog))                                           
                                            (set-union (uncover-live-unwrap e1)
                                                      (uncover-live-unwrap e2)
@@ -252,7 +250,16 @@
                             (map (lambda (v2)
                                    (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
                                  (set->list caller-save))) lak)]
-    [`(if ,cnd (,thn) (,els)) '()]
+    [`(if (eq? ,e1 ,e2) ,thn ,els)
+     (let ([s (build-interference-unwrap e1)]
+           [d (build-interference-unwrap e2)])
+       (map (lambda (v1)
+              (build-interference-helper graph (car v1) (cadr v1))) thn)
+       (map (lambda (v1)
+              (build-interference-helper graph (car v1) (cadr v1))) els)
+       (map (lambda (v)
+              (cond
+                [(not (eqv? d v)) (add-edge graph d v)])) lak))]
     [else '()]))
 
 (define (build-interference e)
@@ -316,12 +323,17 @@
 
 (define (allocate-var e env)
   (match e
+    (print env)
     ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1)) 
     [`(var ,e1) (with-handlers ([exn:fail? (lambda (exn) '(reg rax))])
                   (lookup e1 env))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
-    [`(if ,cnd (,thn) (,els)) e]
+    [`(if (eq? ,e1 e2) (,thn) (,els)) `(if ,e1 (allocate-var e2 env)
+                                           ,(map (lambda (v)
+                                                  (allocate-var (car v)  env)) thn)
+                                           ,(map (lambda (v)
+                                                  (allocate-var (car v)  env)) els))]
     ;[`(addq ,e1 ,e2) `(addq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     ;[`(subq ,e1 ,e2) `(subq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [else e]))
