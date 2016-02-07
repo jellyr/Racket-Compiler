@@ -39,7 +39,7 @@
      (match (typecheck-R2 env econd)
        ['Boolean (let ([tthen (typecheck-R2 env ethen)]
                        [telse (typecheck-R2 env eelse)])
-                   (if (eqv? tthen eelse)
+                   (if (eqv? tthen telse)
                        tthen
                        (error "in if")))]
        [else (error "in if")]))
@@ -405,7 +405,8 @@ main:
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
 
-(define r2-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
+(define r2-passes `(("typecheck-R2" ,(curry typecheck-R2 '()) ,interp-scheme)
+                    ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flattens" ,flattens ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
                     ("uncover-live" ,uncover-live ,interp-x86)
