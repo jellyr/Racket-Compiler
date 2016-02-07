@@ -329,6 +329,7 @@
                   (lookup e1 env))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
+    ;; e2 --> ,e2 ???
     [`(if (eq? ,e1 e2) (,thn) (,els)) `(if ,e1 (allocate-var e2 env)
                                            ,(map (lambda (v)
                                                   (allocate-var (car v)  env)) thn)
@@ -376,8 +377,22 @@
 (define (patch-instructions e)
   (append-map patch-instr-helper e))
 
+(define (lower-conditionals-helper e)
+  (define elselabel (gensym 'else))
+  (define thenlabel (gensym 'then))
+  (define endlabel (gensym 'ifend))
+  (match e
+    [`(if (eq? ,e1 ,e2) (,thn) (,els)) `((cmpq ,e1 ,e2)
+                                        (je ,thenlabel)
+                                        ,@(lower-conditionals-helper els)
+                                        (jmp ,endlabel)
+                                        (label ,thenlabel)
+                                        ,@(lower-conditionals-helper thn)
+                                        (label ,endlabel))]
+    [else e]))
 
-
+(define (lower-conditionals e)
+  (map lower-conditionals-helper e))
 
 (define (print-helper e)
   (match e
