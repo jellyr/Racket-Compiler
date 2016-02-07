@@ -4,7 +4,7 @@
 (require "interp.rkt")
 (require "utilities.rkt")
 
-(provide r1-passes)
+(provide r2-passes)
 
 
 
@@ -374,7 +374,10 @@
     [else `(,e)]))
 
 (define (patch-instructions e)
-    (append-map patch-instr-helper e))
+  (append-map patch-instr-helper e))
+
+
+
 
 (define (print-helper e)
   (match e
@@ -402,7 +405,7 @@ main:
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
 
-(define r1-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
+(define r2-passes `(("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flattens" ,flattens ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
                     ("uncover-live" ,uncover-live ,interp-x86)
