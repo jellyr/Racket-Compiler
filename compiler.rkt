@@ -324,7 +324,6 @@
                   (lookup e1 env))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
-    ;; e2 --> ,e2 ???
     [`(if (eq? ,e1 ,e2) (,thn) (,els)) `(if ,e1 (allocate-var e2 env)
                                            ,(map (lambda (v)
                                                   (allocate-var (car v)  env)) thn)

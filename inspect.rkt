@@ -1,16 +1,17 @@
+#lang racket
 (require "interp.rkt")
 (require "compiler.rkt")
 
-
+(provide test)
 
 ;;;; some helpful dev code
 ;;;; see: https://piazza.com/class/ij8uxz86huctk?cid=46
 
-(define (test exp)
+(define (test passes exp)
   (display "--------------------------") (newline)
   (pretty-print exp)
   (display "--------------------------") (newline)
-  (let loop ([ls r1-passes] [prog `(program ,exp)])
+  (let loop ([ls passes] [prog `(program ,exp)])
     (if (null? ls) (begin (display "done") (newline))
         (match (car ls)
           (`(,name ,func ,_)
