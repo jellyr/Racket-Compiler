@@ -196,17 +196,14 @@
                                                           (map (curryr uncover-live-helper lak) els))])
                                      (map (lambda (tset)
                                              (set-union (uncover-live-unwrap e1)
-                                                        (uncover-live-unwrap e2) tsat))
-                                           (append tlistlak elistlak))))]
+                                                        (uncover-live-unwrap e2) tset))
+                                           (append tlistlak elistlak)))]
     [`(cmpq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [`(movzbq ,e1 ,e2) (set-subtract lak (uncover-live-unwrap e2))]
     [`(addq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [`(subq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [else lak]))
 
-(define (uncover-live-exp-helper e lak)
-  (match e
-    [`(if ,cnd (,thn))]))
 
 (define (uncover-live e)
   (define instrs '())
