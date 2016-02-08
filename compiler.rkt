@@ -188,29 +188,38 @@
     [`(movq ,e1 ,e2) (set-union (set-subtract lak (uncover-live-unwrap e2)) (uncover-live-unwrap e1))]
     ; [`(callq read_int) (set-add lak 'rax)]
     ;[`(negq ,e1) (set-union lak (uncover-live-unwrap e1))
-    [`(if (eq? ,e1 ,e2) (,thn) (,els)) (let ([thnvars (if (var? thn)
-                                                          (uncover-live-unwrap thn)
-                                                          (uncover-live-helper thn lak))]
-                                             [elsvars (if (var? els)
-                                                          (uncover-live-unwrap els)
-                                                          (uncover-live-helper els lak))])
-                                         (set-union (uncover-live-unwrap e1)
-                                                    (uncover-live-unwrap e2)
-                                                    thnvars
-                                                    elsvars))]
+    [`(if (eq? ,e1 ,e2) ,thn ,els) (let ([tlistlak (if (var? (car thn))
+                                                          `(,(uncover-live-unwrap thn))
+                                                          (map (curryr uncover-live-helper lak) thn))]
+                                         [elistlak (if (var? (car els))
+                                                          `(,(uncover-live-unwrap els))
+                                                          (map (curryr uncover-live-helper lak) els))])
+                                     (map (lambda (tset)
+                                             (set-union (uncover-live-unwrap e1)
+                                                        (uncover-live-unwrap e2) tsat))
+                                           (append tlistlak elistlak))))]
     [`(cmpq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [`(movzbq ,e1 ,e2) (set-subtract lak (uncover-live-unwrap e2))]
     [`(addq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [`(subq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [else lak]))
 
+(define (uncover-live-exp-helper e lak)
+  (match e
+    [`(if ,cnd (,thn))]))
+
 (define (uncover-live e)
+  (define instrs '())
   (let [(setlist (map set->list
                       (foldr (lambda (x r)
-                               (cons (uncover-live-helper x (car r)) r))
+                               (let ([lak^ (uncover-live-helper x (car r))])
+                                 (match x
+                                   [`(if (eq? ,e1 ,e2) ,thn ,els) 1]
+                                   [else (set! instrs (cons instrs x))])
+                                 ))
                              `(,(set))
                              (cddr e))))]
-    `(,(car e) ,(list (cadr e) (cdr setlist)) ,@(cddr e))))
+    `(,(car e) ,(list (cadr e) (cdr setlist)) ,@instrs)))
 
 ;;;;;;;;;;
 
