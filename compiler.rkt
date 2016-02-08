@@ -326,9 +326,9 @@
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
     [`(if (eq? ,e1 ,e2) (,thn) (,els)) `(if ,e1 (allocate-var e2 env)
                                            ,(map (lambda (v)
-                                                  (allocate-var (car v)  env)) thn)
+                                                   (allocate-var v  env)) thn)
                                            ,(map (lambda (v)
-                                                  (allocate-var (car v)  env)) els))]
+                                                   (allocate-var v  env)) els))]
     ;[`(addq ,e1 ,e2) `(addq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     ;[`(subq ,e1 ,e2) `(subq ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [else e]))
@@ -394,6 +394,7 @@
     [`(stack ,e1) (format "~a(%rbp)" e1)]
     [`(int ,e1) (format "$~a" e1)]
     [`(reg ,e1) (format "%~a" e1)]
+    [`(label ,label) (format "%~a:\n" label)]
     [`(movq ,e1 ,e2) (string-append "movq	" (print-helper e1) ", " (print-helper e2)" \n\t")]
     [`(negq ,e1) (string-append "negq	" (print-helper e1) " \n\t" )]
     [`(callq ,e1) (string-append "callq	" (print-helper e1) " \n\t" )]
