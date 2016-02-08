@@ -176,8 +176,8 @@
                                                        `(,(set->list (uncover-live-unwrap els)))
                                                        (foldr (lambda (v r)
                                                                    (cons (uncover-live-helper v (car r)) r)) `(,lak) els))])
-                                     (list tlistlak
-                                           elistlak
+                                     (list (drop-right tlistlak 1)
+                                           (drop-right elistlak 1)
                                            (remove-duplicates
                                             (append (set->list (set-union (uncover-live-unwrap e1)
                                                                           (uncover-live-unwrap e2)))
