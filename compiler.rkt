@@ -86,28 +86,6 @@
     [(or (? fixnum?) (? symbol?) (? boolean?)) (values e '() '())]
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
-    ;; [`(- ,e1) (let-values ([(e^ statements^ alist) (flattens e1)])
-    ;;             (let [(newvar (gensym))]
-    ;;               (values newvar
-    ;;                       (append statements^ `((assign ,newvar (- ,e^))))
-    ;;                       (cons newvar alist))))]
-    ;; [`(not ,e1) (let-values (((ne nstmt nalist) (flattens e1)))
-    ;;               (let ([newvar (gensym)])
-    ;;                 (values newvar
-    ;;                         (append nstmt `((assign ,newvar (not ,ne))))
-    ;;                         (cons newvar nalist))))]
-    ;; [`(+ ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flattens e1))
-    ;;                            ((e2^ stmt2^ alist2^) (flattens e2)))
-    ;;                 (let ([newvar (gensym)])
-    ;;                   (values newvar
-    ;;                           (append stmt1^ (append stmt2^ `((assign ,newvar (+ ,e1^ ,e2^)))))
-    ;;                           (append (cons newvar alist1^) alist2^))))]
-    ;; [`(eq? ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flattens e1))
-    ;;                              ((e2^ stmt2^ alist2^) (flattens e2)))
-    ;;                   (let ([newvar (gensym)])
-    ;;                     (values newvar
-    ;;                             (append stmt1^ stmt2^ `((assign ,newvar (eq? ,e1^ ,e2^))))
-    ;;                             (append (cons newvar alist1^) alist2^))))]
     [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
                      `(program ,alist^ ,@stmt^ (return ,e^)))]
     [`(if ,cnd ,thn ,els) (let-values (((ec stmtc alistc) (flattens cnd))
@@ -194,10 +172,14 @@
                                          [elistlak (if (var? (car els))
                                                           `(,(uncover-live-unwrap els))
                                                           (map (curryr uncover-live-helper lak) els))])
-                                     (map (lambda (tset)
-                                             (set-union (uncover-live-unwrap e1)
-                                                        (uncover-live-unwrap e2) tset))
-                                           (append tlistlak elistlak)))]
+                                     (list (map (lambda (tset)
+                                                  (set-union (uncover-live-unwrap e1)
+                                                             (uncover-live-unwrap e2) tset))
+                                                tlistlak)
+                                           (map (lambda (tset)
+                                                  (set-union (uncover-live-unwrap e1)
+                                                             (uncover-live-unwrap e2) tset))
+                                                elistlak)))]
     [`(cmpq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
     [`(movzbq ,e1 ,e2) (set-subtract lak (uncover-live-unwrap e2))]
     [`(addq ,e1 ,e2) (set-union lak (uncover-live-unwrap e1) (uncover-live-unwrap e2))]
@@ -211,7 +193,7 @@
                       (foldr (lambda (x r)
                                (let ([lak^ (uncover-live-helper x (car r))])
                                  (match x
-                                   [`(if (eq? ,e1 ,e2) ,thn ,els) 1]
+                                   [`(if (eq? ,e1 ,e2) ,thn ,els) `(if (eq? ,e1 ,e2) ,(map cons thn (car lak^)) ,(map cons els (cdr lak^)))]
                                    [else (set! instrs (cons instrs x))])
                                  ))
                              `(,(set))
