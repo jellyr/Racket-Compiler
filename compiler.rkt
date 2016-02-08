@@ -4,7 +4,7 @@
 (require "interp.rkt")
 (require "utilities.rkt")
 
-(provide r2-passes)
+(provide r2-passes typecheck-R2)
 
 
 
@@ -415,7 +415,7 @@ main:
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
 
-(define r2-passes `(("typecheck-R2" ,(curry typecheck-R2 '()) ,interp-scheme)
+(define r2-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flattens" ,flattens ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)

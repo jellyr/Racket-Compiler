@@ -21,3 +21,6 @@
                (begin (display new-prog) (newline))
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
+
+(define expr '(if #f 0 42))
+(test r2-passes expr)
