@@ -14,5 +14,5 @@
 ; (test r2-passes expr1)
 
 (interp-tests "assignment3 r2" (curry typecheck-R2 '()) 
-                        r2-passes interp-scheme "r2" (range 1 4))
+                        r2-passes interp-scheme "r2" (range 1 3))
 (display "assignemnt3 r2 tests passed!") (newline)

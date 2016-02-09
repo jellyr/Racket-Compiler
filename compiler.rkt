@@ -206,7 +206,7 @@
                             (list (cons (car helpexpr) expr)
                                   (cons (cadr helpexpr) lives))))
                         '() (cddr e))))
-    `(,(car e) ,(list (cadr e) (cadr setlist)) ,@(car setlist))))
+    `(,(car e) ,(list (cadr e) (cdadr setlist)) ,@(car setlist))))
 
 ;;;;;;;;;;
 
@@ -219,41 +219,41 @@
     [else e]))
 
 (define (build-interference-helper graph e lak)
-  (define lak (set->list lak))
-  (match e
-    [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'movq) (eq? op 'movzbq)))
-     (let ([s (build-interference-unwrap e1)]
-           [d (build-interference-unwrap e2)])
-       (map (lambda (v) (cond
-                          [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)]
-                          [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
-    [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'addq) (eq? op 'cmpq)))
-      (let ([s (build-interference-unwrap e1)]
-            [d (build-interference-unwrap e2)])
-        (map (lambda (v) (cond
-                           [(not (eqv? d v)) (add-edge graph d v)]
-                           [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
-    [`(negq ,e2)#:when (or (var? e2) (reg? e2))
-      (let ([d (build-interference-unwrap e2)])
-        (map (lambda (v) (cond
-                           [(not (eqv? d v)) (add-edge graph d v)]
-                           [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
-    [`(callq ,label) (map (lambda (v1)
-                            (map (lambda (v2)
-                                   (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
-                                 (set->list caller-save))) lak)]
-    [`(if (eq? ,e1 ,e2) ,thn ,els)
-     (let ([s (build-interference-unwrap e1)]
-           [d (build-interference-unwrap e2)])
-       (map (lambda (v1)
-              (build-interference-helper graph (car v1) (cadr v1))) thn)
-       (map (lambda (v1)
-              (build-interference-helper graph (car v1) (cadr v1))) els)
-       (map (lambda (v)
-              (cond
-                [(not (eqv? d v)) (add-edge graph d v)]
-                [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
-    [else '()]))
+  (let ([lak (set->list lak)])
+    (match e
+      [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'movq) (eq? op 'movzbq)))
+       (let ([s (build-interference-unwrap e1)]
+             [d (build-interference-unwrap e2)])
+         (map (lambda (v) (cond
+                            [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)]
+                            [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
+      [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'addq) (eq? op 'cmpq)))
+       (let ([s (build-interference-unwrap e1)]
+             [d (build-interference-unwrap e2)])
+         (map (lambda (v) (cond
+                            [(not (eqv? d v)) (add-edge graph d v)]
+                            [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
+      [`(negq ,e2)#:when (or (var? e2) (reg? e2))
+       (let ([d (build-interference-unwrap e2)])
+         (map (lambda (v) (cond
+                            [(not (eqv? d v)) (add-edge graph d v)]
+                            [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
+      [`(callq ,label) (map (lambda (v1)
+                              (map (lambda (v2)
+                                     (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
+                                   (set->list caller-save))) lak)]
+      [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive)
+       (let ([s (build-interference-unwrap e1)]
+             [d (build-interference-unwrap e2)])
+         (map (lambda (v1 v2)
+                (build-interference-helper graph v1 v2)) thn thnlive)
+         (map (lambda (v1 v2)
+                (build-interference-helper graph v1 v2)) els elslive)
+         (map (lambda (v)
+                (cond
+                  [(not (eqv? d v)) (add-edge graph d v)]
+                  [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
+      [else '()])))
 
 (define (build-interference e)
   (let* ([lak (cadadr e)]
@@ -261,8 +261,6 @@
          [graph (make-graph '())])
     (map (curry build-interference-helper graph) instr lak)
     `(,(car e) (,(caadr e) ,graph) ,@instr)))
-
-
 
 ;; ol : ommit list
 (define (highest-saturation graph ol)
