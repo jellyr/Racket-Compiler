@@ -85,9 +85,10 @@
 
 (define (if-flatten cnd thn els)
   (match cnd
-    [`(not ,cexp) (if-flatten cexp els thn)]
-    [`(eq? ,e1 ,e2) #:when (and (scalar? e1) (scalar? e2)) (values cnd thn els)]
-    [else (values '() thn els)]))
+    [`(not ,cexp) (let-values (((cn tn el op) (if-flatten cexp els thn)))
+                    (values cn tn el #t))]
+    [`(eq? ,e1 ,e2) #:when (and (scalar? e1) (scalar? e2)) (values cnd thn els #t)]
+    [else (values cnd thn els #f)]))
 
 ;;0 - Flatten till variables
 ;;1 - Flatten till expressions
@@ -98,20 +99,20 @@
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
     [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
                      `(program ,alist^ ,@stmt^ (return ,e^)))]
-    [`(if ,cn ,tn ,en) (let-values (((cnd thn els) (if-flatten cn tn en)))
+    [`(if ,cn ,tn ,en) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                          (let-values (((ec stmtc alistc) (flattens cn))
                                       ((et stmtt alistt) (flattens thn))
                                       ((ee stmte aliste) (flattens els)))
                            (let ([newvar (gensym)])
                              (values newvar
-                                     (if (null? cnd)
+                                     (if op
                                          (append stmtc `((if (eq? #t ,ec)
                                                              ,(append stmtt `((assign ,newvar ,et)))
                                                              ,(append stmte `((assign ,newvar ,ee))))))
                                          (append `((if ,cnd
                                                        ,(append stmtt `((assign ,newvar ,et)))
                                                        ,(append stmte `((assign ,newvar ,ee)))))))
-                                     (if (null? cnd)
+                                     (if op
                                          (append (cons newvar alistc) alistt aliste)
                                          (append (cons newvar alistt) aliste))))))]
     [`(let ([,x ,e]) ,body) (let-values
