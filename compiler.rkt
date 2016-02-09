@@ -166,50 +166,47 @@
   (match e
     ; [`(callq read_int) (set-add lak^^ 'rax)]
     ;[`(negq ,e1) (set-union lak^^ (uncover-live-unwrap e1))
-    [`(if (eq? ,e1 ,e2) ,thn ,els) (let ([tlistlak (if (var? (car thn))
-                                                          `(,(set->list (uncover-live-unwrap thn)))
-                                                          ;;change to foldr - consider bottom to top processing
-                                                          ;; make this foldr a function
-                                                          (foldr (lambda (v r)
-                                                                   (cons (uncover-live-helper v (car r)) r)) `(,lak) thn))]
-                                         [elistlak (if (var? (car els))
-                                                       `(,(set->list (uncover-live-unwrap els)))
-                                                       (foldr (lambda (v r)
-                                                                   (cons (uncover-live-helper v (car r)) r)) `(,lak) els))])
-                                     (list (drop-right tlistlak 1)
-                                           (drop-right elistlak 1)
-                                           (remove-duplicates
-                                            (append (set->list (set-union (uncover-live-unwrap e1)
-                                                                          (uncover-live-unwrap e2)))
-                                                    (flatten tlistlak)
-                                                    (flatten elistlak)))))]
-    [`(movq ,e1 ,e2) (set->list (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
-    [`(cmpq ,e1 ,e2) (set->list (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
-    [`(movzbq ,e1 ,e2) (set->list (set-subtract lak^ (uncover-live-unwrap e2)))]
-    [`(addq ,e1 ,e2) (set->list (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
-    [`(subq ,e1 ,e2) (set->list (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
-    [else lak]))
+    [`(if (eq? ,e1 ,e2) ,thn ,els) (let ([thenexpr (instrs-live-helper thn)]
+                                         [elseexpr (instrs-live-helper els)])
+                                     (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
+                                           (big-union (last thenexpr) (last elseexpr))))]
+    [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
+    [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
+    [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
+    [`(addq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
+    [`(subq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
+    [else (list e lak)]))
 
+
+(define (instrs-live-helper e)
+  (foldr (lambda (x r)
+           (let* ([expr (if (null? r) '() (car r))]
+                  [lives (if (null? r) `() (cadr r))]
+                  [helpexpr (uncover-live-helper x (if (null? lives) (set) (car lives)))])
+             (list (cons (car helpexpr) expr)
+                   (cons (cadr helpexpr) lives))))
+         '() e))
+
+(define (big-union listset1 listset2)
+  (foldr (lambda (set^ r) (set-union set^ r)) (set) (append listset1 listset2)))
 
 (define (if-stmt-expansion e lak)
   (match e
-    [`(if (eq? ,e1 ,e2) ,thn ,els) `(if (eq? ,e1 ,e2)
-                                         ,(map (lambda (e^ elak^)
-                                                  (if-stmt-expansion e^ elak^)) thn (car lak))
-                                         ,(map (lambda (e^ elak^)
-                                                 (if-stmt-expansion e^ elak^)) els (cadr lak)))]
+    [`(if (eq? ,e1 ,e2) ,thn ,els)
+     `(if (eq? ,e1 ,e2)
+          ,((if-stmt-expansion thn  (car lak)))
+          ,((if-stmt-expansion els) (cadr lak)))]
     [else e]))
 
-
 (define (uncover-live e)
-  (define instrs '())
-  (let [(setlist (foldr (lambda (x r)
-                          (cons (uncover-live-helper x (if (or (null? (car r)) (not (list? (caar r))))
-                                                           (car r)
-                                                           (last (car r)))) r))
-                        `(())
-                        (cddr e)))]
-    `(,(car e) ,(list (cadr e) (cdr setlist)) ,@(cddr e))))
+  (let ((setlist (foldr (lambda (x r)
+                          (let* ([expr (if (null? r) '() (car r))]
+                                 [lives (if (null? r) `(,(set)) (cadr r))]
+                                 [helpexpr (uncover-live-helper x (if (null? lives) (set) (car lives)))])
+                            (list (cons (car helpexpr) expr)
+                                  (cons (cadr helpexpr) lives))))
+                        '() (cddr e))))
+    `(,(car e) ,(list (cadr e) (cadr setlist)) ,@(car setlist))))
 
 ;;;;;;;;;;
 
@@ -222,6 +219,7 @@
     [else e]))
 
 (define (build-interference-helper graph e lak)
+  (define lak (set->list lak))
   (match e
     [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'movq) (eq? op 'movzbq)))
      (let ([s (build-interference-unwrap e1)]
@@ -323,7 +321,7 @@
                   (lookup e1 env))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
-    [`(if (eq? ,e1 ,e2) (,thn) (,els)) `(if ,e1 (allocate-var e2 env)
+    [`(if (eq? ,e1 ,e2) ,thn ,els) `(if (eq? ,e1 ,(allocate-var e2 env))
                                            ,(map (lambda (v)
                                                    (allocate-var v  env)) thn)
                                            ,(map (lambda (v)
@@ -376,17 +374,18 @@
   (define thenlabel (gensym 'then))
   (define endlabel (gensym 'ifend))
   (match e
-    [`(if (eq? ,e1 ,e2) (,thn) (,els)) `((cmpq ,e1 ,e2)
+    [`(if (eq? ,e1 ,e2) ,thn ,els) `((cmpq ,e1 ,e2)
                                         (je ,thenlabel)
-                                        ,@(lower-conditionals-helper els)
+                                        ,(lower-conditionals-helper els)
                                         (jmp ,endlabel)
                                         (label ,thenlabel)
-                                        ,@(lower-conditionals-helper thn)
+                                        ,(lower-conditionals-helper thn)
                                         (label ,endlabel))]
     [else e]))
 
+;; some error
 (define (lower-conditionals e)
-  (map lower-conditionals-helper e))
+  `(,(car e) ,(cadr e) ,@(map lower-conditionals-helper (cddr e))))
 
 (define (print-helper e)
   (match e
@@ -423,4 +422,5 @@ main:
                     ("build interference graph" ,build-interference ,interp-x86)
                     ("register allocation" ,allocate-registers ,interp-x86)
                     ("patch instructions" ,patch-instructions ,interp-x86)
+                    ("live" ,lower-conditionals ,interp-x86)
                     ("print x86" ,print-x86 #f)))
