@@ -383,7 +383,7 @@
 
 ;; some error
 (define (lower-conditionals e)
-  `(,(car e) ,(cadr e) ,@(map lower-conditionals-helper (cddr e))))
+  `(,(car e) ,(cadr e) ,@(car (map lower-conditionals-helper (cddr e)))))
 
 (define (print-helper e)
   (match e

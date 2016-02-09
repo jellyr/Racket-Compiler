@@ -22,5 +22,6 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(if #t 42 0))
+(define expr '(let ([x #t])
+  42))
 (test r2-passes expr)
