@@ -54,6 +54,7 @@
     [`(eq? ,e1 ,e2)
      (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
        ['(Boolean Boolean) 'Boolean]
+       ['(Integer Integer) 'Boolean]
        [else (error "In eq?")])]
     [`(and ,e1 ,e2)
      (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
@@ -125,7 +126,7 @@
     ;[(? symbol?) #:when (eq? e ret-v) '(reg rax)]
     [(? boolean?) (if e '(int 1) '(int 0))]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
-    [`(not ,e1) `(xorq (int 1) (var ,e1))]
+    [`(not ,e1) `(xorq (int 1) ,(select-instructions-assign ret-v e1))]
     [`(assign ,var (eq? ,e1 ,e2)) `((cmpq ,(select-instructions-assign ret-v e1)
                                           ,(select-instructions-assign ret-v e2))
                                     (sete (byte-reg al))
@@ -251,7 +252,7 @@
                 (build-interference-helper graph v1 v2)) els elslive)
          (map (lambda (v)
                 (cond
-                  [(and (var? d) (not (eqv? d v))) (add-edge graph d v)]
+                  [(and (symbol? d) (not (eqv? d v))) (add-edge graph d v)]
                   [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
       [else '()])))
 
@@ -374,16 +375,23 @@
   (match e
     [`(if (eq? ,e1 ,e2) ,thn ,els) `((cmpq ,e1 ,e2)
                                         (je ,thenlabel)
-                                        ,(lower-conditionals-helper els)
+                                        ,@(lower-conditionals-helper els)
                                         (jmp ,endlabel)
                                         (label ,thenlabel)
-                                        ,(lower-conditionals-helper thn)
+                                        ,@(lower-conditionals-helper thn)
                                         (label ,endlabel))]
     [else e]))
 
 ;; some error
 (define (lower-conditionals e)
-  `(,(car e) ,(cadr e) ,@(car (map lower-conditionals-helper (cddr e)))))
+  (define insts (foldr (lambda (x r)
+                       (define x^ (lower-conditionals-helper x))
+                       (if (eq? 'if (car x))
+                           (append x^ r)
+                           (cons x^ r))
+                       )  '() (cddr e)))
+  ;(define t (if (eq? 1 (length insts)) (car insts) insts))
+  `(,(car e) ,(cadr e) ,@insts))
 
 (define (print-helper e)
   (match e
@@ -395,6 +403,7 @@
     [`(negq ,e1) (string-append "negq	" (print-helper e1) " \n\t" )]
     [`(callq ,e1) (string-append "callq	" (print-helper e1) " \n\t" )]
     [`(addq ,e1 ,e2) (string-append "addq	" (print-helper e1) ", " (print-helper e2) " \n\t")]
+    ;[`(xorq ,e1 ,e2)]
     [else (format "~s" e)]
     ))
 
