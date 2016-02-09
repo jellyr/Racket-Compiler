@@ -251,7 +251,7 @@
                 (build-interference-helper graph v1 v2)) els elslive)
          (map (lambda (v)
                 (cond
-                  [(not (eqv? d v)) (add-edge graph d v)]
+                  [(and (var? d) (not (eqv? d v))) (add-edge graph d v)]
                   [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
       [else '()])))
 
@@ -319,7 +319,7 @@
                   (lookup e1 env))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
-    [`(if (eq? ,e1 ,e2) ,thn ,els) `(if (eq? ,e1 ,(allocate-var e2 env))
+    [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive) `(if (eq? ,e1 ,(allocate-var e2 env))
                                            ,(map (lambda (v)
                                                    (allocate-var v  env)) thn)
                                            ,(map (lambda (v)

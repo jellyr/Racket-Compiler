@@ -22,5 +22,5 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(if (eq? (read) 0) 777 (+ 2 (if (eq? (read) 0) 40 444))))
+(define expr '(if #t 42 0))
 (test r2-passes expr)
