@@ -26,7 +26,7 @@
     [(? fixnum?) 'Integer]
     [(? boolean?) 'Boolean]
     [(? symbol?) (lookup e env)]
-    [`(read) (error "implement me")]
+    [`(read) 'Integer]
     [`(+ ,e1 ,e2)
      (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
        ['(Integer Integer) 'Integer]
@@ -135,7 +135,7 @@
                                          ,(append-map (curry select-instructions-assign ret-v) thn)
                                          ,(append-map (curry select-instructions-assign ret-v) els)))]
     [`(assign ,var (read)) `((callq read_int) (movq (reg rax) (var ,var)))]
-    [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign ret-v e1) `(var ,var)) (negq (var ,var)))]
+    [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign ret-v e1) (var ,var)) (negq (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) `((addq ,(select-instructions-assign ret-v e2) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) `((addq ,(select-instructions-assign ret-v e1) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign ret-v e1) (var ,var))
