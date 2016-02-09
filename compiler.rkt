@@ -17,6 +17,9 @@
 (define (reg? e)
   (eqv? (car e) 'reg))
 
+(define (scalar? e)
+  (or (fixnum? e) (symbol? e) (boolean? e)))
+
 ;; to read the type check paper
 ;; see the 521 minikaren one
 
@@ -80,6 +83,12 @@
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
 
+(define (if-flatten cnd thn els)
+  (match cnd
+    [`(not ,cexp) (if-flatten cexp els thn)]
+    [`(eq? ,e1 ,e2) #:when (and (scalar? e1) (scalar? e2)) (values cnd thn els)]
+    [else (values '() thn els)]))
+
 ;;0 - Flatten till variables
 ;;1 - Flatten till expressions
 (define (flattens e)
@@ -89,15 +98,22 @@
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
     [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
                      `(program ,alist^ ,@stmt^ (return ,e^)))]
-    [`(if ,cnd ,thn ,els) (let-values (((ec stmtc alistc) (flattens cnd))
-                                       ((et stmtt alistt) (flattens thn))
-                                       ((ee stmte aliste) (flattens els)))
-                            (let ([newvar (gensym)])
-                              (values newvar
-                                      (append stmtc `((if (eq? #t ,ec)
-                                                          ,(append stmtt `((assign ,newvar ,et)))
-                                                          ,(append stmte `((assign ,newvar ,ee))))))
-                                      (append (cons newvar alistc) alistt aliste))))]
+    [`(if ,cn ,tn ,en) (let-values (((cnd thn els) (if-flatten cn tn en)))
+                         (let-values (((ec stmtc alistc) (flattens cn))
+                                      ((et stmtt alistt) (flattens thn))
+                                      ((ee stmte aliste) (flattens els)))
+                           (let ([newvar (gensym)])
+                             (values newvar
+                                     (if (null? cnd)
+                                         (append stmtc `((if (eq? #t ,ec)
+                                                             ,(append stmtt `((assign ,newvar ,et)))
+                                                             ,(append stmte `((assign ,newvar ,ee))))))
+                                         (append `((if ,cnd
+                                                       ,(append stmtt `((assign ,newvar ,et)))
+                                                       ,(append stmte `((assign ,newvar ,ee)))))))
+                                     (if (null? cnd)
+                                         (append (cons newvar alistc) alistt aliste)
+                                         (append (cons newvar alistt) aliste))))))]
     [`(let ([,x ,e]) ,body) (let-values
                                 ([(xe^ stmtx^ alistx^) (flattens e)]
                                  [(be^ stmtb^ alistb^) (flattens body)])
