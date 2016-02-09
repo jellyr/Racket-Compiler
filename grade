@@ -11,3 +11,35 @@ use callee-save registers. You get full credit for this assignment,
 but I very strongly suggest that you implement a solution to allow the
 use of caller-save registers going forwards.
 Regardless, well done.
+
+ASSIGNMENT 3:
+Please export a "typechecker" value as described in the Piazza post for this assignment.
+
+Part of this assignment required you to move 0 to %rax at the end of
+your programs, as an exit code of normal termination. I won't penalize
+you further for not doing so this time but ensure you fix this for
+the next assignment.
+
+13/23 new test cases compiled successfully.
+16/23 new test cases interpreted successfully.
+All old test cases worked correctly modulo the above issue about exit codes.
+
+It appears that a major problem in your compiler is that it doesn't
+hadle if statements well. They turn up in your printed x86, and of
+course they aren't valid x86 instructions.
+
+Also, in many programs your flattening pass doesn't work as intended
+-- if there is a nested if inside the condition of the outer if, you
+aren't flattening the inner if. In fact, it looks like you aren't
+flattening the condition of the if in some other cases, too, like when
+the condition is a (eq?)
+
+Also note that in the r2_19 test case, the interpreter asks for input,
+but none should be required -- and is a short-circuiting operator so
+(and #f (eq? (read) 42)) should never ask the user for input.
+
+Remember to submit a fixed version in one week for most of the remaining credit.
+
+	   V compiler	     V cases that interpret 	   V partial credit for cases that worked up to flattening
+Grade: (.5 * 13/23) + (.5 * (16/23 + (3/10 * 3/23) + (2/10 * 4/23))) = 67%
+       	     	      	  ^ interpreter	   ^ partial credit for cases that worked up to select-instructions
