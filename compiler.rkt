@@ -86,7 +86,7 @@
 (define (if-flatten cnd thn els)
   (match cnd
     [`(not ,cexp) (let-values (((cn tn el op) (if-flatten cexp els thn)))
-                    (values cn tn el #t))]
+                    (values cn tn el #f))]
     [`(eq? ,e1 ,e2) #:when (and (scalar? e1) (scalar? e2)) (values cnd thn els #t)]
     [else (values cnd thn els #f)]))
 
@@ -100,21 +100,21 @@
     [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
                      `(program ,alist^ ,@stmt^ (return ,e^)))]
     [`(if ,cn ,tn ,en) (let-values (((cnd thn els op) (if-flatten cn tn en)))
-                         (let-values (((ec stmtc alistc) (flattens cn))
+                         (let-values (((ec stmtc alistc) (flattens cnd))
                                       ((et stmtt alistt) (flattens thn))
                                       ((ee stmte aliste) (flattens els)))
                            (let ([newvar (gensym)])
                              (values newvar
                                      (if op
-                                         (append stmtc `((if (eq? #t ,ec)
-                                                             ,(append stmtt `((assign ,newvar ,et)))
-                                                             ,(append stmte `((assign ,newvar ,ee))))))
                                          (append `((if ,cnd
                                                        ,(append stmtt `((assign ,newvar ,et)))
-                                                       ,(append stmte `((assign ,newvar ,ee)))))))
+                                                       ,(append stmte `((assign ,newvar ,ee))))))
+                                         (append stmtc `((if (eq? #t ,ec)
+                                                             ,(append stmtt `((assign ,newvar ,et)))
+                                                             ,(append stmte `((assign ,newvar ,ee)))))))
                                      (if op
-                                         (append (cons newvar alistc) alistt aliste)
-                                         (append (cons newvar alistt) aliste))))))]
+                                         (append (cons newvar alistt) aliste)
+                                         (append (cons newvar alistc) alistt aliste))))))]
     [`(let ([,x ,e]) ,body) (let-values
                                 ([(xe^ stmtx^ alistx^) (flattens e)]
                                  [(be^ stmtb^ alistb^) (flattens body)])
@@ -365,6 +365,7 @@
          [assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()) phash)]
          [env (allocate-reg-stack assign-list)]
          [prog (car e)])
+    (print assign-list)
     `(,prog ,(lookup '_stacklength env) . ,(cddr (map (curryr allocate-var env) e)))))
 
 ; starti == -1
@@ -415,11 +416,15 @@
     [`(stack ,e1) (format "~a(%rbp)" e1)]
     [`(int ,e1) (format "$~a" e1)]
     [`(reg ,e1) (format "%~a" e1)]
+    [`(byte-reg ,e1) (format "byte-reg ~a" e)]
     [`(label ,label) (format "%~a:\n" label)]
-    [`(movq ,e1 ,e2) (string-append "movq	" (print-helper e1) ", " (print-helper e2)" \n\t")]
-    [`(negq ,e1) (string-append "negq	" (print-helper e1) " \n\t" )]
-    [`(callq ,e1) (string-append "callq	" (print-helper e1) " \n\t" )]
-    [`(addq ,e1 ,e2) (string-append "addq	" (print-helper e1) ", " (print-helper e2) " \n\t")]
+    [`(,op ,e1) (string-append (format "~a	" op) (print-helper e1) "\n\t")]
+    [`(,op ,e1 ,e2) (string-append (format "~a	" op) (print-helper e1) ", " (print-helper e2)" \n\t")]
+    ;[`(negq ,e1) (string-append "negq	" (print-helper e1) " \n\t" )]
+    ;[`(callq ,e1) (string-append "callq	" (print-helper e1) " \n\t" )]
+    ;[`(jmp ,e1) (string-append "jmp	" (print-helper e1) "\n\t")]
+    ;[`(movq ,e1 ,e2) (string-append "movq	" (print-helper e1) ", " (print-helper e2)" \n\t")]
+    ;[`(addq ,e1 ,e2) (string-append "addq	" (print-helper e1) ", " (print-helper e2) " \n\t")]
     ;[`(xorq ,e1 ,e2)]
     [else (format "~s" e)]
     ))
