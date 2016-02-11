@@ -129,13 +129,17 @@
     [`(let ([,x ,e]) ,body) (let-values
                                 ([(xe^ stmtx^ alistx^) (flattens e)]
                                  [(be^ stmtb^ alistb^) (flattens body)])
-                              (let* [(xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
-                                     ;; (if (null? alistx^) alistx^ (cdr alistx^))
-                                     (alistx^ (cons x alistx^)) ;; probelm here
-                                     (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
-                                (values be^
-                                        (append stmtx^ (append `((assign ,x ,xe^)) stmtb^))
-                                        (append alistx^ alistb^))))]
+
+                              (match e
+                                [`(if ,cnd ,thn ,els) (values be^
+                                                              (append stmtx^ `((assign ,x ,xe^)) stmtb^)
+                                                              (append alistx^ alistb^))]
+                                [else (let* [(xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
+                                             (alistx^ (cons x (if (null? alistx^) alistx^ (cdr alistx^))))
+                                             (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
+                                        (values be^
+                                                (append stmtx^ `((assign ,x ,xe^)) stmtb^)
+                                                (append alistx^ alistb^)))]))]
     [`(and ,e1 ,e2) (flattens `(if (eq? ,e1 #t) ,e2 #f))]
     [`(,op ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flattens e1))
                                ((e2^ stmt2^ alist2^) (flattens e2)))
@@ -377,7 +381,7 @@
          [assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()) phash)]
          [env (allocate-reg-stack assign-list)]
          [prog (car e)])
-    (print assign-list)
+    ;(print assign-list)
     `(,prog ,(lookup '_stacklength env) . ,(cddr (map (curryr allocate-var env) e)))))
 
 ; starti == -1
