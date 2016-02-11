@@ -437,7 +437,7 @@
     [`(int ,e1) (format "$~a" e1)]
     [`(reg ,e1) (format "%~a" e1)]
     [`(byte-reg ,e1) (format "byte-reg ~a" e)]
-    [`(label ,label) (format "%~a:\n" label)]
+    [`(label ,label) (format "~a:\n" label)]
     [`(,op ,e1) (string-append (format "~a	" op) (print-helper e1) "\n\t")]
     [`(,op ,e1 ,e2) (string-append (format "~a	" op) (print-helper e1) ", " (print-helper e2)" \n\t")]
     ;[`(negq ,e1) (string-append "negq	" (print-helper e1) " \n\t" )]
