@@ -385,6 +385,18 @@
     ;(print assign-list)
     `(,prog ,(lookup '_stacklength env) . ,(cddr (map (curryr allocate-var env) e)))))
 
+
+(define (lower-conditionals e)
+  (define insts (foldr (lambda (x r)
+                       (define x^ (lower-conditionals-helper x))
+                       (if (eq? 'if (car x))
+                           (append x^ r)
+                           (cons x^ r))
+                       )  '() (cddr e)))
+  ;(define t (if (eq? 1 (length insts)) (car insts) insts))
+  `(,(car e) ,(cadr e) ,@insts))
+
+
 ; starti == -1
 ;; (define (assign-homes-env alist starti)
 ;;   (cond
@@ -417,16 +429,7 @@
                                         (label ,endlabel))]
     [else e]))
 
-;; some error
-(define (lower-conditionals e)
-  (define insts (foldr (lambda (x r)
-                       (define x^ (lower-conditionals-helper x))
-                       (if (eq? 'if (car x))
-                           (append x^ r)
-                           (cons x^ r))
-                       )  '() (cddr e)))
-  ;(define t (if (eq? 1 (length insts)) (car insts) insts))
-  `(,(car e) ,(cadr e) ,@insts))
+
 
 (define (print-helper e)
   (match e
@@ -468,7 +471,7 @@ main:
                     ("uncover-live" ,uncover-live ,interp-x86)
                     ("build interference graph" ,build-interference ,interp-x86)
                     ("register allocation" ,allocate-registers ,interp-x86)
-                    ("patch instructions" ,patch-instructions ,interp-x86)
                     ("live" ,lower-conditionals ,interp-x86)
+                    ("patch instructions" ,patch-instructions ,interp-x86)
                     ("print x86" ,print-x86 #f)))
 
