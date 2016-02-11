@@ -456,6 +456,7 @@ main:
  (string-join (map print-helper (cddr e)))
  (format "	movq	%rax, %rdi
 	callq	print_int
+        movq    $0, %rax
 	addq	$~a, %rsp
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
