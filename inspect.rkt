@@ -22,7 +22,6 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(let ([x (if (let ([x #t]) (if x x #f)) #t #f)]) 
-                  (if x 42 777)))
+(define expr '(if (eq? (let ([x 42]) (if (eq? x 42) x 20)) 42) 42 777))
 
 (test r2-passes expr)

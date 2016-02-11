@@ -203,7 +203,7 @@
     [`(if (eq? ,e1 ,e2) ,thn ,els) (let ([thenexpr (instrs-live-helper thn)]
                                          [elseexpr (instrs-live-helper els)])
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
-                                           (big-union (last thenexpr) (last elseexpr))))]
+                                           (set-union (car (last thenexpr)) (car (last elseexpr)))))]
     [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
@@ -286,6 +286,7 @@
          (map (lambda (v)
                 (cond
                   [(and (symbol? d) (not (eqv? d v))) (add-edge graph d v)]
+                  ;[(and (symbol? s) (not (eqv? s v))) (add-edge graph s v)]
                   [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
       [else '()])))
 
@@ -353,7 +354,7 @@
                   (lookup e1 env))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
-    [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive) `(if (eq? ,e1 ,(allocate-var e2 env))
+    [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive) `(if (eq? ,(allocate-var e1 env) ,(allocate-var e2 env))
                                            ,(map (lambda (v)
                                                    (allocate-var v  env)) thn)
                                            ,(map (lambda (v)
@@ -469,3 +470,4 @@ main:
                     ("patch instructions" ,patch-instructions ,interp-x86)
                     ("live" ,lower-conditionals ,interp-x86)
                     ("print x86" ,print-x86 #f)))
+
