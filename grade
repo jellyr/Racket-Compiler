@@ -43,3 +43,15 @@ Remember to submit a fixed version in one week for most of the remaining credit.
 	   V compiler	     V cases that interpret 	   V partial credit for cases that worked up to flattening
 Grade: (.5 * 13/23) + (.5 * (16/23 + (3/10 * 3/23) + (2/10 * 4/23))) = 67%
        	     	      	  ^ interpreter	   ^ partial credit for cases that worked up to select-instructions
+
+
+ASSIGNMENT 3 (late):
+
+You /still/ didn't add a "typechecker" value to your compiler.rkt,
+which meant that I had to go in and edit it manually. We won't
+penalize you for this, but please read the Piazza post for the
+assignment in the future.
+
+23/23 test cases compile and interpret correctly. Well done.
+
+Final grade: 97%
