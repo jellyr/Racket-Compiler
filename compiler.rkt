@@ -92,6 +92,17 @@
 
 ;;0 - Flatten till variables
 ;;1 - Flatten till expressions
+
+;; 1 st : flattened variable
+;; 2 nd : flattened statements
+;; list of new vars which will show in the program
+
+;; faltten-unwrap
+;; faltten-helper
+;; flatten
+
+;; r2_13
+;; another prob r2_15 which => allocate
 (define (flattens e)
   (match e
     [(or (? fixnum?) (? symbol?) (? boolean?)) (values e '() '())]
@@ -119,7 +130,8 @@
                                 ([(xe^ stmtx^ alistx^) (flattens e)]
                                  [(be^ stmtb^ alistb^) (flattens body)])
                               (let* [(xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
-                                     (alistx^ (cons x (if (null? alistx^) alistx^ (cdr alistx^))))
+                                     ;; (if (null? alistx^) alistx^ (cdr alistx^))
+                                     (alistx^ (cons x alistx^)) ;; probelm here
                                      (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
                                 (values be^
                                         (append stmtx^ (append `((assign ,x ,xe^)) stmtb^))
