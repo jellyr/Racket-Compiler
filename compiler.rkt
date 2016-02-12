@@ -4,7 +4,7 @@
 (require "interp.rkt")
 (require "utilities.rkt")
 
-(provide r2-passes typecheck-R2)
+(provide r2-passes typechecker)
 
 
 
@@ -66,6 +66,8 @@
     [`(program ,body)
      (typecheck-R2 '() body)
      `(program ,body)]))
+
+(define typechecker (curry typecheck-R2 '()))
 
 (define uniquify
   (lambda (alist)
