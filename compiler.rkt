@@ -23,7 +23,13 @@
 ;; to read the type check paper
 ;; see the 521 minikaren one
 
-;; check R2 language
+;; actually it is check R3 language;
+;; but i am too lazy to change the name
+;; vector
+;; var-env --> t1 -> t2
+;; use walk up?
+;; ( . (t2 .'(Vector Integer Integer)))
+
 (define (typecheck-R2 env e)
   (match e
     [(? fixnum?) 'Integer]
@@ -63,6 +69,26 @@
      (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
        ['(Boolean Boolean) 'Boolean]
        [else (error "In and")])]
+    [`(vector . ,expr)
+     `(Vector ,@(map (curry typecheck-R2 env) expr))]
+    [`(vector-ref ,expr ,number)
+     (define vector_t (typecheck-R2 env expr))
+     (define erroref (curry error "in vector ref"))
+     (match vector_t
+       [`(Vector) (error "empty vector")]
+       [`(Vector . ,expr) ;; see if we can check index?
+        (if (eq? (typecheck-R2 env number) 'Integer)
+            (list-ref expr number)
+            (erroref))]
+       [else (erroref)])]
+    [`(vector-set! ,expr1 ,number ,expr2)
+     (define vector_t (typecheck-R2 env expr1))
+     (define errorset (curry error "in vector set"))
+     (if (eq? (typecheck-R2 env number) 'Integer)
+         (if (eq? (list-ref vector_t number) (typecheck-R2 env expr2))
+             'void
+             (errorset))
+         (errorset))]
     [`(program ,body)
      (typecheck-R2 '() body)
      `(program ,body)]))
@@ -489,4 +515,8 @@ main:
                     ("live" ,lower-conditionals ,interp-x86)
                     ("patch instructions" ,patch-instructions ,interp-x86)
                     ("print x86" ,print-x86 #f)))
+
+
+
+
 
