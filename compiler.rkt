@@ -374,6 +374,7 @@
          (match inst
            [`(movq (var ,e1) (var ,e2))
             (hash-set! phash e1 (set-add (hash-ref phash e1 (set)) e2))]
+           ;; consider if condition
            [else '()])) insts)
   phash)
 
@@ -387,6 +388,19 @@
     ;(print assign-list)
     `(,prog ,(lookup '_stacklength env) . ,(cddr (map (curryr allocate-var env) e)))))
 
+(define (lower-conditionals-helper e)
+  (define elselabel (gensym 'else))
+  (define thenlabel (gensym 'then))
+  (define endlabel (gensym 'ifend))
+  (match e
+    [`(if (eq? ,e1 ,e2) ,thn ,els) `((cmpq ,e1 ,e2)
+                                        (je ,thenlabel)
+                                        ,@(lower-conditionals-helper els)
+                                        (jmp ,endlabel)
+                                        (label ,thenlabel)
+                                        ,@(lower-conditionals-helper thn)
+                                        (label ,endlabel))]
+    [else e]))
 
 (define (lower-conditionals e)
   (define insts (foldr (lambda (x r)
@@ -416,22 +430,6 @@
 
 (define (patch-instructions e)
   (append-map patch-instr-helper e))
-
-(define (lower-conditionals-helper e)
-  (define elselabel (gensym 'else))
-  (define thenlabel (gensym 'then))
-  (define endlabel (gensym 'ifend))
-  (match e
-    [`(if (eq? ,e1 ,e2) ,thn ,els) `((cmpq ,e1 ,e2)
-                                        (je ,thenlabel)
-                                        ,@(lower-conditionals-helper els)
-                                        (jmp ,endlabel)
-                                        (label ,thenlabel)
-                                        ,@(lower-conditionals-helper thn)
-                                        (label ,endlabel))]
-    [else e]))
-
-
 
 (define (print-helper e)
   (match e
