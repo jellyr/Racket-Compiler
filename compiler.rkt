@@ -92,6 +92,17 @@
     [`(eq? ,e1 ,e2) #:when (and (scalar? e1) (scalar? e2)) (values cnd thn els #t)]
     [else (values cnd thn els #f)]))
 
+
+(define (flatten-vector expr)
+  (let [(flat-vector   (foldl (lambda (exp res)
+                                (let-values ([(e^ stmt^ alist^) (flattens exp)])
+                                  `(,(append `(,e^) (car res))
+                                    ,(append stmt^ (cadr res))
+                                    ,(append alist^ (caddr res))))) '(() () ())  expr))]
+      (values (car flat-vector)
+              (cadr flat-vector)
+              (caddr flat-vector))))
+
 ;;0 - Flatten till variables
 ;;1 - Flatten till expressions
 
@@ -107,11 +118,25 @@
 ;; another prob r2_15 which => allocate
 (define (flattens e)
   (match e
-    [(or (? fixnum?) (? symbol?) (? boolean?)) (values e '() '())]
+    [(or (? scalar?) (? vector?)) (values e '() '())]
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
     [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
                      `(program ,alist^ ,@stmt^ (return ,e^)))]
+    [`(vector . ,e1) (let-values ([(e^ stmt^ alist^) (flatten-vector e1)])
+                       (let [(newvar (gensym))]
+                         (values newvar
+                                 (append stmt^ `((assign ,newvar (vector . ,e^))))
+                                 (cons newvar alist^))))]
+    [`(vector-set! ,e1 ,e2 ,e3) (let-values ([(e1^ stmt1^ alist1^) (flatten e1)]
+                                             [(e2^ stmt2^ alist2^) (flatten e2)]
+                                             [(e3^ stmt3^ alist3^) (flatten e3)])
+                                  (let [(newvar (gensym))]
+                                    (values newvar
+                                            (append stmt1^
+                                                    stmt2^
+                                                    stmt3^
+                                                    `((assign ,newvar (vector-set! ,e1^ ,e2^ ,e3^)))))))]
     [`(if ,cn ,tn ,en) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                          (let-values (((ec stmtc alistc) (flattens cnd))
                                       ((et stmtt alistt) (flattens thn))
