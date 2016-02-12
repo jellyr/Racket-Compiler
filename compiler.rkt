@@ -223,16 +223,6 @@
                    (cons (cadr helpexpr) lives))))
          '() e))
 
-(define (big-union listset1 listset2)
-  (foldr (lambda (set^ r) (set-union set^ r)) (set) (append listset1 listset2)))
-
-(define (if-stmt-expansion e lak)
-  (match e
-    [`(if (eq? ,e1 ,e2) ,thn ,els)
-     `(if (eq? ,e1 ,e2)
-          ,((if-stmt-expansion thn  (car lak)))
-          ,((if-stmt-expansion els) (cadr lak)))]
-    [else e]))
 
 (define (uncover-live e)
   (let ((setlist (foldr (lambda (x r)
