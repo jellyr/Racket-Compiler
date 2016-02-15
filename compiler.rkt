@@ -92,7 +92,7 @@
          (errorset))]
     [`(program ,body)
      (define _type (typecheck-R2 '() body))
-     `(program ,(car body) ,_type ,(cdr body))]))
+     `(program (type ,_type) ,body)]))
 
 (define  typechecker
   (curry typecheck-R2 '()))
