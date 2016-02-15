@@ -181,6 +181,20 @@
                           (append statements^ `((assign ,newvar (,op ,e^))))
                           (cons newvar alist))))]))
 
+
+;; expose allocation
+;; figure out what type is
+(define (expose-helper instr)
+  (match instr
+    [`(assign ,lhs (vector . ,ve))
+     (let* ([len (length ve)]
+            [bytes^ (* 8 (add1 len))])
+       `(if (collection-needed? ,bytes^)
+            ((collect ,bytes^))
+            ()))]))
+(define (expose-allocation e)
+  '())
+;; =============
 (define (select-instructions-assign ret-v e)
   (match e
     [(? fixnum?) `(int ,e)]
