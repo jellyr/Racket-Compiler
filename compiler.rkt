@@ -3,9 +3,10 @@
 (require racket/set)
 (require "interp.rkt")
 (require "utilities.rkt")
+(require "uncover-types.rkt")
 
 (provide r2-passes typechecker)
-
+(define prog-ret-type 'Notype)
 
 
 (define (int? e)
@@ -93,7 +94,10 @@
      (typecheck-R2 '() body)
      `(program ,body)]))
 
-(define typechecker (curry typecheck-R2 '()))
+(define  typechecker
+  (lambda (e)
+    (set! prog-ret-type (typecheck-R2 '() e))
+    e))
 
 (define uniquify
   (lambda (alist)
@@ -142,13 +146,15 @@
 
 ;; r2_13
 ;; another prob r2_15 which => allocate
+
+
 (define (flattens e)
   (match e
     [(or (? scalar?) (? vector?)) (values e '() '())]
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
     [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
-                     `(program ,alist^ ,@stmt^ (return ,e^)))]
+                     `(program ,alist^ (type ,prog-ret-type) ,@stmt^ (return ,e^)))]
     [`(vector . ,e1) (let-values ([(e^ stmt^ alist^) (flatten-vector e1)])
                        (let [(newvar (gensym))]
                          (values newvar
@@ -162,7 +168,8 @@
                                             (append stmt1^
                                                     stmt2^
                                                     stmt3^
-                                                    `((assign ,newvar (vector-set! ,e1^ ,e2^ ,e3^)))))))]
+                                                    `((assign ,newvar (vector-set! ,e1^ ,e2^ ,e3^))))
+                                            (append (cons newvar alist1^) alist2^ alist3^))))]
     [`(if ,cn ,tn ,en) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                          (let-values (((ec stmtc alistc) (flattens cnd))
                                       ((et stmtt alistt) (flattens thn))
@@ -182,7 +189,6 @@
     [`(let ([,x ,e]) ,body) (let-values
                                 ([(xe^ stmtx^ alistx^) (flattens e)]
                                  [(be^ stmtb^ alistb^) (flattens body)])
-
                               (match e
                                 [`(if ,cnd ,thn ,els) (values be^
                                                               (append stmtx^ `((assign ,x ,xe^)) stmtb^)
@@ -205,6 +211,21 @@
                   (values newvar
                           (append statements^ `((assign ,newvar (,op ,e^))))
                           (cons newvar alist))))]))
+
+(define (expose-allocation-helper e)
+  (match e
+    [`(vector . ,e1) (let* ([len (length e1)]
+                           [by (+ 8 (* 8 len))])                      
+                      `((if (colection-needed? ,len)
+                           ((collect ,by))
+                           ())
+                        (assign lhs (allocate ,len))
+                        ,@())
+                      )
+     ]))
+
+(define (expose-allocation e)
+  1)
 
 (define (select-instructions-assign ret-v e)
   (match e
