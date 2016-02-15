@@ -6,7 +6,7 @@
 (require "uncover-types.rkt")
 
 (provide r2-passes typechecker)
-(define prog-ret-type 'Notype)
+
 
 
 (define (int? e)
@@ -91,13 +91,11 @@
              (errorset))
          (errorset))]
     [`(program ,body)
-     (typecheck-R2 '() body)
-     `(program ,body)]))
+     (define _type (typecheck-R2 '() body))
+     `(program ,(car body) ,_type ,(cdr body))]))
 
 (define  typechecker
-  (lambda (e)
-    (set! prog-ret-type (typecheck-R2 '() e))
-    e))
+  (curry typecheck-R2 '()))
 
 (define uniquify
   (lambda (alist)
@@ -153,8 +151,9 @@
     [(or (? scalar?) (? vector?)) (values e '() '())]
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
+    ;; be careful here 
     [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
-                     `(program ,alist^ (type ,prog-ret-type) ,@stmt^ (return ,e^)))]
+                     `(program ,alist^ ,@stmt^ (return ,e^)))]
     [`(vector . ,e1) (let-values ([(e^ stmt^ alist^) (flatten-vector e1)])
                        (let [(newvar (gensym))]
                          (values newvar
@@ -227,20 +226,19 @@
   '())
 ;; =============
 
-(define (expose-allocation-helper e)
-  (match e
-    [`(vector . ,e1) (let* ([len (length e1)]
-                           [by (+ 8 (* 8 len))])                      
-                      `((if (colection-needed? ,len)
-                           ((collect ,by))
-                           ())
-                        (assign lhs (allocate ,len))
-                        ,@())
-                      )
-     ]))
+;; (define (expose-allocation-helper e)
+;;   (match e
+;;     [`(vector . ,e1) (let* ([len (length e1)]
+;;                            [by (+ 8 (* 8 len))])                      
+;;                       `((if (colection-needed? ,len)
+;;                            ((collect ,by))
+;;                            ())
+;;                         (assign lhs (allocate ,len))
+;;                         ,@())
+;;                       )
+;;      ]))
 
-(define (expose-allocation e)
-  1)
+
 
 (define (select-instructions-assign ret-v e)
   (match e
