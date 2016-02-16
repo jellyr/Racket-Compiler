@@ -223,14 +223,14 @@
                                            ())
                                        (assign ,newvar (allocate ,len ,(lookup lhs types)))
                                        ,@(map (lambda (val idx)
-                                                (let ([voidvar (gensym void)])
+                                                (let ([voidvar (gensym 'void)])
                                                   `(assign ,voidvar (vector-set! ,newvar ,idx ,val))))
                                               ve
                                               (build-list (length ve) values))))]
     [else  `(,instr)]))
 (define (expose-allocation e)
   (let ([ut (uncover-types e)])
-    (append `(,(car e)) `(,ut) `(,(caddr e)) (map (curryr expose-helper ut) (cdddr e)))))
+    (append `(,(car e)) `(,ut) `(,(caddr e)) (append-map (curryr expose-helper ut) (cdddr e)))))
 ;; =============
 
 ;; (define (expose-allocation-helper e)
