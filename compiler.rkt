@@ -8,7 +8,6 @@
 (provide r2-passes typechecker)
 
 
-
 (define (int? e)
   (eqv? (car e) 'int))
 
@@ -152,8 +151,8 @@
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
     ;; be careful here 
-    [`(program ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
-                     `(program ,alist^ ,@stmt^ (return ,e^)))]
+    [`(program ,type ,e) (let-values ([(e^ stmt^ alist^) (flattens e)])
+                     `(program ,alist^ ,type  ,@stmt^ (return ,e^)))]
     [`(vector . ,e1) (let-values ([(e^ stmt^ alist^) (flatten-vector e1)])
                        (let [(newvar (gensym))]
                          (values newvar
@@ -214,16 +213,24 @@
 
 ;; expose allocation
 ;; figure out what type is
-(define (expose-helper instr)
+(define (expose-helper instr types)
   (match instr
-    [`(assign ,lhs (vector . ,ve))
-     (let* ([len (length ve)]
-            [bytes^ (* 8 (add1 len))])
-       `(if (collection-needed? ,bytes^)
-            ((collect ,bytes^))
-            ()))]))
+    [`(assign ,lhs (vector . ,ve)) (let* ([len (length ve)]
+                                          [bytes^ (* 8 (add1 len))]
+                                          [newvar (gensym)])
+                                     `((if (collection-needed? ,bytes^)
+                                           ((collect ,bytes^))
+                                           ())
+                                       (assign ,newvar (allocate ,len ,(lookup lhs types)))
+                                       ,@(map (lambda (val idx)
+                                                (let ([voidvar (gensym void)])
+                                                  `(assign ,voidvar (vector-set! ,newvar ,idx ,val))))
+                                              ve
+                                              (build-list (length ve) values))))]
+    [else  `(,instr)]))
 (define (expose-allocation e)
-  '())
+  (let ([ut (uncover-types e)])
+    (append `(,(car e)) `(,ut) `(,(caddr e)) (map (curryr expose-helper ut) (cdddr e)))))
 ;; =============
 
 ;; (define (expose-allocation-helper e)
