@@ -86,7 +86,7 @@
      (define errorset (curry error "in vector set"))
      (if (eq? (typecheck-R2 env number) 'Integer)
          (if (eq? (list-ref vector_t number) (typecheck-R2 env expr2))
-             'void
+             'Void
              (errorset))
          (errorset))]
     [`(program ,body)
@@ -228,24 +228,54 @@
                                               ve
                                               (build-list (length ve) values))))]
     [else  `(,instr)]))
+
 (define (expose-allocation e)
   (let ([ut (uncover-types e)])
     (append `(,(car e)) `(,ut) `(,(caddr e)) (append-map (curryr expose-helper ut) (cdddr e)))))
+
+
 ;; =============
 
-;; (define (expose-allocation-helper e)
-;;   (match e
-;;     [`(vector . ,e1) (let* ([len (length e1)]
-;;                            [by (+ 8 (* 8 len))])                      
-;;                       `((if (colection-needed? ,len)
-;;                            ((collect ,by))
-;;                            ())
-;;                         (assign lhs (allocate ,len))
-;;                         ,@())
-;;                       )
-;;      ]))
+(define (live-roots-vector? var type-env)
+  (lookup var type-env #f))
 
 
+(define (live-if-helper e type-env)
+  (foldr (lambda (x r)
+           (let* ([lives (if (null? r) `() (car r))]
+                  [newlives (live-analysis x lives type-env)])
+             (cons newlives r)))
+         '() e))
+
+;; set -> lak
+(define (live-analysis instr lak type-env)
+  (define vector? (curryr live-roots-vector? type-env))
+  (define (vector-unwrap var) (if (vector? var) (set var) (set)))
+  (match instr
+    [(? vector?) (set instr)]
+    [`(assign ,var ,e)
+     (let ([forsub (vector-unwrap var)]
+           [forunion (live-analysis e lak type-env)])
+       (set-union forunion (set-subtract lak forsub)))]
+    [`(vector-set! ,var ,index ,e)
+     (let ([forunion (live-analysis e lak type-env)])
+       (set-union lak forunion))]
+    [`(vector-ref ,v ,index) (set-union lak (set v))]
+    [`(if (eq? ,e1 ,e2) ,thn ,els)
+     (let ([e1set (live-analysis e1 lak type-env)]
+           [e2set (live-analysis e2 lak type-env)]
+           [thenset (live-if-helper thn type-env)]
+           [elseset (live-if-helper els type-env)])
+       (set-union e1set e2set (car thenset) (car elseset)))]
+    [`(return ,var) (set)]
+    [else (lak)]))
+
+(define (call-live-roots e) null)
+
+
+
+
+;; =============
 
 (define (select-instructions-assign ret-v e)
   (match e
