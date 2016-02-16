@@ -240,7 +240,7 @@
 
 (define (live-if-helper e type-env)
   (foldr (lambda (x r)
-           (let* ([lives (if (null? r) `() (car r))]
+           (let* ([lives (if (null? r) '() (car r))]
                   [newlives (live-analysis x lives type-env)])
              (cons newlives r)))
          '() e))
@@ -266,9 +266,17 @@
            [elseset (live-if-helper els type-env)])
        (set-union e1set e2set (car thenset) (car elseset)))]
     [`(return ,var) (set)]
-    [else (lak)]))
+    [else lak]))
 
-(define (call-live-roots e) null)
+(define (call-live-roots e)
+  (let ([prog (car e)]
+        [types (cadr e)]
+        [ret-type (caddr e)]
+        [instrs (cdddr e)])
+    (foldr (lambda (instr res)
+             (list (live-analysis instr res types)))
+           '()
+           instrs)))
 
 
 
