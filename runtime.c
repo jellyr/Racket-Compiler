@@ -1,7 +1,8 @@
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "runtime.h"
-#define DEBUG_MODE 1
 
 // Often misunderstood static global variables in C are not
 // accessible to code outside of the module.
@@ -13,12 +14,11 @@ static int64_t* tospace_end;
 // checked in order to ensure that initialization has occurred.
 static int initialized = 0;
 
-
 /*
   Object Tag (64 bits)
-  #b|- 7 bit unused -|- 50 bit field [50, 0] -| 6 bits lenght -| 1 bit isForwarding Pointer  
+  #b|- 7 bit unused -|- 50 bit field [50, 0] -| 6 bits length -| 1 bit isNotForwarding Pointer  
   * If the bottom-most bit is zero, the tag is really a forwarding pointer.
-  * Otherwise, its an object. In that case, the next 
+  * Otherwise, its an object tag. In that case, the next 
     6 bits give the length of the object (max of 50 64-bit words).
     The next 50 bits say where there are pointers.
     A '1' is a pointer, a '0' is not a pointer.
@@ -44,47 +44,34 @@ static inline int64_t get_ptr_bitfield(int64_t tag){
 }
 
 // initialize the state of the collector so that allocations can occur
-void initialize(int64_t rootstack_size, int64_t heap_size)
+void initialize(uint64_t rootstack_size, uint64_t heap_size)
 {
   // 1. Check to make sure that our assumptions about the world are correct.
-  if (DEBUG_MODE){
-    if (sizeof(int64_t) != sizeof(int64_t*)){
-      printf("The runtime was compiler on an incompatible plaform");
-      exit(-1);
-    }
-    
-    if ((heap_size % 8) != 0){
-      printf("invalid heap size %lld\n", heap_size);
-      exit(-1);
-    }
-    
-    if ((rootstack_size % 8) != 0) {
-      printf("invalid rootstack size %lld\n", rootstack_size);
-      exit(-1);
-    }
-  }
+  assert(sizeof(int64_t) == sizeof(int64_t*));
+  assert((heap_size % sizeof(int64_t)) == 0);
+  assert((rootstack_size % sizeof(int64_t)) == 0);
   
   // 2. Allocate memory (You should always check if malloc gave you memory)
   if (!(fromspace_begin = malloc(heap_size))) {
-      printf("Failed to malloc %lld byte fromspace\n", heap_size);
-      exit(-1);
+    printf("Failed to malloc %" PRIu64 " byte fromspace\n", heap_size);
+    exit(EXIT_FAILURE);
   }
 
   if (!(tospace_begin = malloc(heap_size))) {
-      printf("Failed to malloc %lld byte tospace\n", heap_size);
-      exit(-1);
+    printf("Failed to malloc %" PRIu64 " byte tospace\n", heap_size);
+    exit(EXIT_FAILURE);
   }
 
   if (!(rootstack_begin = malloc(rootstack_size))) {
-    printf("Failed to malloc %lld byte rootstack", rootstack_size);
-    exit(-1);
+    printf("Failed to malloc %" PRIu64 " byte rootstack", rootstack_size);
+    exit(EXIT_FAILURE);
   }
   
   // 2.5 Calculate the ends memory we are using.
   // Note: the pointers are for a half open interval [begin, end)
-  fromspace_end = fromspace_begin + (heap_size / 8);
-  tospace_end = tospace_begin + (heap_size / 8);
-  rootstack_end = rootstack_begin + (rootstack_size / 8);
+  fromspace_end = fromspace_begin + (heap_size / sizeof(int64_t));
+  tospace_end = tospace_begin + (heap_size / sizeof(int64_t));
+  rootstack_end = rootstack_begin + (rootstack_size / sizeof(int64_t));
 
   // 3 Initialize the global free pointer 
   free_ptr = fromspace_begin;
@@ -98,36 +85,20 @@ void initialize(int64_t rootstack_size, int64_t heap_size)
 // There is a stub and explaination below.
 static void cheney(int64_t** rootstack_ptr);
 
-void collect(int64_t** rootstack_ptr, int64_t bytes_requested)
+void collect(int64_t** rootstack_ptr, uint64_t bytes_requested)
 {
   // 1. Check our assumptions about the world
-  if (DEBUG_MODE) {
-    if (!initialized){
-      printf("Collection tried with uninitialized runtime\n");
-      exit(-1);
-    }
+  assert(initialized);
+  assert(rootstack_ptr >= rootstack_begin);
+  assert(rootstack_ptr < rootstack_end);
   
-    if (rootstack_ptr < rootstack_begin){
-      printf("rootstack_ptr = %p < %p = rootstack_begin\n",
-             rootstack_ptr, rootstack_begin);
-      exit(-1);
-    }
-
-    if (rootstack_ptr > rootstack_end){
-      printf("rootstack_ptr = %p > %p = rootstack_end\n",
-             rootstack_ptr, rootstack_end);
-      exit(-1);
-    }
-
-    for(int i = 0; rootstack_begin + i < rootstack_ptr; i++){
-      int64_t* a_root = rootstack_begin[i];
-      if (!(fromspace_begin <= a_root && a_root < fromspace_end)) {
-        printf("rootstack contains non fromspace pointer\n");
-        exit(-1);
-      }
-    }
+#ifndef NDEBUG  
+  // All pointers in the rootstack point to fromspace
+  for(unsigned int i = 0; rootstack_begin + i < rootstack_ptr; i++){
+    int64_t* a_root = rootstack_begin[i];
+    assert(fromspace_begin <= a_root && a_root < fromspace_end);
   }
-
+#endif
   
   // 2. Perform collection
   cheney(rootstack_ptr);
@@ -155,11 +126,11 @@ void collect(int64_t** rootstack_ptr, int64_t bytes_requested)
        in reality.
     */
     
-    long occupied_bytes = (free_ptr - fromspace_begin) * 8;
-    long needed_bytes = occupied_bytes + bytes_requested;
-    long old_len = fromspace_end - fromspace_begin;
-    long old_bytes = old_len * sizeof(int64_t);
-    long new_bytes = old_bytes;
+    unsigned long occupied_bytes = (free_ptr - fromspace_begin) * sizeof(int64_t);
+    unsigned long needed_bytes = occupied_bytes + bytes_requested;
+    unsigned long old_len = fromspace_end - fromspace_begin;
+    unsigned long old_bytes = old_len * sizeof(int64_t);
+    unsigned long new_bytes = old_bytes;
     
     while (new_bytes < needed_bytes) new_bytes = 2 * new_bytes;
 
@@ -168,7 +139,7 @@ void collect(int64_t** rootstack_ptr, int64_t bytes_requested)
 
     if (!(tospace_begin = malloc(new_bytes))) {
       printf("failed to malloc %ld byte fromspace", new_bytes);
-      exit(-1);
+      exit(EXIT_FAILURE);
     }
     
     tospace_end = tospace_begin + new_bytes / (sizeof(int64_t));
@@ -186,12 +157,37 @@ void collect(int64_t** rootstack_ptr, int64_t bytes_requested)
 
     if (!(tospace_begin = malloc(new_bytes))) {
       printf("failed to malloc %ld byte tospace", new_bytes);
-      exit(-1);
+      exit(EXIT_FAILURE);
     }
 
-    tospace_end = tospace_begin + new_bytes / (sizeof(int64_t));
-    
+    tospace_end = tospace_begin + new_bytes / (sizeof(int64_t));    
   }
+
+  assert(free_ptr < fromspace_end);
+  assert(free_ptr >= fromspace_begin);
+#ifndef NDEBUG
+  // All pointers in the rootstack point to fromspace
+  for(unsigned long i = 0; rootstack_begin + i < rootstack_ptr; i++){
+    int64_t* a_root = rootstack_begin[i];
+    assert(fromspace_begin <= a_root && a_root < fromspace_end);
+  }
+  // All pointers in fromspace point to fromspace
+  int64_t* scan_ptr = fromspace_begin;
+  while(scan_ptr != free_ptr){
+    int64_t tag = *scan_ptr;
+    unsigned char len = get_length(tag);
+    int64_t isPtrBits = get_ptr_bitfield(tag);
+    int64_t* data = scan_ptr + 1;
+    scan_ptr = scan_ptr + len + 1;
+    for(unsigned char i = 0; i < len; i++){
+      if ((isPtrBits >> i) & 1){
+        int64_t* ptr = (int64_t*) data[i];
+        assert(ptr < fromspace_end);
+        assert(ptr >= fromspace_begin);
+      }
+    }
+  }
+#endif
 }
 
 // copy_vector is responsible for doing a pointer oblivious
@@ -235,7 +231,7 @@ static void copy_vector(int64_t** vector_ptr_loc);
 
 void cheney(int64_t** rootstack_ptr)
 {
-  
+
 }
 
 
@@ -299,13 +295,13 @@ void copy_vector(int64_t** vector_ptr_loc)
 // Read an integer from stdin
 int64_t read_int() {
   int64_t i;
-  scanf("%lld", &i);
+  scanf("%" SCNd64, &i);
   return i;
 }
 
 // print an integer to stdout
 void print_int(int64_t x) {
-  printf("%lld", x);
+  printf("%" PRId64, x);
 }
 
 // print a bool to stdout
