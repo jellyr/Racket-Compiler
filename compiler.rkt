@@ -235,7 +235,10 @@
 ;; =============
 
 (define (live-roots-vector? var type-env)
-  (lookup var type-env #f))
+  (let ([lkp (lookup var type-env #f)])
+    (match lkp
+      [`(Vector . ,e1) #t]
+      [else #f])))
 
 
 (define (live-if-helper e type-env)
@@ -251,34 +254,37 @@
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
   (match instr
     [(? vector?) (set instr)]
-    [`(assign ,var ,e)
-     (let ([forsub (vector-unwrap var)]
-           [forunion (live-analysis e lak type-env)])
-       (set-union forunion (set-subtract lak forsub)))]
-    [`(vector-set! ,var ,index ,e)
-     (let ([forunion (live-analysis e lak type-env)])
-       (set-union lak forunion))]
+    [`(allocate ,e) (set)]
+    [`(assign ,var ,e) (let ([forsub (vector-unwrap var)]
+                             [forunion (live-analysis e (set) type-env)])
+                         (set-union forunion (set-subtract lak forsub)))]
+    [`(vector-set! ,var ,index ,e) (let ([forunion (live-analysis e lak type-env)])
+                                     (set-union lak forunion))]
     [`(vector-ref ,v ,index) (set-union lak (set v))]
-    [`(if (eq? ,e1 ,e2) ,thn ,els)
-     (let ([e1set (live-analysis e1 lak type-env)]
-           [e2set (live-analysis e2 lak type-env)]
-           [thenset (live-if-helper thn type-env)]
-           [elseset (live-if-helper els type-env)])
-       (set-union e1set e2set (car thenset) (car elseset)))]
+    [`(if (eq? ,e1 ,e2) ,thn ,els)  (let ([e1set (live-analysis e1 lak type-env)]
+                                          [e2set (live-analysis e2 lak type-env)]
+                                          [thenset (live-if-helper thn type-env)]
+                                          [elseset (live-if-helper els type-env)])
+                                      (set-union e1set e2set (car thenset) (car elseset)))]
     [`(return ,var) (set)]
     [else lak]))
 
 (define (call-live-roots e)
-  (let ([prog (car e)]
-        [types (cadr e)]
-        [ret-type (caddr e)]
-        [instrs (cdddr e)])
-    (foldr (lambda (instr res)
-             (list (live-analysis instr res types)))
-           '()
-           instrs)))
-
-
+  (define (live-instr-helper instr livea)
+    (match instr
+      [`(if (collection-needed? ,e1) ((collect ,e2)) ()) `(if (collection-needed? ,e1)
+                                                              ((call-live-roots ,(set->list livea) (collect ,e2)))
+                                                              ())]
+      [else instr]))
+  (let* ([prog (car e)]
+         [types (cadr e)]
+         [ret-type (caddr e)]
+         [instrs (cdddr e)]
+         [livea (foldr (lambda (instr res)
+                         (append `(,(live-analysis instr (car res) types)) res))
+                       `(,(set))
+                       instrs)])
+    `(,prog ,(map car types) ,ret-type ,@(map live-instr-helper instrs (cdr livea)))))
 
 
 ;; =============
