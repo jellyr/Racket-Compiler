@@ -506,13 +506,13 @@
 
 ;;; consider rax
 (define (allocate-registers e)
-  (let* ([phash (allocate-prefer (cddr e))]
+  (let* ([phash (allocate-prefer (cdddr e))]
          ;;; (hash-remove (cadadr e) 'rax)
          [assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()) phash)]
          [env (allocate-reg-stack assign-list)]
          [prog (car e)])
     ;(print assign-list)
-    `(,prog ,(lookup '_stacklength env) . ,(cddr (map (curryr allocate-var env) e)))))
+    `(,prog ,(lookup '_stacklength env) ,(caddr e) . ,(cdddr (map (curryr allocate-var env) e)))))
 
 (define (lower-conditionals-helper e)
   (define elselabel (gensym 'else))
@@ -536,7 +536,7 @@
                            (cons x^ r))
                        )  '() (cddr e)))
   ;(define t (if (eq? 1 (length insts)) (car insts) insts))
-  `(,(car e) ,(cadr e) ,@insts))
+  `(,(car e) ,(cadr e) ,(caddr e) ,@insts))
 
 
 ; starti == -1
