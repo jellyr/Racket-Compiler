@@ -298,6 +298,40 @@
     [(? boolean?) (if e '(int 1) '(int 0))]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
     [`(not ,e1) `(xorq (int 1) ,(select-instructions-assign ret-v e1))]
+    [`(initialize ,rootlen ,heaplen) `((movq (int ,rootlen) (reg rdi))
+                                       (movq (int ,heaplen) (reg rsi))
+                                       (callq initialize)
+                                       (movq (global-value rootstack_begin) (var rootstack)))]
+    [`(assign ,var (vector-ref ,v1 ,idx)) `((movq (offset ,v1 (* 8 (add1 ,idx))) ,var))]
+    [`(assign ,var (vector-set! ,v1 ,idx ,arg)) `((movq ,arg (offset ,v1 (* 8 (add1 ,idx)))))]
+    [`(assign ,var (allocate ,len (Vector ,type))) `((movq (global-value free-ptr) ,var)
+                                                     (addq (int (* 8 (add1 ,len))) (global-value free-ptr))
+                                                     (movq (int tag) (offset ,var 0)))]
+    [`(call-live-roots ,la (collect ,bytes^)) (let* ([n (length la)]
+                                                     [nvals (build-list n values)])
+                                                `(,@(map (lambda (v idx)
+                                                           `(movq (var ,v) (offset (var rootstack.prev) (* 8 ,idx))))
+                                                         la
+                                                         nvals)
+                                                  (movq rootstack.prev rootstack.new)
+                                                  (addq ,n rootstack.new)
+                                                  (movq (var rootstack.new) (reg rdi))
+                                                  (movq (int ,bytes^) (reg rsi))
+                                                  (callq collect)
+                                                  ,@(map (lambda (v idx)
+                                                           `(movq (offset (var rootstack.prev) (* 8 ,idx)) (var ,v)))
+                                                         la
+                                                         nvals)))]
+    [`(if (collection-needed? ,bytes^) ,thn ,els) (let ([thn^ (map (curry select-instructions-assign ret-v) thn)]
+                                                        [els^ (map (curry select-instructions-assign ret-v) els)])
+                                                    `((movq (global-value free_ptr) (var end-data.1))
+                                                      (addq (int ,bytes^) (var end-data.1))
+                                                      (cmpq (var end-data.1) (global-value fromspace_end))
+                                                      (setl (byte-reg al))
+                                                      (movzbq (byte-reg al) (var lt.1))
+                                                      (if (eq? (int 0) (var lt.1))
+                                                          ,els^
+                                                          ,(car thn^))))]
     [`(assign ,var (eq? ,e1 ,e2)) `((cmpq ,(select-instructions-assign ret-v e1)
                                           ,(select-instructions-assign ret-v e2))
                                     (sete (byte-reg al))
