@@ -272,9 +272,11 @@
 (define (call-live-roots e)
   (define (live-instr-helper instr livea)
     (match instr
-      [`(if (collection-needed? ,e1) ((collect ,e2)) ()) `(if (collection-needed? ,e1)
-                                                              ((call-live-roots ,(set->list livea) (collect ,e2)))
-                                                              ())]
+      [`(if (collection-needed? ,e1)
+            ((collect ,e2))
+            ())                      `(if (collection-needed? ,e1)
+                                          ((call-live-roots ,(set->list livea) (collect ,e2)))
+                                          ())]
       [else instr]))
   (let* ([prog (car e)]
          [types (cadr e)]
@@ -365,8 +367,8 @@
                                  [helpexpr (uncover-live-helper x (if (null? lives) (set) (car lives)))])
                             (list (cons (car helpexpr) expr)
                                   (cons (cadr helpexpr) lives))))
-                        '() (cddr e))))
-    `(,(car e) ,(list (cadr e) (cdadr setlist)) ,@(car setlist))))
+                        '() (cdddr e))))
+    `(,(car e) ,(list (cadr e) (cdadr setlist)) ,(caddr e) ,@(car setlist))))
 
 ;;;;;;;;;;
 
@@ -418,10 +420,10 @@
 
 (define (build-interference e)
   (let* ([lak (cadadr e)]
-         [instr (cddr e)]
+         [instr (cdddr e)]
          [graph (make-graph '())])
     (map (curry build-interference-helper graph) instr lak)
-    `(,(car e) (,(caadr e) ,graph) ,@instr)))
+    `(,(car e) (,(caadr e) ,graph) ,(caddr e) ,@instr)))
 
 ;; ol : ommit list
 (define (highest-saturation graph ol)
