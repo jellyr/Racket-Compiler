@@ -198,6 +198,7 @@
                                 [else (let* [(xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
                                              (alistx^ (cons x (if (null? alistx^) alistx^ (cdr alistx^))))
                                              (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
+                                        (println (format "xe^ ~a" xe^))
                                         (values be^
                                                 (append stmtx^ `((assign ,x ,xe^)) stmtb^)
                                                 (append alistx^ alistb^)))]))]
