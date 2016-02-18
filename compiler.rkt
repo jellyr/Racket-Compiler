@@ -291,6 +291,11 @@
 
 ;; =============
 
+(define (calc-pointer-mask v idx res)
+  (match v
+    [`(Vector ,e1) (+ res (* idx 1))]
+    [else (+ res (* idx 0))]))
+
 (define (select-instructions-assign ret-v e)
   (match e
     [(? fixnum?) `(int ,e)]
@@ -302,15 +307,25 @@
                                        (movq (int ,heaplen) (reg rsi))
                                        (callq initialize)
                                        (movq (global-value rootstack_begin) (var rootstack)))]
-    [`(assign ,var (vector-ref ,v1 ,idx)) `((movq (offset ,v1 (* 8 (add1 ,idx))) ,var))]
-    [`(assign ,var (vector-set! ,v1 ,idx ,arg)) `((movq ,arg (offset ,v1 (* 8 (add1 ,idx)))))]
-    [`(assign ,var (allocate ,len (Vector ,type))) `((movq (global-value free-ptr) ,var)
-                                                     (addq (int (* 8 (add1 ,len))) (global-value free-ptr))
-                                                     (movq (int tag) (offset ,var 0)))]
+    [`(assign ,var (vector-ref ,v1 ,idx)) (let ([v1^ (select-instructions-assign ret-v v1)])
+                                            `((movq (offset ,v1^ ,(* 8 (add1 idx))) ,var)))]
+    [`(assign ,var (vector-set! ,v1 ,idx ,arg)) (let ([v1^ (select-instructions-assign ret-v v1)]
+                                                      [arg^ (select-instructions-assign ret-v arg)])
+                                                  `((movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))))]
+    [`(assign ,var (allocate ,len (Vector . ,type))) (let* ([var^ (select-instructions-assign ret-v var)]
+                                                            [ptrmask (foldr calc-pointer-mask
+                                                                            0
+                                                                            type
+                                                                            (build-list len (curry expt 2)))]
+                                                            [tag (bitwise-ior (arithmetic-shift ptrmask 7)
+                                                                              (bitwise-ior (arithmetic-shift len 1) 1))])
+                                                       `((movq (global-value free-ptr) ,var^)
+                                                         (addq (int ,(* 8 (add1 len))) (global-value free-ptr))
+                                                         (movq (int ,tag) (offset ,var^ 0))))]
     [`(call-live-roots ,la (collect ,bytes^)) (let* ([n (length la)]
                                                      [nvals (build-list n values)])
                                                 `(,@(map (lambda (v idx)
-                                                           `(movq (var ,v) (offset (var rootstack.prev) (* 8 ,idx))))
+                                                           `(movq (var ,v) (offset (var rootstack.prev) ,(* 8 idx))))
                                                          la
                                                          nvals)
                                                   (movq rootstack.prev rootstack.new)
@@ -319,7 +334,7 @@
                                                   (movq (int ,bytes^) (reg rsi))
                                                   (callq collect)
                                                   ,@(map (lambda (v idx)
-                                                           `(movq (offset (var rootstack.prev) (* 8 ,idx)) (var ,v)))
+                                                           `(movq (offset (var rootstack.prev) ,(* 8 idx)) (var ,v)))
                                                          la
                                                          nvals)))]
     [`(if (collection-needed? ,bytes^) ,thn ,els) (let ([thn^ (map (curry select-instructions-assign ret-v) thn)]
