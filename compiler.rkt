@@ -81,14 +81,14 @@
        [`(Vector) (error "empty vector")]
        [`(Vector . ,expr) ;; see if we can check index?
         (if (eq? (typecheck-R2 env number) 'Integer)
-            (list-ref expr number)
+            (list-ref vector_t (add1 number))
             (erroref))]
        [else (erroref)])]
     [`(vector-set! ,expr1 ,number ,expr2)
      (define vector_t (typecheck-R2 env expr1))
      (define errorset (curry error "in vector set"))
      (if (eq? (typecheck-R2 env number) 'Integer)
-         (if (eq? (list-ref vector_t number) (typecheck-R2 env expr2))
+         (if (eq? (list-ref vector_t (add1 number)) (typecheck-R2 env expr2))
              'Void
              (errorset))
          (errorset))]
