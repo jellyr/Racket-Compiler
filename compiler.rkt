@@ -7,6 +7,7 @@
 
 (provide r3-passes typechecker)
 
+(define HEAP-LEN 10000)
 
 (define (int? e)
   (eqv? (car e) 'int))
@@ -108,6 +109,7 @@
                [newlist (cons `(,x . ,newx) alist)])
            `(let ([,newx ,((uniquify alist) e)])
               ,((uniquify newlist) body)))]
+        [`(type ,type) e]
         [`(program ,e) `(program ,((uniquify alist) e))]
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
@@ -230,7 +232,7 @@
 
 (define (expose-allocation e)
   (let ([ut (uncover-types e)])
-    (append  `(,(car e) ,ut ,(caddr e) (initialize 10000 10000)) (append-map (curryr expose-helper ut) (cdddr e)))))
+    (append  `(,(car e) ,ut ,(caddr e) (initialize 10000 ,HEAP-LEN)) (append-map (curryr expose-helper ut) (cdddr e)))))
 
 ;; =============
 
@@ -243,7 +245,7 @@
 
 (define (live-if-helper e type-env)
   (foldr (lambda (x r)
-           (let* ([lives (if (null? r) '() (car r))]
+           (let* ([lives (if (null? r) (set) (car r))]
                   [newlives (live-analysis x lives type-env)])
              (cons newlives r)))
          '() e))
@@ -252,6 +254,9 @@
 (define (live-analysis instr lak type-env)
   (define vector? (curryr live-roots-vector? type-env))
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
+  (println "in live-analysis")
+  (println instr)
+  (println (set? lak))
   (match instr
     [(? vector?) (set instr)]
     [`(allocate ,e) (set)]
@@ -283,7 +288,8 @@
          [ret-type (caddr e)]
          [instrs (cdddr e)]
          [livea (foldr (lambda (instr res)
-                         (append `(,(live-analysis instr (car res) types)) res))
+                         (define value (live-analysis instr (car res) types))
+                         (cons value res))
                        `(,(set))
                        instrs)])
     `(,prog ,(map car types) ,ret-type ,@(map live-instr-helper instrs (cdr livea)))))
