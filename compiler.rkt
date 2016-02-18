@@ -7,7 +7,9 @@
 
 (provide r3-passes typechecker)
 
-(define HEAP-LEN 10000)
+(define HEAP-LEN 10000) ;; For Debugging GC
+
+(define SI-VARS '()) ;;Global variable to hold all new variables in select instructions pass
 
 (define (int? e)
   (eqv? (car e) 'int))
@@ -309,12 +311,16 @@
     [(? boolean?) (if e '(int 1) '(int 0))]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
     [`(not ,e1) `(xorq (int 1) ,(select-instructions-assign ret-v e1))]
-    [`(initialize ,rootlen ,heaplen) `((movq (int ,rootlen) (reg rdi))
-                                       (movq (int ,heaplen) (reg rsi))
-                                       (callq initialize)
-                                       (movq (global-value rootstack_begin) (var rootstack)))]
-    [`(assign ,var (vector-ref ,v1 ,idx)) (let ([v1^ (select-instructions-assign ret-v v1)])
-                                            `((movq (offset ,v1^ ,(* 8 (add1 idx))) ,var)))]
+    [`(initialize ,rootlen ,heaplen) (let ([newvar1 (gensym 'rootstack)])
+                                       (set! SI-VARS `(,newvar1))
+                                       `((movq (int ,rootlen) (reg rdi))
+                                         (movq (int ,heaplen) (reg rsi))
+                                         (callq initialize)
+                                         (movq (global-value rootstack_begin)
+                                               ,(select-instructions-assign ret-v newvar1))))]
+    [`(assign ,var (vector-ref ,v1 ,idx)) (let ([v1^ (select-instructions-assign ret-v v1)]
+                                                [var^ (select-instructions-assign ret-v var)])
+                                            `((movq (offset ,v1^ ,(* 8 (add1 idx))) ,var^)))]
     [`(assign ,var (vector-set! ,v1 ,idx ,arg)) (let ([v1^ (select-instructions-assign ret-v v1)]
                                                       [arg^ (select-instructions-assign ret-v arg)])
                                                   `((movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))))]
@@ -326,31 +332,41 @@
                                                             [tag (bitwise-ior (arithmetic-shift ptrmask 7)
                                                                               (bitwise-ior (arithmetic-shift len 1) 1))])
                                                        `((movq (global-value free-ptr) ,var^)
-                                                         (addq (int ,(* 8 (add1 len))) (global-value free-ptr))
+                                                         (addq (int ,(* 8 (add1 len))) (global-value free_ptr))
                                                          (movq (int ,tag) (offset ,var^ 0))))]
     [`(call-live-roots ,la (collect ,bytes^)) (let* ([n (length la)]
-                                                     [nvals (build-list n values)])
+                                                     [nvals (build-list n values)]
+                                                     [newvar1 (last SI-VARS)]
+                                                     [newvar2 (gensym 'rootstack)]
+                                                     [nv1 (select-instructions-assign ret-v newvar1)]
+                                                     [nv2 (select-instructions-assign ret-v newvar2)])
+                                                (set! SI-VARS (append `(,newvar2) SI-VARS))
                                                 `(,@(map (lambda (v idx)
-                                                           `(movq (var ,v) (offset (var rootstack.prev) ,(* 8 idx))))
+                                                           `(movq (var ,v) (offset ,nv1 ,(* 8 idx))))
                                                          la
                                                          nvals)
-                                                  (movq rootstack.prev rootstack.new)
-                                                  (addq ,n rootstack.new)
-                                                  (movq (var rootstack.new) (reg rdi))
+                                                  (movq ,nv1 ,nv2)
+                                                  (addq ,(select-instructions-assign ret-v n) ,nv2)
+                                                  (movq ,nv2 (reg rdi))
                                                   (movq (int ,bytes^) (reg rsi))
                                                   (callq collect)
                                                   ,@(map (lambda (v idx)
-                                                           `(movq (offset (var rootstack.prev) ,(* 8 idx)) (var ,v)))
+                                                           `(movq (offset ,nv1 ,(* 8 idx)) (var ,v)))
                                                          la
                                                          nvals)))]
-    [`(if (collection-needed? ,bytes^) ,thn ,els) (let ([thn^ (map (curry select-instructions-assign ret-v) thn)]
-                                                        [els^ (map (curry select-instructions-assign ret-v) els)])
-                                                    `((movq (global-value free_ptr) (var end-data.1))
-                                                      (addq (int ,bytes^) (var end-data.1))
-                                                      (cmpq (var end-data.1) (global-value fromspace_end))
+    [`(if (collection-needed? ,bytes^) ,thn ,els) (let* ([thn^ (map (curry select-instructions-assign ret-v) thn)]
+                                                         [els^ (map (curry select-instructions-assign ret-v) els)]
+                                                         [newvar1 (gensym 'end-data)]
+                                                         [newvar2 (gensym 'lt)]
+                                                         [nv1 (select-instructions-assign ret-v newvar1)]
+                                                         [nv2 (select-instructions-assign ret-v newvar2)])
+                                                    (set! SI-VARS (append `(,newvar1 ,newvar2) SI-VARS))
+                                                    `((movq (global-value free_ptr) ,nv1)
+                                                      (addq (int ,bytes^) ,nv1)
+                                                      (cmpq ,nv1 (global-value fromspace_end))
                                                       (setl (byte-reg al))
-                                                      (movzbq (byte-reg al) (var lt.1))
-                                                      (if (eq? (int 0) (var lt.1))
+                                                      (movzbq (byte-reg al) ,nv2)
+                                                      (if (eq? (int 0) ,nv2)
                                                           ,els^
                                                           ,(car thn^))))]
     [`(assign ,var (eq? ,e1 ,e2)) `((cmpq ,(select-instructions-assign ret-v e1)
@@ -377,8 +393,12 @@
 
 (define (select-instructions e)
   (let* ([ret-var (last (last e))]
-         [si (append-map (curry select-instructions-assign ret-var) e)])
-    si))
+         [prog (car e)]
+         [args (cadr e)]
+         [ret-type (caddr e)]
+         [instrs (cdddr e)]
+         [si (append-map (curry select-instructions-assign ret-var) instrs)])
+    `(,prog ,(append args SI-VARS) ,ret-type ,@si)))
 
 ;;;;;;
 (define (uncover-live-unwrap e)
