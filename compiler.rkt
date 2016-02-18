@@ -162,16 +162,16 @@
                          (values newvar
                                  (append stmt^ `((assign ,newvar (vector . ,e^))))
                                  (cons newvar alist^))))]
-    [`(vector-set! ,e1 ,e2 ,e3) (let-values ([(e1^ stmt1^ alist1^) (flatten e1)]
-                                             [(e2^ stmt2^ alist2^) (flatten e2)]
-                                             [(e3^ stmt3^ alist3^) (flatten e3)])
-                                  (let [(newvar (gensym))]
-                                    (values newvar
-                                            (append stmt1^
-                                                    stmt2^
-                                                    stmt3^
-                                                    `((assign ,newvar (vector-set! ,e1^ ,e2^ ,e3^))))
-                                            (append (cons newvar alist1^) alist2^ alist3^))))]
+    [`(vector-set! ,e1 ,e2 ,e3) (let-values ([(e1^ stmt1^ alist1^) (flattens e1)]
+                                             [(e2^ stmt2^ alist2^) (flattens e2)]
+                                             [(e3^ stmt3^ alist3^) (flattens e3)]
+                                             [(newvar) (gensym)])
+                                  (values newvar
+                                          (append stmt1^
+                                                  stmt2^
+                                                  stmt3^
+                                                  `((assign ,newvar (vector-set! ,e1^ ,e2^ ,e3^))))
+                                          (append (cons newvar alist1^) alist2^ alist3^)))]
     [`(if ,cn ,tn ,en) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                          (let-values (((ec stmtc alistc) (flattens cnd))
                                       ((et stmtt alistt) (flattens thn))
