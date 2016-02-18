@@ -22,57 +22,9 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(let ([a 1])
-  (let ([b 1])
-    (let ([c 1])
-      (let ([d 1])
-        (let ([e 1])
-          (let ([f 1])
-            (let ([g 1])
-              (let ([h 1])
-                (let ([i 1])
-                  (let ([j 1])
-                    (let ([k 1])
-                      (let ([l 1])
-                        (let ([m 1])
-                          (let ([n 1])
-                            (let ([o 1])
-                              (let ([p 1])
-                                (let ([q 1])
-                                  (let ([r 1])
-                                    (let ([s 1])
-                                      (let ([t 1])
-                                        (let ([u 1])
-                                          (let ([z
-                                                 (let ([x 1])
-                                                   (let ([y 9])
-                                                     (let ([z (+ y y)])
-                                                       (let ([w (+ 2 z)])
-                                                         (+ w x)))))])
-                                            
-                                          (+ a 
-                                          (+ b 
-                                          (+ c 
-                                          (+ d 
-                                          (+ e 
-                                          (+ f 
-                                          (+ g 
-                                          (+ h 
-                                          (+ i 
-                                          (+ j 
-                                          (+ k 
-                                          (+ l 
-                                          (+ m 
-                                          (+ n 
-                                          (+ o
-                                          (+ p 
-                                          (+ q 
-                                          (+ r 
-                                          (+ s 
-                                          (+ t 
-                                          (+ u z)))))))))))))))))))))))))))))))))))))))))))
-      
+(define expr '(let ([t1 (vector 3 7)])
+                (let ([t2 t1])
+                  (let ([_ (vector-set! t2 0 42)])
+                    (vector-ref t1 0)))))
 
-)
-
-(test `(("typecher1" ,typechecker ,interp-scheme) ,@r3-passes) expr)
+(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r3-passes) expr)
