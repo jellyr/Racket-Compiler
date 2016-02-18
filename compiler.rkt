@@ -5,8 +5,9 @@
 (require "utilities.rkt")
 (require "uncover-types.rkt")
 
-(provide r2-passes typechecker)
+(provide r3-passes typechecker)
 
+(define HEAP-LEN 10000)
 
 (define (int? e)
   (eqv? (car e) 'int))
@@ -108,6 +109,7 @@
                [newlist (cons `(,x . ,newx) alist)])
            `(let ([,newx ,((uniquify alist) e)])
               ,((uniquify newlist) body)))]
+        [`(type ,type) e]
         [`(program ,e) `(program ,((uniquify alist) e))]
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
@@ -230,7 +232,7 @@
 
 (define (expose-allocation e)
   (let ([ut (uncover-types e)])
-    (append  `(,(car e) ,ut ,(caddr e) (initialize 10000 10000)) (append-map (curryr expose-helper ut) (cdddr e)))))
+    (append  `(,(car e) ,ut ,(caddr e) (initialize 10000 ,HEAP-LEN)) (append-map (curryr expose-helper ut) (cdddr e)))))
 
 ;; =============
 
@@ -243,7 +245,7 @@
 
 (define (live-if-helper e type-env)
   (foldr (lambda (x r)
-           (let* ([lives (if (null? r) '() (car r))]
+           (let* ([lives (if (null? r) (set) (car r))]
                   [newlives (live-analysis x lives type-env)])
              (cons newlives r)))
          '() e))
@@ -252,6 +254,9 @@
 (define (live-analysis instr lak type-env)
   (define vector? (curryr live-roots-vector? type-env))
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
+  (println "in live-analysis")
+  (println instr)
+  (println (set? lak))
   (match instr
     [(? vector?) (set instr)]
     [`(allocate ,e) (set)]
@@ -283,7 +288,8 @@
          [ret-type (caddr e)]
          [instrs (cdddr e)]
          [livea (foldr (lambda (instr res)
-                         (append `(,(live-analysis instr (car res) types)) res))
+                         (define value (live-analysis instr (car res) types))
+                         (cons value res))
                        `(,(set))
                        instrs)])
     `(,prog ,(map car types) ,ret-type ,@(map live-instr-helper instrs (cdr livea)))))
@@ -611,10 +617,13 @@
     [`(stack ,e1) (format "~a(%rbp)" e1)]
     [`(int ,e1) (format "$~a" e1)]
     [`(reg ,e1) (format "%~a" e1)]
+    [`(global-value ,e1) (format "~a(%rip)" e1)]
     [`(byte-reg ,e1) (format "%~a" e1)]
     [`(label ,label) (format "~a:\n" label)]
+    [`(offset ,reg ,index) (format "~a(%~a)" index reg)]
     [`(,op ,e1) (string-append (format "~a	" op) (print-helper e1) "\n\t")]
     [`(,op ,e1 ,e2) (string-append (format "~a	" op) (print-helper e1) ", " (print-helper e2)" \n\t")]
+    ;[`(callq initialize) (format "callq initialize\n")] ;; this can be else
     ;[`(negq ,e1) (string-append "negq	" (print-helper e1) " \n\t" )]
     ;[`(callq ,e1) (string-append "callq	" (print-helper e1) " \n\t" )]
     ;[`(jmp ,e1) (string-append "jmp	" (print-helper e1) "\n\t")]
@@ -639,9 +648,11 @@ main:
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
 
-(define r2-passes `(
+(define r3-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flattens" ,flattens ,interp-C)
+                    ("expose-allocation" ,expose-allocation ,interp-C)
+                    ("call-live-roots" ,call-live-roots ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
                     ("uncover-live" ,uncover-live ,interp-x86)
                     ("build interference graph" ,build-interference ,interp-x86)
