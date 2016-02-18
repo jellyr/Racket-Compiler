@@ -410,10 +410,12 @@
   (match e
     ; [`(callq read_int) (set-add lak^^ 'rax)]
     ;[`(negq ,e1) (set-union lak^^ (uncover-live-unwrap e1))
-    [`(if (eq? ,e1 ,e2) ,thn ,els) (let ([thenexpr (instrs-live-helper thn)]
-                                         [elseexpr (instrs-live-helper els)])
+    [`(if (eq? ,e1 ,e2) ,thn ,els) (let* ([thenexpr (instrs-live-helper thn)]
+                                          [elseexpr (instrs-live-helper els)]
+                                          [thenset (if (null? thenexpr) (set) (car (last thenexpr)))]
+                                          [elseset (if (null? elseexpr) (set) (car (last elseexpr)))])
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
-                                           (set-union (car (last thenexpr)) (car (last elseexpr)))))]
+                                           (set-union thenset elseset)))]
     [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
@@ -424,7 +426,7 @@
 
 (define (instrs-live-helper e)
   (foldr (lambda (x r)
-           (let* ([expr (if (null? r) '() (car r))]
+           (let* ([expr (if (null? r) `() (car r))]
                   [lives (if (null? r) `() (cadr r))]
                   [helpexpr (uncover-live-helper x (if (null? lives) (set) (car lives)))])
              (list (cons (car helpexpr) expr)
