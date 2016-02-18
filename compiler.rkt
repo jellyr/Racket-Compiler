@@ -195,10 +195,9 @@
                                 [`(if ,cnd ,thn ,els) (values be^
                                                               (append stmtx^ `((assign ,x ,xe^)) stmtb^)
                                                               (append alistx^ alistb^))]
-                                [else (let* [(xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
-                                             (alistx^ (cons x (if (null? alistx^) alistx^ (cdr alistx^))))
+                                [else (let* [(alistx^ (cons x (if (null? alistx^) alistx^ (remq xe^ alistx^))))
+                                             (xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
                                              (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
-                                        (println (format "xe^ ~a" xe^))
                                         (values be^
                                                 (append stmtx^ `((assign ,x ,xe^)) stmtb^)
                                                 (append alistx^ alistb^)))]))]
