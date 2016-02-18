@@ -5,7 +5,7 @@
 (require "utilities.rkt")
 (require "uncover-types.rkt")
 
-(provide r2-passes typechecker)
+(provide r3-passes typechecker)
 
 
 (define (int? e)
@@ -627,9 +627,11 @@ main:
 	popq	%rbp
 	retq" (* 8 (cadr e)))))
 
-(define r2-passes `(
+(define r3-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("flattens" ,flattens ,interp-C)
+                    ("expose-allocation" ,expose-allocation ,interp-C)
+                    ("call-live-roots" ,call-live-roots ,interp-C)
                     ("select instructions" ,select-instructions ,interp-x86)
                     ("uncover-live" ,uncover-live ,interp-x86)
                     ("build interference graph" ,build-interference ,interp-x86)
