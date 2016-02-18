@@ -256,9 +256,6 @@
 (define (live-analysis instr lak type-env)
   (define vector? (curryr live-roots-vector? type-env))
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
-  (println "in live-analysis")
-  (println instr)
-  (println (set? lak))
   (match instr
     [(? vector?) (set instr)]
     [`(allocate ,e) (set)]
