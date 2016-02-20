@@ -637,6 +637,7 @@
 (define (print-helper e)
   (match e
     [`(stack ,e1) (format "~a(%rbp)" e1)]
+    [`(type ,e1) ""]
     [`(int ,e1) (format "$~a" e1)]
     [`(reg ,e1) (format "%~a" e1)]
     [`(global-value ,e1) (format "~a(%rip)" e1)]
@@ -654,16 +655,20 @@
     ;[`(xorq ,e1 ,e2)]
     [else (format "~s" e)]
     ))
+;; patameter, return a func name
+(define (callq-helper typexpr)
+  (match typexpr)
+  [`() `()])
 
 (define (print-x86 e)
   (string-append
- (format "	.globl main
+   (format "	.globl main
 main:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$~a, %rsp\n\t" (* 8 (cadr e)))
- (string-join (map print-helper (cddr e)))
- (format "	movq	%rax, %rdi
+   (string-join (map print-helper (cdddr e)))
+   (format "	movq	%rax, %rdi
 	callq	print_int
         movq    $0, %rax
 	addq	$~a, %rsp
