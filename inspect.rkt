@@ -22,9 +22,19 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(let ([t1 (vector 3 7)])
-                (let ([t2 t1])
-                  (let ([_ (vector-set! t2 0 42)])
-                    (vector-ref t1 0)))))
+(define expr '(vector-ref
+  (let ([t1 (vector 1)])
+  (let ([t2 (vector 1 2)])
+  (let ([t3 (vector 1 2 3)])
+  (let ([t4 (vector 1 2 3 4)])
+  (let ([t5 (vector 1 2 3 4 5)])
+  (let ([t6 (vector 1 2 3 4 5 6)])
+  (let ([t7 (vector 1 2 3 4 5 6 7)])
+  (let ([t8 (vector 1 2 3 4 5 6 7 8)])
+  (let ([t9 (vector 1 2 3 4 5 6 7 8 9)])
+  (let ([t0 (vector 1 2 3 4 5 6 7 8 9 10)])
+    t0))))))))))
+  0)
+)
 
 (test `(("typechecker1" ,typechecker ,interp-scheme) ,@r3-passes) expr)

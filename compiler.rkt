@@ -639,7 +639,7 @@
     [`(global-value ,e1) (format "~a(%rip)" e1)]
     [`(byte-reg ,e1) (format "%~a" e1)]
     [`(label ,label) (format "~a:\n" label)]
-    [`(offset ,reg ,index) (format "~a(%~a)" index reg)]
+    [`(offset ,reg ,index) (format "~a(~a)" index (print-helper reg))]
     [`(,op ,e1) (string-append (format "~a	" op) (print-helper e1) "\n\t")]
     [`(,op ,e1 ,e2) (string-append (format "~a	" op) (print-helper e1) ", " (print-helper e2)" \n\t")]
     ;[`(callq initialize) (format "callq initialize\n")] ;; this can be else
