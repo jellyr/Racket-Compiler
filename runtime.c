@@ -314,6 +314,11 @@ void cheney(int64_t** rootstack_ptr)
   
   //2. Pick all the vectors from rootset(registers, stack) and place in queue
   //2.a. Read all the registers and stack
+  for(unsigned int i = 0; rootstack_begin + i < rootstack_ptr; i++){
+    int64_t* a_root = rootstack_begin[i];
+    printf("%d. ", i);
+    printf("a_root:%d\n", a_root);
+  }
   //2.b Pick the vectors and add them to queue
   
   //3. With queue built up for 1st level of vectors call the copy vector in a loop
