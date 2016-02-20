@@ -311,10 +311,16 @@ void cheney(int64_t** rootstack_ptr)
 {
   //1. Set the free_ptr to To Space beginning
   free_ptr = tospace_begin;
+  
   //2. Pick all the vectors from rootset(registers, stack) and place in queue
+  //2.a. Read all the registers and stack
+  //2.b Pick the vectors and add them to queue
   
-  //3. With queue built up with 1st level of vectors call the copy vector
+  //3. With queue built up for 1st level of vectors call the copy vector in a loop
+
+  //4. Find a way to add the new vectors to Queue
   
+  //5. Swap the From space to To space.
   int64_t* tmp_from_ptr = fromspace_begin;
   int64_t* tmp_to_ptr = fromspace_end;
   fromspace_begin = tospace_begin;
