@@ -602,6 +602,7 @@
                                         (label ,thenlabel)
                                         ,@(lower-conditionals-helper thn)
                                         (label ,endlabel))]
+    [`(()) '()]
     [else e]))
 
 (define (lower-conditionals e)
