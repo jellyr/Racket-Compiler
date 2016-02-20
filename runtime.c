@@ -231,7 +231,18 @@ static void copy_vector(int64_t** vector_ptr_loc);
 
 void cheney(int64_t** rootstack_ptr)
 {
-
+  //1. Set the free_ptr to To Space beginning
+  free_ptr = tospace_begin;
+  //2. Pick all the vectors from rootset(registers, stack) and place in queue
+  
+  //3. With queue built up with 1st level of vectors call the copy vector
+  
+  int64_t* tmp_from_ptr = fromspace_begin;
+  int64_t* tmp_to_ptr = fromspace_end;
+  fromspace_begin = tospace_begin;
+  fromspace_end = tospace_end;
+  tospace_begin = tmp_from_ptr;
+  tospace_end = tmp_to_ptr;
 }
 
 
