@@ -4,6 +4,84 @@
 #include <assert.h>
 #include "runtime.h"
 
+
+
+/*  
+  queue.c
+
+  Implementation of a FIFO queue abstract data type.
+
+  by: Steven Skiena
+  begun: March 27, 2002
+
+  Copyright 2003 by Steven S. Skiena; all rights reserved. 
+
+  Permission is granted for use in non-commerical applications
+  provided this copyright notice remains intact and unchanged.
+
+  Modified By Yang for compiler class
+*/
+
+#define QUEUESIZE       1000
+ 
+typedef struct {
+        int q[QUEUESIZE+1];     /* body of queue */
+        int first;              /* position of first element */
+        int last;               /* position of last element */
+        int count;              /* number of queue elements */
+} queue;
+
+void init_queue(queue *q)
+{
+    q->first = 0;
+    q->last = QUEUESIZE-1;
+    q->count = 0;
+}
+
+void enqueue(queue *q, int x){
+    if (q->count >= QUEUESIZE){
+      printf("Warning: queue overflow enqueue x=%d\n",x);
+    }else {
+            q->last = (q->last+1) % QUEUESIZE;
+            q->q[ q->last ] = x;    
+            q->count = q->count + 1;
+    }
+}
+
+int dequeue(queue *q){
+    int x;
+
+    if (q->count <= 0) printf("Warning: empty queue dequeue.\n");
+    else {
+            x = q->q[ q->first ];
+            q->first = (q->first+1) % QUEUESIZE;
+            q->count = q->count - 1;
+    }
+
+    return x;
+}
+
+int empty(queue *q)
+{
+  if (q->count <= 0) return 1;
+  else return 0;
+}
+
+void print_queue(queue *q){
+    int i,j;
+
+    i=q->first; 
+    
+    while (i != q->last) {
+            printf("%c ",q->q[i]);
+            i = (i+1) % QUEUESIZE;
+    }
+
+    printf("%2d ",q->q[i]);
+    printf("\n");
+}
+
+
 // Often misunderstood static global variables in C are not
 // accessible to code outside of the module.
 // No one besides the collector ever needs to know tospace exists.
