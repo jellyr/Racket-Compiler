@@ -412,6 +412,8 @@
     ;[`(negq ,e1) (set-union lak^^ (uncover-live-unwrap e1))
     [`(if (eq? ,e1 ,e2) ,thn ,els) (let* ([thenexpr (instrs-live-helper thn)]
                                           [elseexpr (instrs-live-helper els)]
+                                          [thenexpr (if (null? thenexpr) (list '(()) `(,(set))) thenexpr)]
+                                          [elseexpr (if (null? elseexpr) (list '(()) `(,(set))) elseexpr)]
                                           [thenset (if (null? thenexpr) (set) (car (last thenexpr)))]
                                           [elseset (if (null? elseexpr) (set) (car (last elseexpr)))])
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
