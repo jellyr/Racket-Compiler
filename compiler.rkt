@@ -655,25 +655,36 @@
     ;[`(xorq ,e1 ,e2)]
     [else (format "~s" e)]
     ))
+
+
 ;; patameter, return a func name
 (define (callq-helper typexpr)
-  (match typexpr)
-  [`() `()])
+  (match typexpr
+      ['Integer "	callq print_int\n\t"]
+      ['Boolean "	callq print_bool\n\t"]
+      ['Void "	callq print_void\n\t"]
+      [`(Vector . ,typexpr1) (string-append
+                              (format "	callq print_vecbegin\n\t")
+                              (foldr (lambda (v r)
+                                       (string-append (callq-helper v) (format  "	callq print_space\n\t"))) "" (cdr (reverse typexpr1)))
+                              (callq-helper (last typexpr1))
+                              (format "	callq print_vecend\n\t"))]))
 
 (define (print-x86 e)
-  (string-append
+  (let ([type (caddr e)])
+    (string-append
    (format "	.globl main
 main:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$~a, %rsp\n\t" (* 8 (cadr e)))
    (string-join (map print-helper (cdddr e)))
-   (format "	movq	%rax, %rdi
-	callq	print_int
-        movq    $0, %rax
+   (format "	movq	%rax, %rdi")
+   (callq-helper (cadr type))
+   (format "	movq    $0, %rax
 	addq	$~a, %rsp
 	popq	%rbp
-	retq" (* 8 (cadr e)))))
+	retq" (* 8 (cadr e))))))
 
 (define r3-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
