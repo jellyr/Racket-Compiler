@@ -679,7 +679,7 @@ main:
 	movq	%rsp, %rbp
 	subq	$~a, %rsp\n\t" (* 8 (cadr e)))
    (string-join (map print-helper (cdddr e)))
-   (format "	movq	%rax, %rdi")
+   (format "	movq	%rax, %rdi\n\t")
    (callq-helper (cadr type))
    (format "	movq    $0, %rax
 	addq	$~a, %rsp
