@@ -17,5 +17,10 @@
 (interp-tests "assignment4 r2" typechecker
                         r3-passes interp-scheme "r2" (range 1 23))
 
-
 (display "r2 tests passed!") (newline)
+
+(interp-tests "assignment4 r2" typechecker
+                        r3-passes interp-scheme "r3" (range 1 16))
+
+(display "r3 tests passed!") (newline)
+

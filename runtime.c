@@ -387,7 +387,8 @@ void cheney(int64_t** rootstack_ptr)
 */
 void copy_vector(int64_t** vector_ptr_loc)
 {
-  
+        tag = **vector_ptr_loc[0];
+        
 }
 
 

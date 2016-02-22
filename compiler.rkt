@@ -125,7 +125,7 @@
 
 
 (define (flatten-vector expr)
-  (let [(flat-vector   (foldl (lambda (exp res)
+  (let [(flat-vector   (foldr (lambda (exp res)
                                 (let-values ([(e^ stmt^ alist^) (flattens exp)])
                                   `(,(append `(,e^) (car res))
                                     ,(append stmt^ (cadr res))
@@ -328,7 +328,7 @@
                                                                             (build-list len (curry expt 2)))]
                                                             [tag (bitwise-ior (arithmetic-shift ptrmask 7)
                                                                               (bitwise-ior (arithmetic-shift len 1) 1))])
-                                                       `((movq (global-value free-ptr) ,var^)
+                                                       `((movq (global-value free_ptr) ,var^)
                                                          (addq (int ,(* 8 (add1 len))) (global-value free_ptr))
                                                          (movq (int ,tag) (offset ,var^ 0))))]
     [`(call-live-roots ,la (collect ,bytes^)) (let* ([n (length la)]
