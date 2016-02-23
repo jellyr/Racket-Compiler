@@ -314,10 +314,13 @@ void cheney(int64_t** rootstack_ptr)
   
   //2. Pick all the vectors from rootset(registers, stack) and place in queue
   //2.a. Read all the registers and stack
-  for(unsigned int i = 0; rootstack_begin + i < rootstack_ptr; i++){
-    int64_t* a_root = rootstack_begin[i];
-    printf("%d. ", i);
-    printf("a_root:%d\n", a_root);
+  for(int64_t* pi = rootstack_begin;  pi < rootstack_ptr; pi++){
+          int64_t vec = *pi;
+          int vec_len = get_length(*vec);
+          for(int64_t j = 0; j <=get_length(*vec) ; j++){
+                  *free_ptr = *(vec+(sizeof(int64_t)*j));
+                  free_ptr++;
+          }
   }
   //2.b Pick the vectors and add them to queue
   
@@ -388,7 +391,7 @@ void cheney(int64_t** rootstack_ptr)
 void copy_vector(int64_t** vector_ptr_loc)
 {
    int64_t* vec = *vector_ptr_loc;
-   if !(is_forwarding(*vec){
+   if (!is_forwarding(*vec){
                    int vec_len = get_length(*vec);
                    int64_t vec_ptr_mask = get_ptr_bitfield(*vec);
                    for(int i = 0; i < vec_len; i++){
@@ -397,7 +400,6 @@ void copy_vector(int64_t** vector_ptr_loc)
                                  int64_t* from_vec_ptr = vec+(sizeof(int64_t) * (i+1));
                                  int64_t child_vec = *from_vec_ptr;
                                  int child_vec_len = get_length(child_vec);
-                                 int64_t child_ptr_mask = get_ptr_bitfield(child_vec);
                                  for(int j = 0; j <= child_vec_len; j++){
                                          int64_t* cp_val_ptr = from_vec_ptr+(sizeof(int64_t) * j);
                                          *free_ptr = *cp_val_ptr;
