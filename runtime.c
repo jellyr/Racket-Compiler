@@ -314,13 +314,19 @@ void cheney(int64_t** rootstack_ptr)
   
   //2. Pick all the vectors from rootset(registers, stack) and place in queue
   //2.a. Read all the registers and stack
-  for(int64_t* pi = rootstack_begin;  pi < rootstack_ptr; pi++){
-          int64_t vec = *pi;
-          int vec_len = get_length(*vec);
-          for(int64_t j = 0; j <=get_length(*vec) ; j++){
-                  *free_ptr = *(vec+(sizeof(int64_t)*j));
+  for(int64_t** pi = &rootstack_begin; *pi < rootstack_ptr; *pi++){
+          int64_t* tag_ptr = *pi;
+          int vec_len = get_length(*tag_ptr);
+          *pi = free_ptr;
+          for(int64_t j = 0; j <= vec_len ; j++){
+                  *free_ptr = *(tag_ptr+(sizeof(int64_t)*j));
                   free_ptr++;
           }
+  }
+  for(int64_t** i = &tospace_begin; *i < free_ptr; *i++){
+          int64_t* tag_ptr = *i;
+          int vec_len = get_length(*tag_length);
+          copy_vector(i);
   }
   //2.b Pick the vectors and add them to queue
   
