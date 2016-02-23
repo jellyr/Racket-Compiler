@@ -387,8 +387,26 @@ void cheney(int64_t** rootstack_ptr)
 */
 void copy_vector(int64_t** vector_ptr_loc)
 {
-        tag = **vector_ptr_loc[0];
-        
+   int64_t* vec = *vector_ptr_loc;
+   if !(is_forwarding(*vec){
+                   int vec_len = get_length(*vec);
+                   int64_t vec_ptr_mask = get_ptr_bitfield(*vec);
+                   for(int i = 0; i < vec_len; i++){
+                           byte_contents = (vec_ptr_mask & (2 ** i)) >> i;
+                         if(byte_contents == 1){
+                                 int64_t* from_vec_ptr = vec+(sizeof(int64_t) * (i+1));
+                                 int64_t child_vec = *from_vec_ptr;
+                                 int child_vec_len = get_length(child_vec);
+                                 int64_t child_ptr_mask = get_ptr_bitfield(child_vec);
+                                 for(int j = 0; j <= child_vec_len; j++){
+                                         int64_t* cp_val_ptr = from_vec_ptr+(sizeof(int64_t) * j);
+                                         *free_ptr = *cp_val_ptr;
+                                         free_ptr++;
+                                 }
+                                 (*from_vec_ptr >> TAG_LENGTH_RSHIFT) << TAG_LENGTH_RSHIFT;
+                         }
+                   }
+   }
 }
 
 
