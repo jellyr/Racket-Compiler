@@ -11,6 +11,8 @@
 
 (define SI-VARS '()) ;;Global variable to hold all new variables in select instructions pass
 
+
+
 (define (int? e)
   (eqv? (car e) 'int))
 
@@ -479,7 +481,7 @@
       [`(callq ,label) (map (lambda (v1)
                               (map (lambda (v2)
                                      (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
-                                   (set->list caller-save))) lak)]
+                                   (set->list (set-remove caller-save 'r11)))) lak)]
       [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive)
        (let ([s (build-interference-unwrap e1)]
              [d (build-interference-unwrap e2)])
@@ -544,6 +546,9 @@
 
 ;; stacki = -1 ;
 (define (allocate-reg-stack assign-list)
+  (define general-registers (vector 'rbx 'rcx 'rdx 'rsi 'rdi
+    				  'r8 'r9 'r10 'r12 
+				  'r13 'r14 'r15))
   (define k (vector-length general-registers)) ;; (vector-length general-registers)
   (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
         [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
@@ -624,6 +629,11 @@
 
 (define (patch-instr-helper e)
   (match e
+    [`(,op (offset (stack ,istack) ,index) ,e2)
+     `((movq (stack ,istack) (reg r11)) (,op (offset (reg r11) ,index) ,e2))] ;; e1 if offset stack
+    [`(,op ,e1 (offset (stack ,istack) ,index))
+     `((movq (stack ,istack) (reg r11)) (,op ,e1 (offset (reg r11) ,index)))] ;; e2 if offset stack
+    ;; negq[]
     [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
     [`(,op (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (,op (reg rax) (stack ,e2)))]
     [`(cmpq ,e1 ,e2) #:when (int? e2) (if (or (var? e1) (reg? e1))
