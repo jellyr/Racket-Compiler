@@ -402,6 +402,7 @@
   (match e
     [`(var ,e1) (set e1)]
     [`(xorq (int 1) (var ,s)) (set s)]
+    [`(offset ,e1 ,idx) (uncover-live-unwrap e1)]
     ;[`(reg ,r) (set r)]
     [else (set)]))
 

@@ -22,8 +22,13 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(let ([v (vector 1 2)])
-  42)
+(define expr '(let ([v1 (vector 0)])
+  (let ([g1 (vector 1 2 3 4 5)])
+    (let ([dummy
+           (if (eq? (read) 0)
+               (vector-set! v1 0 42)
+               (vector-set! g1 0 42))])
+      (vector-ref v1 0))))
 )
 
 (test `(("typechecker1" ,typechecker ,interp-scheme) ,@r3-passes) expr)
