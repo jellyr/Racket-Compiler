@@ -280,9 +280,12 @@
     (match instr
       [`(if (collection-needed? ,e1)
             ((collect ,e2))
-            ())                      `(if (collection-needed? ,e1)
-                                          ((call-live-roots ,(set->list livea) (collect ,e2)))
-                                          ())]
+            ())
+       `(if (collection-needed? ,e1)
+            ((call-live-roots ,(set->list livea) (collect ,e2)))
+            ())]
+      ;[`(if (eq?))]
+      ;[`(assign ,var ,e1) #:when (eq? 'Void (begin (println (lookup e1 (cadr e) #f)) (lookup e1 (cadr e) #f))) '(assign 1 1)]
       [else instr]))
   (let* ([prog (car e)]
          [types (cadr e)]
@@ -421,6 +424,7 @@
                                           [elseset (if (null? elseexpr) (set) (car (last elseexpr)))])
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
                                            (set-union thenset elseset)))]
+    [`(movq ,e1 ,e2) #:when(eq? 'offset (car e2)) (list e (set-union lak^ (uncover-live-unwrap e1)))]
     [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
@@ -456,6 +460,7 @@
     [`(var ,e1) e1]
     [`(reg ,r) r] ;; removed rax from interference graph
     ['(byte-reg al) 'rax]
+    [`(offset ,e1 ,idx) (build-interference-unwrap e1)]
     [`(xorq (int 1) (var ,e1)) e1]
     [else e]))
 
