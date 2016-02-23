@@ -276,6 +276,10 @@
     [else lak]))
 
 (define (call-live-roots e)
+  (define (if-helper instr)
+    (match instr
+      [`(assign ,var ,e1) #:when (eq? 'Void (begin (println (lookup e1 (cadr e) #f)) (lookup e1 (cadr e) #f))) '(assign 1 1)]
+      [else instr]))
   (define (live-instr-helper instr livea)
     (match instr
       [`(if (collection-needed? ,e1)
@@ -284,9 +288,10 @@
        `(if (collection-needed? ,e1)
             ((call-live-roots ,(set->list livea) (collect ,e2)))
             ())]
-      ;[`(if (eq?))]
-      ;[`(assign ,var ,e1) #:when (eq? 'Void (begin (println (lookup e1 (cadr e) #f)) (lookup e1 (cadr e) #f))) '(assign 1 1)]
-      [else instr]))
+      [`(if (eq? ,e^1 ,e^2) ,thn ,els)
+       `(if (eq? ,e^1 ,e^2) ,(map if-helper thn) ,(map if-helper els))]
+      [else (if-helper instr)]))
+  
   (let* ([prog (car e)]
          [types (cadr e)]
          [ret-type (caddr e)]
