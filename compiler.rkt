@@ -652,8 +652,8 @@
                                                          (movq (reg r11) ,e2))]
     [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
     [`(,op (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (,op (reg rax) (stack ,e2)))]
-    ;; [`(movzbq ,e1 ,e2) #:when (stack? e2) `((movzbq ,e1 (reg r11))
-    ;;                                         (movq (reg r11) ,e2))]
+    [`(movzbq ,e1 ,e2) #:when (stack? e2) `((movzbq ,e1 (reg r11))
+                                            (movq (reg r11) ,e2))]
     [`(cmpq ,e1 (global-value ,e2)) #:when (stack? e1) `((movq ,e1 (reg r11))
                                                          (cmpq (reg r11) (global-value ,e2)))]
     [`(cmpq ,e1 ,e2) #:when (int? e2) (if (or (var? e1) (reg? e1))
