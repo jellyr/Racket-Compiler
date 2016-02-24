@@ -276,14 +276,22 @@
     [else lak]))
 
 (define (call-live-roots e)
+  (define (if-helper instr)
+    (match instr
+      [`(assign ,var ,e1) #:when (eq? 'Void (lookup e1 (cadr e) #f)) '(assign 1 1)]
+      [else instr]))
   (define (live-instr-helper instr livea)
     (match instr
       [`(if (collection-needed? ,e1)
             ((collect ,e2))
-            ())                      `(if (collection-needed? ,e1)
-                                          ((call-live-roots ,(set->list livea) (collect ,e2)))
-                                          ())]
-      [else instr]))
+            ())
+       `(if (collection-needed? ,e1)
+            ((call-live-roots ,(set->list livea) (collect ,e2)))
+            ())]
+      [`(if (eq? ,e^1 ,e^2) ,thn ,els)
+       `(if (eq? ,e^1 ,e^2) ,(map if-helper thn) ,(map if-helper els))]
+      [else (if-helper instr)]))
+  
   (let* ([prog (car e)]
          [types (cadr e)]
          [ret-type (caddr e)]
@@ -404,6 +412,7 @@
   (match e
     [`(var ,e1) (set e1)]
     [`(xorq (int 1) (var ,s)) (set s)]
+    [`(offset ,e1 ,idx) (uncover-live-unwrap e1)]
     ;[`(reg ,r) (set r)]
     [else (set)]))
 
@@ -420,6 +429,7 @@
                                           [elseset (if (null? elseexpr) (set) (car (last elseexpr)))])
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
                                            (set-union thenset elseset)))]
+    [`(movq ,e1 ,e2) #:when(eq? 'offset (car e2)) (list e (set-union lak^ (uncover-live-unwrap e1)))]
     [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
@@ -455,6 +465,7 @@
     [`(var ,e1) e1]
     [`(reg ,r) r] ;; removed rax from interference graph
     ['(byte-reg al) 'rax]
+    [`(offset ,e1 ,idx) (build-interference-unwrap e1)]
     [`(xorq (int 1) (var ,e1)) e1]
     [else e]))
 
