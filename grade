@@ -55,3 +55,28 @@ assignment in the future.
 23/23 test cases compile and interpret correctly. Well done.
 
 Final grade: 97%
+
+ASSIGNMENT 4:
+13/14 test cases interpret successfully.
+0/14 test cases compile successfully.
+12/14 test cases compile successfully using an empty runtime.c
+
+There are syntax errors in your runtime.c and it won't
+compile. Because of this, none of your test cases compiled
+successfully.
+
+We graded your assignment using an empty runtime.c (the template we
+provided to you) that doesn't do any garbage collection. We're giving
+you partial credit for the compiler test cases you passed with the
+empty runtime.c. Of course, you also get partial credit for the
+interpreter working.
+
+Test case 11/12 fails the compiler even with a template runtime.c. It
+seems that your patch-instruction isn't working quite right, there are
+stack-stack moves.
+
+Test case 15 fails the interpreter after select-instructions, and
+fails the compiler even with a template runtime.c. It seems that
+you're reading from an undefined variable.
+
+Grade: .5 * (13/14 + 5/11 * 1/14) + .25 * 12/14 = 69%
