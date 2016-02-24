@@ -22,6 +22,9 @@
 (define (reg? e)
   (eqv? (car e) 'reg))
 
+(define (stack? e)
+  (eqv? (car e) 'stack))
+
 (define (scalar? e)
   (or (fixnum? e) (symbol? e) (boolean? e)))
 
@@ -645,8 +648,14 @@
     [`(,op ,e1 (offset (stack ,istack) ,index))
      `((movq (stack ,istack) (reg r11)) (,op ,e1 (offset (reg r11) ,index)))] ;; e2 if offset stack
     ;; negq[]
+    [`(movq (global-value ,e1) ,e2) #:when (stack? e2) `((movq (global-value ,e1) (reg r11))
+                                                         (movq (reg r11) ,e2))]
     [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
     [`(,op (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (,op (reg rax) (stack ,e2)))]
+    ;; [`(movzbq ,e1 ,e2) #:when (stack? e2) `((movzbq ,e1 (reg r11))
+    ;;                                         (movq (reg r11) ,e2))]
+    [`(cmpq ,e1 (global-value ,e2)) #:when (stack? e1) `((movq ,e1 (reg r11))
+                                                         (cmpq (reg r11) (global-value ,e2)))]
     [`(cmpq ,e1 ,e2) #:when (int? e2) (if (or (var? e1) (reg? e1))
                                           `((cmpq ,e2 ,e1))
                                           `((movq ,e2 (reg rax)) (cmpq ,e1 (reg rax))))]
