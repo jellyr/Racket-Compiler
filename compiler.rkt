@@ -644,10 +644,10 @@
 (define (patch-instr-helper e)
   (match e
     [`(,op (offset (stack ,istack) ,index) ,e2) (append `((movq (stack ,istack) (reg r11))
-                                                          (patch-instr-helper `(,op (offset (reg r11) ,index) ,e2))))]
+                                                          ,(patch-instr-helper `(,op (offset (reg r11) ,index) ,e2))))]
     ;; e1 if offset stack
     [`(,op ,e1 (offset (stack ,istack) ,index)) (append `((movq (stack ,istack) (reg r11))
-                                                          (patch-instr-helper `(,op ,e1 (offset (reg r11) ,index)))))]
+                                                          ,(patch-instr-helper `(,op ,e1 (offset (reg r11) ,index)))))]
     ;; e2 if offset stack
     [`(movq ,e1 (offset ,e2 ,index)) #:when (stack? e1) `((movq ,e1 (reg rax))
                                                           (movq (reg rax) (offset ,e2 ,index)))]
