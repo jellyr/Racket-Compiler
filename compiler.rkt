@@ -11,6 +11,8 @@
 
 (define SI-VARS '()) ;;Global variable to hold all new variables in select instructions pass
 
+
+
 (define (int? e)
   (eqv? (car e) 'int))
 
@@ -19,6 +21,9 @@
 
 (define (reg? e)
   (eqv? (car e) 'reg))
+
+(define (stack? e)
+  (eqv? (car e) 'stack))
 
 (define (scalar? e)
   (or (fixnum? e) (symbol? e) (boolean? e)))
@@ -274,14 +279,22 @@
     [else lak]))
 
 (define (call-live-roots e)
+  (define (if-helper instr)
+    (match instr
+      [`(assign ,var ,e1) #:when (eq? 'Void (lookup e1 (cadr e) #f)) '(assign 1 1)]
+      [else instr]))
   (define (live-instr-helper instr livea)
     (match instr
       [`(if (collection-needed? ,e1)
             ((collect ,e2))
-            ())                      `(if (collection-needed? ,e1)
-                                          ((call-live-roots ,(set->list livea) (collect ,e2)))
-                                          ())]
-      [else instr]))
+            ())
+       `(if (collection-needed? ,e1)
+            ((call-live-roots ,(set->list livea) (collect ,e2)))
+            ())]
+      [`(if (eq? ,e^1 ,e^2) ,thn ,els)
+       `(if (eq? ,e^1 ,e^2) ,(map if-helper thn) ,(map if-helper els))]
+      [else (if-helper instr)]))
+  
   (let* ([prog (car e)]
          [types (cadr e)]
          [ret-type (caddr e)]
@@ -402,6 +415,7 @@
   (match e
     [`(var ,e1) (set e1)]
     [`(xorq (int 1) (var ,s)) (set s)]
+    [`(offset ,e1 ,idx) (uncover-live-unwrap e1)]
     ;[`(reg ,r) (set r)]
     [else (set)]))
 
@@ -418,6 +432,7 @@
                                           [elseset (if (null? elseexpr) (set) (car (last elseexpr)))])
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
                                            (set-union thenset elseset)))]
+    [`(movq ,e1 ,e2) #:when(eq? 'offset (car e2)) (list e (set-union lak^ (uncover-live-unwrap e1)))]
     [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
@@ -453,6 +468,7 @@
     [`(var ,e1) e1]
     [`(reg ,r) r] ;; removed rax from interference graph
     ['(byte-reg al) 'rax]
+    [`(offset ,e1 ,idx) (build-interference-unwrap e1)]
     [`(xorq (int 1) (var ,e1)) e1]
     [else e]))
 
@@ -479,7 +495,7 @@
       [`(callq ,label) (map (lambda (v1)
                               (map (lambda (v2)
                                      (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
-                                   (set->list caller-save))) lak)]
+                                   (set->list (set-remove caller-save 'r11)))) lak)]
       [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive)
        (let ([s (build-interference-unwrap e1)]
              [d (build-interference-unwrap e2)])
@@ -544,6 +560,9 @@
 
 ;; stacki = -1 ;
 (define (allocate-reg-stack assign-list)
+  (define general-registers (vector 'rbx 'rcx 'rdx 'rsi 'rdi
+    				  'r8 'r9 'r10 'r12 
+				  'r13 'r14 'r15))
   (define k (vector-length general-registers)) ;; (vector-length general-registers)
   (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
         [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
@@ -624,8 +643,19 @@
 
 (define (patch-instr-helper e)
   (match e
+    [`(,op (offset (stack ,istack) ,index) ,e2)
+     `((movq (stack ,istack) (reg r11)) (,op (offset (reg r11) ,index) ,e2))] ;; e1 if offset stack
+    [`(,op ,e1 (offset (stack ,istack) ,index))
+     `((movq (stack ,istack) (reg r11)) (,op ,e1 (offset (reg r11) ,index)))] ;; e2 if offset stack
+    ;; negq[]
+    [`(movq (global-value ,e1) ,e2) #:when (stack? e2) `((movq (global-value ,e1) (reg r11))
+                                                         (movq (reg r11) ,e2))]
     [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
     [`(,op (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (,op (reg rax) (stack ,e2)))]
+    [`(movzbq ,e1 ,e2) #:when (stack? e2) `((movzbq ,e1 (reg r11))
+                                            (movq (reg r11) ,e2))]
+    [`(cmpq ,e1 (global-value ,e2)) #:when (stack? e1) `((movq ,e1 (reg r11))
+                                                         (cmpq (reg r11) (global-value ,e2)))]
     [`(cmpq ,e1 ,e2) #:when (int? e2) (if (or (var? e1) (reg? e1))
                                           `((cmpq ,e2 ,e1))
                                           `((movq ,e2 (reg rax)) (cmpq ,e1 (reg rax))))]

@@ -313,26 +313,29 @@ void cheney(int64_t** rootstack_ptr)
   free_ptr = tospace_begin;
   
   //2. Pick all the vectors from rootset(registers, stack) and place in queue
-  //2.a. Read all the registers and stack
-  for(int64_t* pi = rootstack_begin;  pi < rootstack_ptr; pi++){
+  for(int64_t* pi = *rootstack_begin;  pi < *rootstack_ptr; pi++){
           int64_t vec = *pi;
-          int vec_len = get_length(*vec);
-          for(int64_t j = 0; j <=get_length(*vec) ; j++){
-                  *free_ptr = *(vec+(sizeof(int64_t)*j));
-                  free_ptr++;
+          int vec_len = get_length(vec);
+          for(int64_t j = 0; j <=get_length(vec) ; j++){
+              int64_t* tmp_ptr = (pi+(sizeof(int64_t)*j));
+	      *free_ptr = *tmp_ptr;
+	      free_ptr++;
           }
   }
-  //2.b Pick the vectors and add them to queue
   
   //3. With queue built up for 1st level of vectors call the copy vector in a loop
+  for(int64_t** i = &tospace_begin; *i < free_ptr;){
+          int64_t* tag_ptr = *i;
+	  int vec_len = get_length(*tag_ptr);
+	  copy_vector(i);
+	  *i += (sizeof(int64_t) * vec_len);
+  }
 
-  //4. Find a way to add the new vectors to Queue
-  
-  //5. Swap the From space to To space.
-  int64_t* tmp_from_ptr = fromspace_begin;
-  int64_t* tmp_to_ptr = fromspace_end;
-  fromspace_begin = tospace_begin;
-  fromspace_end = tospace_end;
+  //4. Swap the From space to To space.
+  int64_t* tmp_from_ptr = (int64_t*)*fromspace_begin;
+  int64_t* tmp_to_ptr = (int64_t*)*fromspace_end;
+  *fromspace_begin = tospace_begin;
+  *fromspace_end = tospace_end;
   tospace_begin = tmp_from_ptr;
   tospace_end = tmp_to_ptr;
 }
@@ -388,14 +391,24 @@ void cheney(int64_t** rootstack_ptr)
  the invariant that the free_ptr points to the next free memory address.
 
 */
+int powr(int v1, int v2){
+  int res=1;
+  for(int i = 0;i < v2; i++){
+    res = res*v1;
+  }
+  return res;
+}
+
+
 void copy_vector(int64_t** vector_ptr_loc)
 {
    int64_t* vec = *vector_ptr_loc;
-   if (!is_forwarding(*vec){
+   if (!is_forwarding(*vec)){
                    int vec_len = get_length(*vec);
                    int64_t vec_ptr_mask = get_ptr_bitfield(*vec);
                    for(int i = 0; i < vec_len; i++){
-                           byte_contents = (vec_ptr_mask & (2 ** i)) >> i;
+		     int64_t byte_adder = powr(2 ,i);
+		     int64_t byte_contents = (vec_ptr_mask & byte_adder) >> i;
                          if(byte_contents == 1){
                                  int64_t* from_vec_ptr = vec+(sizeof(int64_t) * (i+1));
                                  int64_t child_vec = *from_vec_ptr;
@@ -410,7 +423,6 @@ void copy_vector(int64_t** vector_ptr_loc)
                    }
    }
 }
-
 
 
 // Read an integer from stdin
