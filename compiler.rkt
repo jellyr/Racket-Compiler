@@ -281,7 +281,7 @@
 (define (call-live-roots e)
   (define (if-helper instr)
     (match instr
-      [`(assign ,var ,e1) #:when (eq? 'Void (lookup e1 (cadr e) #f)) '(assign 1 1)]
+      [`(assign ,var ,e1) #:when (eq? 'Void (lookup e1 (cadr e) #f)) `(assign ,var 0)]
       [else instr]))
   (define (live-instr-helper instr livea)
     (match instr

@@ -309,6 +309,7 @@ static void copy_vector(int64_t** vector_ptr_loc);
 
 void cheney(int64_t** rootstack_ptr)
 {
+  printf("Inside Cheney");
   //1. Set the free_ptr to To Space beginning
   free_ptr = tospace_begin;
   
@@ -334,8 +335,8 @@ void cheney(int64_t** rootstack_ptr)
   //4. Swap the From space to To space.
   int64_t* tmp_from_ptr = (int64_t*)*fromspace_begin;
   int64_t* tmp_to_ptr = (int64_t*)*fromspace_end;
-  *fromspace_begin = tospace_begin;
-  *fromspace_end = tospace_end;
+  *fromspace_begin = (int64_t)tospace_begin;
+  *fromspace_end = (int64_t)tospace_end;
   tospace_begin = tmp_from_ptr;
   tospace_end = tmp_to_ptr;
 }
@@ -402,25 +403,26 @@ int powr(int v1, int v2){
 
 void copy_vector(int64_t** vector_ptr_loc)
 {
-   int64_t* vec = *vector_ptr_loc;
-   if (!is_forwarding(*vec)){
-                   int vec_len = get_length(*vec);
-                   int64_t vec_ptr_mask = get_ptr_bitfield(*vec);
-                   for(int i = 0; i < vec_len; i++){
-		     int64_t byte_adder = powr(2 ,i);
-		     int64_t byte_contents = (vec_ptr_mask & byte_adder) >> i;
-                         if(byte_contents == 1){
-                                 int64_t* from_vec_ptr = vec+(sizeof(int64_t) * (i+1));
-                                 int64_t child_vec = *from_vec_ptr;
-                                 int child_vec_len = get_length(child_vec);
-                                 for(int j = 0; j <= child_vec_len; j++){
-                                         int64_t* cp_val_ptr = from_vec_ptr+(sizeof(int64_t) * j);
-                                         *free_ptr = *cp_val_ptr;
-                                         free_ptr++;
-                                 }
-                                 (*from_vec_ptr >> TAG_LENGTH_RSHIFT) << TAG_LENGTH_RSHIFT;
-                         }
-                   }
+  printf("Inside Copy Vector");
+  int64_t* vec = *vector_ptr_loc;
+  if (!is_forwarding(*vec)){
+    int vec_len = get_length(*vec);
+    int64_t vec_ptr_mask = get_ptr_bitfield(*vec);
+    for(int i = 0; i < vec_len; i++){
+      int64_t byte_adder = powr(2 ,i);
+      int64_t byte_contents = (vec_ptr_mask & byte_adder) >> i;
+      if(byte_contents == 1){
+	int64_t* from_vec_ptr = vec+(sizeof(int64_t) * (i+1));
+	int64_t child_vec = *from_vec_ptr;
+	int child_vec_len = get_length(child_vec);
+	for(int j = 0; j <= child_vec_len; j++){
+	  int64_t* cp_val_ptr = from_vec_ptr+(sizeof(int64_t) * j);
+	  *free_ptr = *cp_val_ptr;
+	  free_ptr++;
+	}
+	(*from_vec_ptr >> TAG_LENGTH_RSHIFT) << TAG_LENGTH_RSHIFT;
+      }
+    }
    }
 }
 
