@@ -630,7 +630,7 @@
                        (if (eq? 'if (car x))
                            (append x^ r)
                            (cons x^ r))
-                       )  '() (cddr e)))
+                       )  '() (cdddr e)))
   ;(define t (if (eq? 1 (length insts)) (car insts) insts))
   `(,(car e) ,(cadr e) ,(caddr e) ,@insts))
 
@@ -651,7 +651,7 @@
     ;; e2 if offset stack
     [`(movq ,e1 (offset ,e2 ,index)) #:when (stack? e1) `((movq ,e1 (reg rax))
                                                           (movq (reg rax) (offset ,e2 ,index)))]
-    [`(movq (offset ,e1 ,index) ,e2) #:when (stack? e2) `((movq (offset ,e2 ,index) (reg rax))
+    [`(movq (offset ,e1 ,index) ,e2) #:when (stack? e2) `((movq (offset ,e1 ,index) (reg rax))
                                                           (movq (reg rax) ,e2))]
     [`(movq (global-value ,e1) ,e2) #:when (stack? e2) `((movq (global-value ,e1) (reg r11))
                                                          (movq (reg r11) ,e2))]
