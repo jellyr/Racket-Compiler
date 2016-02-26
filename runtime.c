@@ -5,83 +5,6 @@
 #include "runtime.h"
 
 
-
-/*  
-  queue.c
-
-  Implementation of a FIFO queue abstract data type.
-
-  by: Steven Skiena
-  begun: March 27, 2002
-
-  Copyright 2003 by Steven S. Skiena; all rights reserved. 
-
-  Permission is granted for use in non-commerical applications
-  provided this copyright notice remains intact and unchanged.
-
-  Modified By Yang for compiler class
-*/
-
-#define QUEUESIZE       1000
- 
-typedef struct {
-        int q[QUEUESIZE+1];     /* body of queue */
-        int first;              /* position of first element */
-        int last;               /* position of last element */
-        int count;              /* number of queue elements */
-} queue;
-
-void init_queue(queue *q)
-{
-    q->first = 0;
-    q->last = QUEUESIZE-1;
-    q->count = 0;
-}
-
-void enqueue(queue *q, int x){
-    if (q->count >= QUEUESIZE){
-      printf("Warning: queue overflow enqueue x=%d\n",x);
-    }else {
-            q->last = (q->last+1) % QUEUESIZE;
-            q->q[ q->last ] = x;    
-            q->count = q->count + 1;
-    }
-}
-
-int dequeue(queue *q){
-    int x;
-
-    if (q->count <= 0) printf("Warning: empty queue dequeue.\n");
-    else {
-            x = q->q[ q->first ];
-            q->first = (q->first+1) % QUEUESIZE;
-            q->count = q->count - 1;
-    }
-
-    return x;
-}
-
-int empty(queue *q)
-{
-  if (q->count <= 0) return 1;
-  else return 0;
-}
-
-void print_queue(queue *q){
-    int i,j;
-
-    i=q->first; 
-    
-    while (i != q->last) {
-            printf("%c ",q->q[i]);
-            i = (i+1) % QUEUESIZE;
-    }
-
-    printf("%2d ",q->q[i]);
-    printf("\n");
-}
-
-
 // Often misunderstood static global variables in C are not
 // accessible to code outside of the module.
 // No one besides the collector ever needs to know tospace exists.
@@ -125,6 +48,7 @@ static inline int64_t get_ptr_bitfield(int64_t tag){
 void initialize(uint64_t rootstack_size, uint64_t heap_size)
 {
   // 1. Check to make sure that our assumptions about the world are correct.
+  //printf("Size of int64_t is: %d\n",sizeof(int64_t));
   assert(sizeof(int64_t) == sizeof(int64_t*));
   assert((heap_size % sizeof(int64_t)) == 0);
   assert((rootstack_size % sizeof(int64_t)) == 0);
@@ -177,7 +101,6 @@ void collect(int64_t** rootstack_ptr, uint64_t bytes_requested)
     assert(fromspace_begin <= a_root && a_root < fromspace_end);
   }
 #endif
-  
   // 2. Perform collection
   cheney(rootstack_ptr);
   
@@ -309,7 +232,7 @@ static void copy_vector(int64_t** vector_ptr_loc);
 
 void cheney(int64_t** rootstack_ptr)
 {
-  printf("Inside Cheney");
+  //printf("Inside Cheney\n");
   //1. Set the free_ptr to To Space beginning
   free_ptr = tospace_begin;
   
@@ -403,7 +326,7 @@ int powr(int v1, int v2){
 
 void copy_vector(int64_t** vector_ptr_loc)
 {
-  printf("Inside Copy Vector");
+  //printf("Inside Copy Vector\n");
   int64_t* vec = *vector_ptr_loc;
   if (!is_forwarding(*vec)){
     int vec_len = get_length(*vec);
