@@ -338,9 +338,9 @@
                                                       [arg^ (select-instructions-assign ret-v arg)])
                                                   
                                                   `(
-                                                    
                                                     (movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))
-                                                    (movq (int 46) ,(select-instructions-assign ret-v var))))]
+                                                    (movq (int 46) ,(select-instructions-assign ret-v var))
+                                                    ))]
     
     [`(assign ,var (allocate ,len (Vector . ,type))) (let* ([var^ (select-instructions-assign ret-v var)]
                                                             [ptrmask (foldr calc-pointer-mask
@@ -432,28 +432,39 @@
   (match e
     ; [`(callq read_int) (set-add lak^^ 'rax)]
     ;[`(negq ,e1) (set-union lak^^ (uncover-live-unwrap e1))
-    [`(if (eq? ,e1 ,e2) ,thn ,els) (let* ([thenexpr (instrs-live-helper thn)]
-                                          [elseexpr (instrs-live-helper els)]
+    [`(if (eq? ,e1 ,e2) ,thn ,els) (let* ([thenexpr (instrs-live-helper thn lak^)]
+                                          [elseexpr (instrs-live-helper els lak^)]
                                           [thenexpr (if (null? thenexpr) (list '(()) `(,(set))) thenexpr)]
                                           [elseexpr (if (null? elseexpr) (list '(()) `(,(set))) elseexpr)]
                                           [thenset (if (null? thenexpr) (set) (car (last thenexpr)))]
-                                          [elseset (if (null? elseexpr) (set) (car (last elseexpr)))])
+                                          [elseset (if (null? elseexpr) (set) (car (last elseexpr)))]
+                                          [thenexpr (list (car thenexpr)
+                                                          (if (null? (caar thenexpr)) `(,(set)) (cdr (last thenexpr))))]
+                                          [elseexpr (list (car elseexpr)
+                                                          (if (null? (caar elseexpr)) `(,(set)) (cdr (last elseexpr))))]
+                                          
+                                          
+                                          )
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
                                            (set-union thenset elseset)))]
-    [`(movq ,e1 ,e2) #:when(eq? 'offset (car e2)) (list e (set-union lak^ (uncover-live-unwrap e1)))]
+    [`(movq ,e1 ,e2) #:when(eq? 'offset (car e2)) (list e (set-union lak^
+                                                                          (uncover-live-unwrap e1)
+                                                                          (uncover-live-unwrap e2)))]
     [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
     [`(addq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(subq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
-    [else (list e lak)]))
+    [else (list e lak^)]))
 
-
-(define (instrs-live-helper e)
+;; lak is set
+(define (instrs-live-helper e lak)
+  (define lak-list (set->list lak))
   (foldr (lambda (x r)
+           ;(println (if (null? r) `(,(list->set lak-list)) (cadr r)))
            (let* ([expr (if (null? r) `() (car r))]
-                  [lives (if (null? r) `() (cadr r))]
-                  [helpexpr (uncover-live-helper x (if (null? lives) (set) (car lives)))])
+                  [lives (if (null? r) `(,(list->set lak-list)) (cadr r))]
+                  [helpexpr (uncover-live-helper x (if (null? (cdr lives)) (set->list lak) (car lives)))])
              (list (cons (car helpexpr) expr)
                    (cons (cadr helpexpr) lives))))
          '() e))
@@ -580,7 +591,7 @@
 (define (allocate-var e env)
   (match e
     ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1)) 
-    [`(var ,e1) (lookup e1 env)]
+    [`(var ,e1) (lookup e1 env '(reg rax))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
     [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive) `(if (eq? ,(allocate-var e1 env) ,(allocate-var e2 env))
