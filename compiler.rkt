@@ -338,8 +338,9 @@
                                                       [arg^ (select-instructions-assign ret-v arg)])
                                                   
                                                   `(
-                                                    (movq ,v1^ ,(select-instructions-assign ret-v var))
-                                                    (movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))))]
+                                                    
+                                                    (movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))
+                                                    (movq (int 46) ,(select-instructions-assign ret-v var))))]
     
     [`(assign ,var (allocate ,len (Vector . ,type))) (let* ([var^ (select-instructions-assign ret-v var)]
                                                             [ptrmask (foldr calc-pointer-mask
@@ -542,8 +543,7 @@
   (if (set-member? (hash-ref graph (car node) (set)) 'rcx)
       (set! contrains (set-union contrains (list->set (range 1 9))))
       '()) 
-  (define preferlist (dropf (map (lambda (v) (with-handlers ([exn:fail? (lambda (exn) #f)])
-                                               (lookup v assign-list)))
+  (define preferlist (dropf (map (lambda (v) (lookup v assign-list #f))
                                  (set->list (set-subtract (hash-ref! phash (car node) (set))
                                                           (hash-ref graph (car node) (set)))))
                             false?))
@@ -580,8 +580,7 @@
 (define (allocate-var e env)
   (match e
     ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1)) 
-    [`(var ,e1) (with-handlers ([exn:fail? (lambda (exn) '(reg rax))])
-                  (lookup e1 env))]
+    [`(var ,e1) (lookup e1 env)]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
     [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive) `(if (eq? ,(allocate-var e1 env) ,(allocate-var e2 env))
