@@ -278,11 +278,14 @@
     [`(return ,var) (set)]
     [else lak]))
 
+
+;; (define (if-helper instr)
+;;     (match instr
+;;       [`(assign ,var ,e1) #:when (eq? 'Void (lookup e1 (cadr e) #f)) `(assign ,var 0)]
+;;       [else instr]))
+
 (define (call-live-roots e)
-  (define (if-helper instr)
-    (match instr
-      [`(assign ,var ,e1) #:when (eq? 'Void (lookup e1 (cadr e) #f)) `(assign ,var 0)]
-      [else instr]))
+  
   (define (live-instr-helper instr livea)
     (match instr
       [`(if (collection-needed? ,e1)
@@ -292,8 +295,8 @@
             ((call-live-roots ,(set->list livea) (collect ,e2)))
             ())]
       [`(if (eq? ,e^1 ,e^2) ,thn ,els)
-       `(if (eq? ,e^1 ,e^2) ,(map if-helper thn) ,(map if-helper els))]
-      [else (if-helper instr)]))
+       `(if (eq? ,e^1 ,e^2) ,thn ,els)]
+      [else instr]))
   
   (let* ([prog (car e)]
          [types (cadr e)]
@@ -333,7 +336,11 @@
                                             `((movq (offset ,v1^ ,(* 8 (add1 idx))) ,var^)))]
     [`(assign ,var (vector-set! ,v1 ,idx ,arg)) (let ([v1^ (select-instructions-assign ret-v v1)]
                                                       [arg^ (select-instructions-assign ret-v arg)])
-                                                  `((movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))))]
+                                                  
+                                                  `(
+                                                    (movq ,v1^ ,(select-instructions-assign ret-v var))
+                                                    (movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))))]
+    
     [`(assign ,var (allocate ,len (Vector . ,type))) (let* ([var^ (select-instructions-assign ret-v var)]
                                                             [ptrmask (foldr calc-pointer-mask
                                                                             0
