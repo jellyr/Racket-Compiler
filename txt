@@ -17,265 +17,239 @@ typechecker1:
 uniquify:
 '(program
   (type Integer)
-  (let ((v19666 (vector 0)))
-    (let ((g19667 (vector 1 2 3 4 5)))
-      (let ((dummy9668
+  (let ((v19669 (vector 0)))
+    (let ((g19670 (vector 1 2 3 4 5)))
+      (let ((dummy9671
              (if (eq? (read) 0)
-               (vector-set! v19666 0 42)
-               (vector-set! g19667 0 42))))
-        (vector-ref v19666 0)))))
+               (vector-set! v19669 0 42)
+               (vector-set! g19670 0 42))))
+        (vector-ref v19669 0)))))
 
 flattens:
 '(program
-  (v19666 g19667 g9675 g9672 g9671 g9673 g9674 g9676)
+  (v19669 g19670 g9678 g9675 g9674 g9676 g9677 g9679)
   (type Integer)
-  (assign v19666 (vector 0))
-  (assign g19667 (vector 1 2 3 4 5))
-  (assign g9671 (read))
-  (assign g9672 (eq? g9671 0))
-  (if (eq? #t g9672)
-    ((assign g9673 (vector-set! v19666 0 42)) (assign g9675 g9673))
-    ((assign g9674 (vector-set! g19667 0 42)) (assign g9675 g9674)))
-  (assign dummy9668 g9675)
-  (assign g9676 (vector-ref v19666 0))
-  (return g9676))
+  (assign v19669 (vector 0))
+  (assign g19670 (vector 1 2 3 4 5))
+  (assign g9674 (read))
+  (assign g9675 (eq? g9674 0))
+  (if (eq? #t g9675)
+    ((assign g9676 (vector-set! v19669 0 42)) (assign g9678 g9676))
+    ((assign g9677 (vector-set! g19670 0 42)) (assign g9678 g9677)))
+  (assign dummy9671 g9678)
+  (assign g9679 (vector-ref v19669 0))
+  (return g9679))
 
 expose-allocation:
 '(program
-  ((g9671 . Integer)
-   (g9673 . Void)
-   (g9674 . Void)
-   (g9676 . Integer)
-   (v19666 Vector Integer)
-   (g19667 Vector Integer Integer Integer Integer Integer)
-   (dummy9668 . Void)
-   (g9675 . Void)
-   (g9672 . Boolean))
+  ((g9678 . Void)
+   (g9675 . Boolean)
+   (g9674 . Integer)
+   (g9676 . Void)
+   (g9677 . Void)
+   (g9679 . Integer)
+   (v19669 Vector Integer)
+   (g19670 Vector Integer Integer Integer Integer Integer)
+   (dummy9671 . Void))
   (type Integer)
   (initialize 10000 10000)
   (if (collection-needed? 16) ((collect 16)) ())
-  (assign v19666 (allocate 1 (Vector Integer)))
-  (assign void9677 (vector-set! v19666 0 0))
+  (assign v19669 (allocate 1 (Vector Integer)))
+  (assign void9680 (vector-set! v19669 0 0))
   (if (collection-needed? 48) ((collect 48)) ())
-  (assign g19667 (allocate 5 (Vector Integer Integer Integer Integer Integer)))
-  (assign void9678 (vector-set! g19667 0 1))
-  (assign void9679 (vector-set! g19667 1 2))
-  (assign void9680 (vector-set! g19667 2 3))
-  (assign void9681 (vector-set! g19667 3 4))
-  (assign void9682 (vector-set! g19667 4 5))
-  (assign g9671 (read))
-  (assign g9672 (eq? g9671 0))
-  (if (eq? #t g9672)
-    ((assign g9673 (vector-set! v19666 0 42)) (assign g9675 g9673))
-    ((assign g9674 (vector-set! g19667 0 42)) (assign g9675 g9674)))
-  (assign dummy9668 g9675)
-  (assign g9676 (vector-ref v19666 0))
-  (return g9676))
+  (assign g19670 (allocate 5 (Vector Integer Integer Integer Integer Integer)))
+  (assign void9681 (vector-set! g19670 0 1))
+  (assign void9682 (vector-set! g19670 1 2))
+  (assign void9683 (vector-set! g19670 2 3))
+  (assign void9684 (vector-set! g19670 3 4))
+  (assign void9685 (vector-set! g19670 4 5))
+  (assign g9674 (read))
+  (assign g9675 (eq? g9674 0))
+  (if (eq? #t g9675)
+    ((assign g9676 (vector-set! v19669 0 42)) (assign g9678 g9676))
+    ((assign g9677 (vector-set! g19670 0 42)) (assign g9678 g9677)))
+  (assign dummy9671 g9678)
+  (assign g9679 (vector-ref v19669 0))
+  (return g9679))
 
 call-live-roots:
 '(program
-  (g9671 g9673 g9674 g9676 v19666 g19667 dummy9668 g9675 g9672)
+  (g9678 g9675 g9674 g9676 g9677 g9679 v19669 g19670 dummy9671)
   (type Integer)
   (initialize 10000 10000)
   (if (collection-needed? 16) ((call-live-roots () (collect 16))) ())
-  (assign v19666 (allocate 1 (Vector Integer)))
-  (assign void9677 (vector-set! v19666 0 0))
-  (if (collection-needed? 48) ((call-live-roots (v19666) (collect 48))) ())
-  (assign g19667 (allocate 5 (Vector Integer Integer Integer Integer Integer)))
-  (assign void9678 (vector-set! g19667 0 1))
-  (assign void9679 (vector-set! g19667 1 2))
-  (assign void9680 (vector-set! g19667 2 3))
-  (assign void9681 (vector-set! g19667 3 4))
-  (assign void9682 (vector-set! g19667 4 5))
-  (assign g9671 (read))
-  (assign g9672 (eq? g9671 0))
-  (if (eq? #t g9672)
-    ((assign g9673 (vector-set! v19666 0 42)) (assign g9675 g9673))
-    ((assign g9674 (vector-set! g19667 0 42)) (assign g9675 g9674)))
-  (assign dummy9668 g9675)
-  (assign g9676 (vector-ref v19666 0))
-  (return g9676))
+  (assign v19669 (allocate 1 (Vector Integer)))
+  (assign void9680 (vector-set! v19669 0 0))
+  (if (collection-needed? 48) ((call-live-roots (v19669) (collect 48))) ())
+  (assign g19670 (allocate 5 (Vector Integer Integer Integer Integer Integer)))
+  (assign void9681 (vector-set! g19670 0 1))
+  (assign void9682 (vector-set! g19670 1 2))
+  (assign void9683 (vector-set! g19670 2 3))
+  (assign void9684 (vector-set! g19670 3 4))
+  (assign void9685 (vector-set! g19670 4 5))
+  (assign g9674 (read))
+  (assign g9675 (eq? g9674 0))
+  (if (eq? #t g9675)
+    ((assign g9676 (vector-set! v19669 0 42)) (assign g9678 g9676))
+    ((assign g9677 (vector-set! g19670 0 42)) (assign g9678 g9677)))
+  (assign dummy9671 g9678)
+  (assign g9679 (vector-ref v19669 0))
+  (return g9679))
 
 select instructions:
 '(program
-  (g9671
-   g9673
+  (g9678
+   g9675
    g9674
    g9676
-   v19666
-   g19667
-   dummy9668
-   g9675
-   g9672
+   g9677
+   g9679
+   v19669
+   g19670
+   dummy9671
+   end-data9691
+   lt9692
+   rootstack9690
    end-data9688
    lt9689
    rootstack9687
-   end-data9685
-   lt9686
-   rootstack9684
-   rootstack9683)
+   rootstack9686)
   (type Integer)
   (movq (int 10000) (reg rdi))
   (movq (int 10000) (reg rsi))
   (callq initialize)
-  (movq (global-value rootstack_begin) (var rootstack9683))
-  (movq (global-value free_ptr) (var end-data9685))
-  (addq (int 16) (var end-data9685))
-  (cmpq (var end-data9685) (global-value fromspace_end))
-  (setl (byte-reg al))
-  (movzbq (byte-reg al) (var lt9686))
-  (if (eq? (int 0) (var lt9686))
-    ()
-    ((movq (var rootstack9683) (var rootstack9684))
-     (addq (int 0) (var rootstack9684))
-     (movq (var rootstack9684) (reg rdi))
-     (movq (int 16) (reg rsi))
-     (callq collect)))
-  (movq (global-value free_ptr) (var v19666))
-  (addq (int 16) (global-value free_ptr))
-  (movq (int 3) (offset (var v19666) 0))
-  (movq (int 0) (offset (var v19666) 8))
-  (movq (int 46) (var void9677))
+  (movq (global-value rootstack_begin) (var rootstack9686))
   (movq (global-value free_ptr) (var end-data9688))
-  (addq (int 48) (var end-data9688))
+  (addq (int 16) (var end-data9688))
   (cmpq (var end-data9688) (global-value fromspace_end))
   (setl (byte-reg al))
   (movzbq (byte-reg al) (var lt9689))
   (if (eq? (int 0) (var lt9689))
     ()
-    ((movq (var v19666) (offset (var rootstack9683) 0))
-     (movq (var rootstack9683) (var rootstack9687))
-     (addq (int 1) (var rootstack9687))
+    ((movq (var rootstack9686) (var rootstack9687))
+     (addq (int 0) (var rootstack9687))
      (movq (var rootstack9687) (reg rdi))
+     (movq (int 16) (reg rsi))
+     (callq collect)))
+  (movq (global-value free_ptr) (var v19669))
+  (addq (int 16) (global-value free_ptr))
+  (movq (int 3) (offset (var v19669) 0))
+  (movq (int 0) (offset (var v19669) 8))
+  (movq (int 46) (var void9680))
+  (movq (global-value free_ptr) (var end-data9691))
+  (addq (int 48) (var end-data9691))
+  (cmpq (var end-data9691) (global-value fromspace_end))
+  (setl (byte-reg al))
+  (movzbq (byte-reg al) (var lt9692))
+  (if (eq? (int 0) (var lt9692))
+    ()
+    ((movq (var v19669) (offset (var rootstack9686) 0))
+     (movq (var rootstack9686) (var rootstack9690))
+     (addq (int 1) (var rootstack9690))
+     (movq (var rootstack9690) (reg rdi))
      (movq (int 48) (reg rsi))
      (callq collect)
-     (movq (offset (var rootstack9683) 0) (var v19666))))
-  (movq (global-value free_ptr) (var g19667))
+     (movq (offset (var rootstack9686) 0) (var v19669))))
+  (movq (global-value free_ptr) (var g19670))
   (addq (int 48) (global-value free_ptr))
-  (movq (int 11) (offset (var g19667) 0))
-  (movq (int 1) (offset (var g19667) 8))
-  (movq (int 46) (var void9678))
-  (movq (int 2) (offset (var g19667) 16))
-  (movq (int 46) (var void9679))
-  (movq (int 3) (offset (var g19667) 24))
-  (movq (int 46) (var void9680))
-  (movq (int 4) (offset (var g19667) 32))
+  (movq (int 11) (offset (var g19670) 0))
+  (movq (int 1) (offset (var g19670) 8))
   (movq (int 46) (var void9681))
-  (movq (int 5) (offset (var g19667) 40))
+  (movq (int 2) (offset (var g19670) 16))
   (movq (int 46) (var void9682))
+  (movq (int 3) (offset (var g19670) 24))
+  (movq (int 46) (var void9683))
+  (movq (int 4) (offset (var g19670) 32))
+  (movq (int 46) (var void9684))
+  (movq (int 5) (offset (var g19670) 40))
+  (movq (int 46) (var void9685))
   (callq read_int)
-  (movq (reg rax) (var g9671))
-  (cmpq (var g9671) (int 0))
+  (movq (reg rax) (var g9674))
+  (cmpq (var g9674) (int 0))
   (sete (byte-reg al))
-  (movzbq (byte-reg al) (var g9672))
-  (if (eq? (int 1) (var g9672))
-    ((movq (int 42) (offset (var v19666) 8))
-     (movq (int 46) (var g9673))
-     (movq (var g9673) (var g9675)))
-    ((movq (int 42) (offset (var g19667) 8))
-     (movq (int 46) (var g9674))
-     (movq (var g9674) (var g9675))))
-  (movq (var g9675) (var dummy9668))
-  (movq (offset (var v19666) 8) (var g9676))
-  (movq (var g9676) (reg rax)))
+  (movzbq (byte-reg al) (var g9675))
+  (if (eq? (int 1) (var g9675))
+    ((movq (int 42) (offset (var v19669) 8))
+     (movq (int 46) (var g9676))
+     (movq (var g9676) (var g9678)))
+    ((movq (int 42) (offset (var g19670) 8))
+     (movq (int 46) (var g9677))
+     (movq (var g9677) (var g9678))))
+  (movq (var g9678) (var dummy9671))
+  (movq (offset (var v19669) 8) (var g9679))
+  (movq (var g9679) (reg rax)))
 
 uncover-live:
 (list
  'program
  (list
-  '(g9671
-    g9673
+  '(g9678
+    g9675
     g9674
     g9676
-    v19666
-    g19667
-    dummy9668
-    g9675
-    g9672
+    g9677
+    g9679
+    v19669
+    g19670
+    dummy9671
+    end-data9691
+    lt9692
+    rootstack9690
     end-data9688
     lt9689
     rootstack9687
-    end-data9685
-    lt9686
-    rootstack9684
-    rootstack9683)
+    rootstack9686)
   (list
    (set)
    (set)
    (set)
-   (set 'rootstack9683)
-   (set 'end-data9685 'rootstack9683)
-   (set 'end-data9685 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666 'end-data9688 'rootstack9683)
-   (set 'v19666 'end-data9688 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666 'rootstack9683)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'g9671 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666)
-   (set 'v19666 'g9675)
-   (set 'v19666)
-   (set 'g9676)
+   (set 'rootstack9686)
+   (set 'end-data9688 'rootstack9686)
+   (set 'end-data9688 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669 'end-data9691 'rootstack9686)
+   (set 'v19669 'end-data9691 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669 'rootstack9686)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'g9674 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'v19669)
+   (set 'g9678 'v19669)
+   (set 'v19669)
+   (set 'g9679)
    (set)))
  '(type Integer)
  '(movq (int 10000) (reg rdi))
  '(movq (int 10000) (reg rsi))
  '(callq initialize)
- '(movq (global-value rootstack_begin) (var rootstack9683))
- '(movq (global-value free_ptr) (var end-data9685))
- '(addq (int 16) (var end-data9685))
- '(cmpq (var end-data9685) (global-value fromspace_end))
- '(setl (byte-reg al))
- '(movzbq (byte-reg al) (var lt9686))
- (list
-  'if
-  '(eq? (int 0) (var lt9686))
-  '(())
-  (list (set))
-  '((movq (var rootstack9683) (var rootstack9684))
-    (addq (int 0) (var rootstack9684))
-    (movq (var rootstack9684) (reg rdi))
-    (movq (int 16) (reg rsi))
-    (callq collect))
-  (list
-   (set 'rootstack9683)
-   (set 'rootstack9684 'rootstack9683)
-   (set 'rootstack9684 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)))
- '(movq (global-value free_ptr) (var v19666))
- '(addq (int 16) (global-value free_ptr))
- '(movq (int 3) (offset (var v19666) 0))
- '(movq (int 0) (offset (var v19666) 8))
- '(movq (int 46) (var void9677))
+ '(movq (global-value rootstack_begin) (var rootstack9686))
  '(movq (global-value free_ptr) (var end-data9688))
- '(addq (int 48) (var end-data9688))
+ '(addq (int 16) (var end-data9688))
  '(cmpq (var end-data9688) (global-value fromspace_end))
  '(setl (byte-reg al))
  '(movzbq (byte-reg al) (var lt9689))
@@ -284,194 +258,194 @@ uncover-live:
   '(eq? (int 0) (var lt9689))
   '(())
   (list (set))
-  '((movq (var v19666) (offset (var rootstack9683) 0))
-    (movq (var rootstack9683) (var rootstack9687))
-    (addq (int 1) (var rootstack9687))
+  '((movq (var rootstack9686) (var rootstack9687))
+    (addq (int 0) (var rootstack9687))
     (movq (var rootstack9687) (reg rdi))
-    (movq (int 48) (reg rsi))
-    (callq collect)
-    (movq (offset (var rootstack9683) 0) (var v19666)))
+    (movq (int 16) (reg rsi))
+    (callq collect))
   (list
-   (set 'v19666 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9687 'rootstack9683)
-   (set 'rootstack9687 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)))
- '(movq (global-value free_ptr) (var g19667))
- '(addq (int 48) (global-value free_ptr))
- '(movq (int 11) (offset (var g19667) 0))
- '(movq (int 1) (offset (var g19667) 8))
- '(movq (int 46) (var void9678))
- '(movq (int 2) (offset (var g19667) 16))
- '(movq (int 46) (var void9679))
- '(movq (int 3) (offset (var g19667) 24))
+   (set 'rootstack9687 'rootstack9686)
+   (set 'rootstack9687 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)))
+ '(movq (global-value free_ptr) (var v19669))
+ '(addq (int 16) (global-value free_ptr))
+ '(movq (int 3) (offset (var v19669) 0))
+ '(movq (int 0) (offset (var v19669) 8))
  '(movq (int 46) (var void9680))
- '(movq (int 4) (offset (var g19667) 32))
- '(movq (int 46) (var void9681))
- '(movq (int 5) (offset (var g19667) 40))
- '(movq (int 46) (var void9682))
- '(callq read_int)
- '(movq (reg rax) (var g9671))
- '(cmpq (var g9671) (int 0))
- '(sete (byte-reg al))
- '(movzbq (byte-reg al) (var g9672))
+ '(movq (global-value free_ptr) (var end-data9691))
+ '(addq (int 48) (var end-data9691))
+ '(cmpq (var end-data9691) (global-value fromspace_end))
+ '(setl (byte-reg al))
+ '(movzbq (byte-reg al) (var lt9692))
  (list
   'if
-  '(eq? (int 1) (var g9672))
-  '((movq (int 42) (offset (var v19666) 8))
-    (movq (int 46) (var g9673))
-    (movq (var g9673) (var g9675)))
-  (list (set 'v19666) (set 'v19666) (set 'g9673 'v19666))
-  '((movq (int 42) (offset (var g19667) 8))
-    (movq (int 46) (var g9674))
-    (movq (var g9674) (var g9675)))
-  (list (set 'v19666) (set 'v19666) (set 'g9674 'v19666)))
- '(movq (var g9675) (var dummy9668))
- '(movq (offset (var v19666) 8) (var g9676))
- '(movq (var g9676) (reg rax)))
+  '(eq? (int 0) (var lt9692))
+  '(())
+  (list (set))
+  '((movq (var v19669) (offset (var rootstack9686) 0))
+    (movq (var rootstack9686) (var rootstack9690))
+    (addq (int 1) (var rootstack9690))
+    (movq (var rootstack9690) (reg rdi))
+    (movq (int 48) (reg rsi))
+    (callq collect)
+    (movq (offset (var rootstack9686) 0) (var v19669)))
+  (list
+   (set 'rootstack9686)
+   (set 'rootstack9690 'rootstack9686)
+   (set 'rootstack9690 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'v19669)))
+ '(movq (global-value free_ptr) (var g19670))
+ '(addq (int 48) (global-value free_ptr))
+ '(movq (int 11) (offset (var g19670) 0))
+ '(movq (int 1) (offset (var g19670) 8))
+ '(movq (int 46) (var void9681))
+ '(movq (int 2) (offset (var g19670) 16))
+ '(movq (int 46) (var void9682))
+ '(movq (int 3) (offset (var g19670) 24))
+ '(movq (int 46) (var void9683))
+ '(movq (int 4) (offset (var g19670) 32))
+ '(movq (int 46) (var void9684))
+ '(movq (int 5) (offset (var g19670) 40))
+ '(movq (int 46) (var void9685))
+ '(callq read_int)
+ '(movq (reg rax) (var g9674))
+ '(cmpq (var g9674) (int 0))
+ '(sete (byte-reg al))
+ '(movzbq (byte-reg al) (var g9675))
+ (list
+  'if
+  '(eq? (int 1) (var g9675))
+  '((movq (int 42) (offset (var v19669) 8))
+    (movq (int 46) (var g9676))
+    (movq (var g9676) (var g9678)))
+  (list (set 'v19669) (set 'g9676 'v19669) (set 'g9678 'v19669))
+  '((movq (int 42) (offset (var g19670) 8))
+    (movq (int 46) (var g9677))
+    (movq (var g9677) (var g9678)))
+  (list (set 'v19669) (set 'g9677 'v19669) (set 'g9678 'v19669)))
+ '(movq (var g9678) (var dummy9671))
+ '(movq (offset (var v19669) 8) (var g9679))
+ '(movq (var g9679) (reg rax)))
 
 build interference graph:
 (list
  'program
  (list
-  '(g9671
-    g9673
+  '(g9678
+    g9675
     g9674
     g9676
-    v19666
-    g19667
-    dummy9668
-    g9675
-    g9672
+    g9677
+    g9679
+    v19669
+    g19670
+    dummy9671
+    end-data9691
+    lt9692
+    rootstack9690
     end-data9688
     lt9689
     rootstack9687
-    end-data9685
-    lt9686
-    rootstack9684
-    rootstack9683)
+    rootstack9686)
   (hash
-   'rootstack9683
-   (set
-    'r8
-    'r9
-    'r10
-    'rdi
-    'rsi
-    'v19666
-    'end-data9688
-    'lt9689
-    'rootstack9687
-    'end-data9685
-    'lt9686
-    'rootstack9684
-    'void9677
-    'rdx
-    'rcx)
-   'rootstack9684
-   (set 'rootstack9683)
-   'lt9686
-   (set 'rootstack9683)
-   'end-data9685
-   (set 'rootstack9683)
-   'rootstack9687
-   (set 'rootstack9683)
-   'lt9689
-   (set 'v19666 'rootstack9683)
-   'end-data9688
-   (set 'v19666 'rootstack9683)
+   'g9678
+   (set 'g9675 'v19669)
    'g9676
-   (set)
-   'g9674
-   (set 'v19666)
-   'void9682
-   (set 'v19666)
-   'void9681
-   (set 'v19666)
-   'g9673
-   (set 'v19666)
+   (set 'v19669)
    'g9675
-   (set 'v19666 'g9672)
-   'g9672
-   (set 'v19666 'g9675)
-   'g9671
-   (set 'v19666)
-   'void9677
-   (set 'v19666 'rootstack9683)
-   'void9678
-   (set 'v19666)
-   'void9679
-   (set 'v19666)
-   'void9680
-   (set 'v19666)
-   'dummy9668
-   (set 'v19666)
-   'g19667
-   (set 'v19666)
-   'rsi
-   (set 'rootstack9683)
-   'rdi
-   (set 'rootstack9683)
-   'v19666
+   (set 'g9678 'v19669)
+   'g9674
+   (set 'v19669)
+   'dummy9671
+   (set 'v19669)
+   'g19670
+   (set 'v19669)
+   'v19669
    (set
-    'r8
-    'g9671
+    'void9680
     'void9681
-    'r9
-    'g9673
+    'rdx
+    'g9678
     'void9682
-    'r10
-    'g9674
+    'rcx
     'rdi
+    'g9675
+    'void9683
+    'r8
     'rsi
-    'g19667
-    'dummy9668
+    'g9674
+    'void9684
+    'r9
+    'g9676
+    'void9685
+    'r10
+    'g9677
+    'g19670
+    'dummy9671
+    'end-data9691
+    'lt9692
+    'rootstack9686)
+   'rootstack9686
+   (set
+    'void9680
+    'rdx
+    'rcx
+    'rdi
+    'r8
+    'rsi
+    'r9
+    'r10
+    'v19669
+    'end-data9691
+    'lt9692
+    'rootstack9690
     'end-data9688
     'lt9689
-    'rootstack9683
-    'void9677
-    'void9678
-    'rdx
-    'g9675
-    'void9679
-    'rcx
-    'g9672
-    'void9680)))
+    'rootstack9687)
+   'rootstack9687
+   (set 'rootstack9686)
+   'lt9689
+   (set 'rootstack9686)
+   'end-data9688
+   (set 'rootstack9686)
+   'rootstack9690
+   (set 'rootstack9686)
+   'lt9692
+   (set 'v19669 'rootstack9686)
+   'end-data9691
+   (set 'v19669 'rootstack9686)
+   'g9679
+   (set)
+   'g9677
+   (set 'v19669)
+   'void9685
+   (set 'v19669)
+   'void9684
+   (set 'v19669)
+   'void9683
+   (set 'v19669)
+   'void9682
+   (set 'v19669)
+   'void9681
+   (set 'v19669)
+   'void9680
+   (set 'v19669 'rootstack9686)
+   'rdi
+   (set 'rootstack9686)
+   'rsi
+   (set 'rootstack9686)))
  '(type Integer)
  '(movq (int 10000) (reg rdi))
  '(movq (int 10000) (reg rsi))
  '(callq initialize)
- '(movq (global-value rootstack_begin) (var rootstack9683))
- '(movq (global-value free_ptr) (var end-data9685))
- '(addq (int 16) (var end-data9685))
- '(cmpq (var end-data9685) (global-value fromspace_end))
- '(setl (byte-reg al))
- '(movzbq (byte-reg al) (var lt9686))
- (list
-  'if
-  '(eq? (int 0) (var lt9686))
-  '(())
-  (list (set))
-  '((movq (var rootstack9683) (var rootstack9684))
-    (addq (int 0) (var rootstack9684))
-    (movq (var rootstack9684) (reg rdi))
-    (movq (int 16) (reg rsi))
-    (callq collect))
-  (list
-   (set 'rootstack9683)
-   (set 'rootstack9684 'rootstack9683)
-   (set 'rootstack9684 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)))
- '(movq (global-value free_ptr) (var v19666))
- '(addq (int 16) (global-value free_ptr))
- '(movq (int 3) (offset (var v19666) 0))
- '(movq (int 0) (offset (var v19666) 8))
- '(movq (int 46) (var void9677))
+ '(movq (global-value rootstack_begin) (var rootstack9686))
  '(movq (global-value free_ptr) (var end-data9688))
- '(addq (int 48) (var end-data9688))
+ '(addq (int 16) (var end-data9688))
  '(cmpq (var end-data9688) (global-value fromspace_end))
  '(setl (byte-reg al))
  '(movzbq (byte-reg al) (var lt9689))
@@ -480,52 +454,304 @@ build interference graph:
   '(eq? (int 0) (var lt9689))
   '(())
   (list (set))
-  '((movq (var v19666) (offset (var rootstack9683) 0))
-    (movq (var rootstack9683) (var rootstack9687))
-    (addq (int 1) (var rootstack9687))
+  '((movq (var rootstack9686) (var rootstack9687))
+    (addq (int 0) (var rootstack9687))
     (movq (var rootstack9687) (reg rdi))
-    (movq (int 48) (reg rsi))
-    (callq collect)
-    (movq (offset (var rootstack9683) 0) (var v19666)))
+    (movq (int 16) (reg rsi))
+    (callq collect))
   (list
-   (set 'v19666 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9687 'rootstack9683)
-   (set 'rootstack9687 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)
-   (set 'rootstack9683)))
- '(movq (global-value free_ptr) (var g19667))
- '(addq (int 48) (global-value free_ptr))
- '(movq (int 11) (offset (var g19667) 0))
- '(movq (int 1) (offset (var g19667) 8))
- '(movq (int 46) (var void9678))
- '(movq (int 2) (offset (var g19667) 16))
- '(movq (int 46) (var void9679))
- '(movq (int 3) (offset (var g19667) 24))
+   (set 'rootstack9687 'rootstack9686)
+   (set 'rootstack9687 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)))
+ '(movq (global-value free_ptr) (var v19669))
+ '(addq (int 16) (global-value free_ptr))
+ '(movq (int 3) (offset (var v19669) 0))
+ '(movq (int 0) (offset (var v19669) 8))
  '(movq (int 46) (var void9680))
- '(movq (int 4) (offset (var g19667) 32))
- '(movq (int 46) (var void9681))
- '(movq (int 5) (offset (var g19667) 40))
- '(movq (int 46) (var void9682))
- '(callq read_int)
- '(movq (reg rax) (var g9671))
- '(cmpq (var g9671) (int 0))
- '(sete (byte-reg al))
- '(movzbq (byte-reg al) (var g9672))
+ '(movq (global-value free_ptr) (var end-data9691))
+ '(addq (int 48) (var end-data9691))
+ '(cmpq (var end-data9691) (global-value fromspace_end))
+ '(setl (byte-reg al))
+ '(movzbq (byte-reg al) (var lt9692))
  (list
   'if
-  '(eq? (int 1) (var g9672))
-  '((movq (int 42) (offset (var v19666) 8))
-    (movq (int 46) (var g9673))
-    (movq (var g9673) (var g9675)))
-  (list (set 'v19666) (set 'v19666) (set 'g9673 'v19666))
-  '((movq (int 42) (offset (var g19667) 8))
-    (movq (int 46) (var g9674))
-    (movq (var g9674) (var g9675)))
-  (list (set 'v19666) (set 'v19666) (set 'g9674 'v19666)))
- '(movq (var g9675) (var dummy9668))
- '(movq (offset (var v19666) 8) (var g9676))
- '(movq (var g9676) (reg rax)))
+  '(eq? (int 0) (var lt9692))
+  '(())
+  (list (set))
+  '((movq (var v19669) (offset (var rootstack9686) 0))
+    (movq (var rootstack9686) (var rootstack9690))
+    (addq (int 1) (var rootstack9690))
+    (movq (var rootstack9690) (reg rdi))
+    (movq (int 48) (reg rsi))
+    (callq collect)
+    (movq (offset (var rootstack9686) 0) (var v19669)))
+  (list
+   (set 'rootstack9686)
+   (set 'rootstack9690 'rootstack9686)
+   (set 'rootstack9690 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'rootstack9686)
+   (set 'v19669)))
+ '(movq (global-value free_ptr) (var g19670))
+ '(addq (int 48) (global-value free_ptr))
+ '(movq (int 11) (offset (var g19670) 0))
+ '(movq (int 1) (offset (var g19670) 8))
+ '(movq (int 46) (var void9681))
+ '(movq (int 2) (offset (var g19670) 16))
+ '(movq (int 46) (var void9682))
+ '(movq (int 3) (offset (var g19670) 24))
+ '(movq (int 46) (var void9683))
+ '(movq (int 4) (offset (var g19670) 32))
+ '(movq (int 46) (var void9684))
+ '(movq (int 5) (offset (var g19670) 40))
+ '(movq (int 46) (var void9685))
+ '(callq read_int)
+ '(movq (reg rax) (var g9674))
+ '(cmpq (var g9674) (int 0))
+ '(sete (byte-reg al))
+ '(movzbq (byte-reg al) (var g9675))
+ (list
+  'if
+  '(eq? (int 1) (var g9675))
+  '((movq (int 42) (offset (var v19669) 8))
+    (movq (int 46) (var g9676))
+    (movq (var g9676) (var g9678)))
+  (list (set 'v19669) (set 'g9676 'v19669) (set 'g9678 'v19669))
+  '((movq (int 42) (offset (var g19670) 8))
+    (movq (int 46) (var g9677))
+    (movq (var g9677) (var g9678)))
+  (list (set 'v19669) (set 'g9677 'v19669) (set 'g9678 'v19669)))
+ '(movq (var g9678) (var dummy9671))
+ '(movq (offset (var v19669) 8) (var g9679))
+ '(movq (var g9679) (reg rax)))
 
 register allocation:
+'(program
+  0
+  (type Integer)
+  (movq (int 10000) (reg rdi))
+  (movq (int 10000) (reg rsi))
+  (callq initialize)
+  (movq (global-value rootstack_begin) (reg r13))
+  (movq (global-value free_ptr) (reg rbx))
+  (addq (int 16) (reg rbx))
+  (cmpq (reg rbx) (global-value fromspace_end))
+  (setl (byte-reg al))
+  (movzbq (byte-reg al) (reg rbx))
+  (if (eq? (int 0) (reg rbx))
+    (())
+    ((movq (reg r13) (reg rbx))
+     (addq (int 0) (reg rbx))
+     (movq (reg rbx) (reg rdi))
+     (movq (int 16) (reg rsi))
+     (callq collect)))
+  (movq (global-value free_ptr) (reg rbx))
+  (addq (int 16) (global-value free_ptr))
+  (movq (int 3) (offset (reg rbx) 0))
+  (movq (int 0) (offset (reg rbx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (global-value free_ptr) (reg rcx))
+  (addq (int 48) (reg rcx))
+  (cmpq (reg rcx) (global-value fromspace_end))
+  (setl (byte-reg al))
+  (movzbq (byte-reg al) (reg rcx))
+  (if (eq? (int 0) (reg rcx))
+    (())
+    ((movq (reg rbx) (offset (reg r13) 0))
+     (movq (reg r13) (reg rbx))
+     (addq (int 1) (reg rbx))
+     (movq (reg rbx) (reg rdi))
+     (movq (int 48) (reg rsi))
+     (callq collect)
+     (movq (offset (reg r13) 0) (reg rbx))))
+  (movq (global-value free_ptr) (reg rcx))
+  (addq (int 48) (global-value free_ptr))
+  (movq (int 11) (offset (reg rcx) 0))
+  (movq (int 1) (offset (reg rcx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (int 2) (offset (reg rcx) 16))
+  (movq (int 46) (reg rcx))
+  (movq (int 3) (offset (reg rcx) 24))
+  (movq (int 46) (reg rcx))
+  (movq (int 4) (offset (reg rcx) 32))
+  (movq (int 46) (reg rcx))
+  (movq (int 5) (offset (reg rcx) 40))
+  (movq (int 46) (reg rcx))
+  (callq read_int)
+  (movq (reg rax) (reg rcx))
+  (cmpq (reg rcx) (int 0))
+  (sete (byte-reg al))
+  (movzbq (byte-reg al) (reg rcx))
+  (if (eq? (int 1) (reg rcx))
+    ((movq (int 42) (offset (reg rbx) 8))
+     (movq (int 46) (reg rcx))
+     (movq (reg rcx) (reg rdx)))
+    ((movq (int 42) (offset (reg rcx) 8))
+     (movq (int 46) (reg rcx))
+     (movq (reg rcx) (reg rdx))))
+  (movq (reg rdx) (reg rcx))
+  (movq (offset (reg rbx) 8) (reg rax))
+  (movq (reg rax) (reg rax)))
+
+live:
+'(program
+  0
+  (type Integer)
+  (movq (int 10000) (reg rdi))
+  (movq (int 10000) (reg rsi))
+  (callq initialize)
+  (movq (global-value rootstack_begin) (reg r13))
+  (movq (global-value free_ptr) (reg rbx))
+  (addq (int 16) (reg rbx))
+  (cmpq (reg rbx) (global-value fromspace_end))
+  (setl (byte-reg al))
+  (movzbq (byte-reg al) (reg rbx))
+  (cmpq (int 0) (reg rbx))
+  (je then9805)
+  (movq (reg r13) (reg rbx))
+  (addq (int 0) (reg rbx))
+  (movq (reg rbx) (reg rdi))
+  (movq (int 16) (reg rsi))
+  (callq collect)
+  (jmp ifend9806)
+  (label then9805)
+  (label ifend9806)
+  (movq (global-value free_ptr) (reg rbx))
+  (addq (int 16) (global-value free_ptr))
+  (movq (int 3) (offset (reg rbx) 0))
+  (movq (int 0) (offset (reg rbx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (global-value free_ptr) (reg rcx))
+  (addq (int 48) (reg rcx))
+  (cmpq (reg rcx) (global-value fromspace_end))
+  (setl (byte-reg al))
+  (movzbq (byte-reg al) (reg rcx))
+  (cmpq (int 0) (reg rcx))
+  (je then9766)
+  (movq (reg rbx) (offset (reg r13) 0))
+  (movq (reg r13) (reg rbx))
+  (addq (int 1) (reg rbx))
+  (movq (reg rbx) (reg rdi))
+  (movq (int 48) (reg rsi))
+  (callq collect)
+  (movq (offset (reg r13) 0) (reg rbx))
+  (jmp ifend9767)
+  (label then9766)
+  (label ifend9767)
+  (movq (global-value free_ptr) (reg rcx))
+  (addq (int 48) (global-value free_ptr))
+  (movq (int 11) (offset (reg rcx) 0))
+  (movq (int 1) (offset (reg rcx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (int 2) (offset (reg rcx) 16))
+  (movq (int 46) (reg rcx))
+  (movq (int 3) (offset (reg rcx) 24))
+  (movq (int 46) (reg rcx))
+  (movq (int 4) (offset (reg rcx) 32))
+  (movq (int 46) (reg rcx))
+  (movq (int 5) (offset (reg rcx) 40))
+  (movq (int 46) (reg rcx))
+  (callq read_int)
+  (movq (reg rax) (reg rcx))
+  (cmpq (reg rcx) (int 0))
+  (sete (byte-reg al))
+  (movzbq (byte-reg al) (reg rcx))
+  (cmpq (int 1) (reg rcx))
+  (je then9703)
+  (movq (int 42) (offset (reg rcx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (reg rcx) (reg rdx))
+  (jmp ifend9704)
+  (label then9703)
+  (movq (int 42) (offset (reg rbx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (reg rcx) (reg rdx))
+  (label ifend9704)
+  (movq (reg rdx) (reg rcx))
+  (movq (offset (reg rbx) 8) (reg rax))
+  (movq (reg rax) (reg rax)))
+
+patch instructions:
+'(program
+  0
+  (type Integer)
+  (movq (int 10000) (reg rdi))
+  (movq (int 10000) (reg rsi))
+  (callq initialize)
+  (movq (global-value rootstack_begin) (reg r13))
+  (movq (global-value free_ptr) (reg rbx))
+  (addq (int 16) (reg rbx))
+  (cmpq (reg rbx) (global-value fromspace_end))
+  (setl (byte-reg al))
+  (movzbq (byte-reg al) (reg rbx))
+  (cmpq (int 0) (reg rbx))
+  (je then9805)
+  (movq (reg r13) (reg rbx))
+  (addq (int 0) (reg rbx))
+  (movq (reg rbx) (reg rdi))
+  (movq (int 16) (reg rsi))
+  (callq collect)
+  (jmp ifend9806)
+  (label then9805)
+  (label ifend9806)
+  (movq (global-value free_ptr) (reg rbx))
+  (addq (int 16) (global-value free_ptr))
+  (movq (int 3) (offset (reg rbx) 0))
+  (movq (int 0) (offset (reg rbx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (global-value free_ptr) (reg rcx))
+  (addq (int 48) (reg rcx))
+  (cmpq (reg rcx) (global-value fromspace_end))
+  (setl (byte-reg al))
+  (movzbq (byte-reg al) (reg rcx))
+  (cmpq (int 0) (reg rcx))
+  (je then9766)
+  (movq (reg rbx) (offset (reg r13) 0))
+  (movq (reg r13) (reg rbx))
+  (addq (int 1) (reg rbx))
+  (movq (reg rbx) (reg rdi))
+  (movq (int 48) (reg rsi))
+  (callq collect)
+  (movq (offset (reg r13) 0) (reg rbx))
+  (jmp ifend9767)
+  (label then9766)
+  (label ifend9767)
+  (movq (global-value free_ptr) (reg rcx))
+  (addq (int 48) (global-value free_ptr))
+  (movq (int 11) (offset (reg rcx) 0))
+  (movq (int 1) (offset (reg rcx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (int 2) (offset (reg rcx) 16))
+  (movq (int 46) (reg rcx))
+  (movq (int 3) (offset (reg rcx) 24))
+  (movq (int 46) (reg rcx))
+  (movq (int 4) (offset (reg rcx) 32))
+  (movq (int 46) (reg rcx))
+  (movq (int 5) (offset (reg rcx) 40))
+  (movq (int 46) (reg rcx))
+  (callq read_int)
+  (movq (reg rax) (reg rcx))
+  (cmpq (int 0) (reg rcx))
+  (sete (byte-reg al))
+  (movzbq (byte-reg al) (reg rcx))
+  (cmpq (int 1) (reg rcx))
+  (je then9703)
+  (movq (int 42) (offset (reg rcx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (reg rcx) (reg rdx))
+  (jmp ifend9704)
+  (label then9703)
+  (movq (int 42) (offset (reg rbx) 8))
+  (movq (int 46) (reg rcx))
+  (movq (reg rcx) (reg rdx))
+  (label ifend9704)
+  (movq (reg rdx) (reg rcx))
+  (movq (offset (reg rbx) 8) (reg rax)))
+
+print x86:
+"\t.globl main\nmain:\n\tpushq\t%rbp\n\tmovq\t%rsp, %rbp\n\tsubq\t$0, %rsp\n\tmovq\t$10000, %rdi \n\t movq\t$10000, %rsi \n\t callq\tinitialize\n\t movq\trootstack_begin(%rip), %r13 \n\t movq\tfree_ptr(%rip), %rbx \n\t addq\t$16, %rbx \n\t cmpq\t%rbx, fromspace_end(%rip) \n\t setl\t%al\n\t movzbq\t%al, %rbx \n\t cmpq\t$0, %rbx \n\t je\tthen9805\n\t movq\t%r13, %rbx \n\t addq\t$0, %rbx \n\t movq\t%rbx, %rdi \n\t movq\t$16, %rsi \n\t callq\tcollect\n\t jmp\tifend9806\n\t then9805:\n ifend9806:\n movq\tfree_ptr(%rip), %rbx \n\t addq\t$16, free_ptr(%rip) \n\t movq\t$3, 0(%rbx) \n\t movq\t$0, 8(%rbx) \n\t movq\t$46, %rcx \n\t movq\tfree_ptr(%rip), %rcx \n\t addq\t$48, %rcx \n\t cmpq\t%rcx, fromspace_end(%rip) \n\t setl\t%al\n\t movzbq\t%al, %rcx \n\t cmpq\t$0, %rcx \n\t je\tthen9766\n\t movq\t%rbx, 0(%r13) \n\t movq\t%r13, %rbx \n\t addq\t$1, %rbx \n\t movq\t%rbx, %rdi \n\t movq\t$48, %rsi \n\t callq\tcollect\n\t movq\t0(%r13), %rbx \n\t jmp\tifend9767\n\t then9766:\n ifend9767:\n movq\tfree_ptr(%rip), %rcx \n\t addq\t$48, free_ptr(%rip) \n\t movq\t$11, 0(%rcx) \n\t movq\t$1, 8(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$2, 16(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$3, 24(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$4, 32(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$5, 40(%rcx) \n\t movq\t$46, %rcx \n\t callq\tread_int\n\t movq\t%rax, %rcx \n\t cmpq\t$0, %rcx \n\t sete\t%al\n\t movzbq\t%al, %rcx \n\t cmpq\t$1, %rcx \n\t je\tthen9703\n\t movq\t$42, 8(%rcx) \n\t movq\t$46, %rcx \n\t movq\t%rcx, %rdx \n\t jmp\tifend9704\n\t then9703:\n movq\t$42, 8(%rbx) \n\t movq\t$46, %rcx \n\t movq\t%rcx, %rdx \n\t ifend9704:\n movq\t%rdx, %rcx \n\t movq\t8(%rbx), %rax \n\t\tmovq\t%rax, %rdi\n\t\tcallq print_int\n\t\tmovq    $0, %rax\n\taddq\t$0, %rsp\n\tpopq\t%rbp\n\tretq"
+
+done
