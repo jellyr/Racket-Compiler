@@ -221,24 +221,24 @@ uncover-live:
    (set 'v19669 'rootstack9686)
    (set 'v19669 'rootstack9686)
    (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'g9674 'v19669)
-   (set 'v19669)
-   (set 'v19669)
-   (set 'v19669)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'g9674 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
+   (set 'v19669 'g19670)
    (set 'g9678 'v19669)
    (set 'v19669)
    (set 'g9679)
@@ -358,26 +358,39 @@ build interference graph:
    'g9676
    (set 'v19669)
    'g9675
-   (set 'g9678 'v19669)
-   'g9674
-   (set 'v19669)
+   (set 'g9678 'v19669 'g19670)
    'dummy9671
    (set 'v19669)
    'g19670
-   (set 'v19669)
+   (set
+    'void9681
+    'rdx
+    'rdi
+    'void9682
+    'rcx
+    'rsi
+    'g9675
+    'void9683
+    'r8
+    'g9674
+    'void9684
+    'r9
+    'void9685
+    'r10
+    'v19669)
    'v19669
    (set
     'void9680
     'void9681
     'rdx
+    'rdi
     'g9678
     'void9682
     'rcx
-    'rdi
+    'rsi
     'g9675
     'void9683
     'r8
-    'rsi
     'g9674
     'void9684
     'r9
@@ -394,10 +407,10 @@ build interference graph:
    (set
     'void9680
     'rdx
-    'rcx
     'rdi
-    'r8
+    'rcx
     'rsi
+    'r8
     'r9
     'r10
     'v19669
@@ -424,21 +437,23 @@ build interference graph:
    'g9677
    (set 'v19669)
    'void9685
-   (set 'v19669)
-   'void9684
-   (set 'v19669)
+   (set 'v19669 'g19670)
+   'g9674
+   (set 'v19669 'g19670)
    'void9683
-   (set 'v19669)
+   (set 'v19669 'g19670)
    'void9682
-   (set 'v19669)
+   (set 'v19669 'g19670)
    'void9681
-   (set 'v19669)
+   (set 'v19669 'g19670)
    'void9680
    (set 'v19669 'rootstack9686)
    'rdi
    (set 'rootstack9686)
    'rsi
-   (set 'rootstack9686)))
+   (set 'rootstack9686)
+   'void9684
+   (set 'v19669 'g19670)))
  '(type Integer)
  '(movq (int 10000) (reg rdi))
  '(movq (int 10000) (reg rsi))
@@ -567,18 +582,18 @@ register allocation:
      (movq (int 48) (reg rsi))
      (callq collect)
      (movq (offset (reg r13) 0) (reg rbx))))
-  (movq (global-value free_ptr) (reg rcx))
+  (movq (global-value free_ptr) (reg r13))
   (addq (int 48) (global-value free_ptr))
-  (movq (int 11) (offset (reg rcx) 0))
-  (movq (int 1) (offset (reg rcx) 8))
+  (movq (int 11) (offset (reg r13) 0))
+  (movq (int 1) (offset (reg r13) 8))
   (movq (int 46) (reg rcx))
-  (movq (int 2) (offset (reg rcx) 16))
+  (movq (int 2) (offset (reg r13) 16))
   (movq (int 46) (reg rcx))
-  (movq (int 3) (offset (reg rcx) 24))
+  (movq (int 3) (offset (reg r13) 24))
   (movq (int 46) (reg rcx))
-  (movq (int 4) (offset (reg rcx) 32))
+  (movq (int 4) (offset (reg r13) 32))
   (movq (int 46) (reg rcx))
-  (movq (int 5) (offset (reg rcx) 40))
+  (movq (int 5) (offset (reg r13) 40))
   (movq (int 46) (reg rcx))
   (callq read_int)
   (movq (reg rax) (reg rcx))
@@ -589,7 +604,7 @@ register allocation:
     ((movq (int 42) (offset (reg rbx) 8))
      (movq (int 46) (reg rcx))
      (movq (reg rcx) (reg rdx)))
-    ((movq (int 42) (offset (reg rcx) 8))
+    ((movq (int 42) (offset (reg r13) 8))
      (movq (int 46) (reg rcx))
      (movq (reg rcx) (reg rdx))))
   (movq (reg rdx) (reg rcx))
@@ -641,18 +656,18 @@ live:
   (jmp ifend9767)
   (label then9766)
   (label ifend9767)
-  (movq (global-value free_ptr) (reg rcx))
+  (movq (global-value free_ptr) (reg r13))
   (addq (int 48) (global-value free_ptr))
-  (movq (int 11) (offset (reg rcx) 0))
-  (movq (int 1) (offset (reg rcx) 8))
+  (movq (int 11) (offset (reg r13) 0))
+  (movq (int 1) (offset (reg r13) 8))
   (movq (int 46) (reg rcx))
-  (movq (int 2) (offset (reg rcx) 16))
+  (movq (int 2) (offset (reg r13) 16))
   (movq (int 46) (reg rcx))
-  (movq (int 3) (offset (reg rcx) 24))
+  (movq (int 3) (offset (reg r13) 24))
   (movq (int 46) (reg rcx))
-  (movq (int 4) (offset (reg rcx) 32))
+  (movq (int 4) (offset (reg r13) 32))
   (movq (int 46) (reg rcx))
-  (movq (int 5) (offset (reg rcx) 40))
+  (movq (int 5) (offset (reg r13) 40))
   (movq (int 46) (reg rcx))
   (callq read_int)
   (movq (reg rax) (reg rcx))
@@ -661,7 +676,7 @@ live:
   (movzbq (byte-reg al) (reg rcx))
   (cmpq (int 1) (reg rcx))
   (je then9703)
-  (movq (int 42) (offset (reg rcx) 8))
+  (movq (int 42) (offset (reg r13) 8))
   (movq (int 46) (reg rcx))
   (movq (reg rcx) (reg rdx))
   (jmp ifend9704)
@@ -719,18 +734,18 @@ patch instructions:
   (jmp ifend9767)
   (label then9766)
   (label ifend9767)
-  (movq (global-value free_ptr) (reg rcx))
+  (movq (global-value free_ptr) (reg r13))
   (addq (int 48) (global-value free_ptr))
-  (movq (int 11) (offset (reg rcx) 0))
-  (movq (int 1) (offset (reg rcx) 8))
+  (movq (int 11) (offset (reg r13) 0))
+  (movq (int 1) (offset (reg r13) 8))
   (movq (int 46) (reg rcx))
-  (movq (int 2) (offset (reg rcx) 16))
+  (movq (int 2) (offset (reg r13) 16))
   (movq (int 46) (reg rcx))
-  (movq (int 3) (offset (reg rcx) 24))
+  (movq (int 3) (offset (reg r13) 24))
   (movq (int 46) (reg rcx))
-  (movq (int 4) (offset (reg rcx) 32))
+  (movq (int 4) (offset (reg r13) 32))
   (movq (int 46) (reg rcx))
-  (movq (int 5) (offset (reg rcx) 40))
+  (movq (int 5) (offset (reg r13) 40))
   (movq (int 46) (reg rcx))
   (callq read_int)
   (movq (reg rax) (reg rcx))
@@ -739,7 +754,7 @@ patch instructions:
   (movzbq (byte-reg al) (reg rcx))
   (cmpq (int 1) (reg rcx))
   (je then9703)
-  (movq (int 42) (offset (reg rcx) 8))
+  (movq (int 42) (offset (reg r13) 8))
   (movq (int 46) (reg rcx))
   (movq (reg rcx) (reg rdx))
   (jmp ifend9704)
@@ -752,6 +767,6 @@ patch instructions:
   (movq (offset (reg rbx) 8) (reg rax)))
 
 print x86:
-"\t.globl main\nmain:\n\tpushq\t%rbp\n\tmovq\t%rsp, %rbp\n\tsubq\t$0, %rsp\n\tmovq\t$10000, %rdi \n\t movq\t$10000, %rsi \n\t callq\tinitialize\n\t movq\trootstack_begin(%rip), %r13 \n\t movq\tfree_ptr(%rip), %rbx \n\t addq\t$16, %rbx \n\t cmpq\t%rbx, fromspace_end(%rip) \n\t setl\t%al\n\t movzbq\t%al, %rbx \n\t cmpq\t$0, %rbx \n\t je\tthen9805\n\t movq\t%r13, %rbx \n\t addq\t$0, %rbx \n\t movq\t%rbx, %rdi \n\t movq\t$16, %rsi \n\t callq\tcollect\n\t jmp\tifend9806\n\t then9805:\n ifend9806:\n movq\tfree_ptr(%rip), %rbx \n\t addq\t$16, free_ptr(%rip) \n\t movq\t$3, 0(%rbx) \n\t movq\t$0, 8(%rbx) \n\t movq\t$46, %rcx \n\t movq\tfree_ptr(%rip), %rcx \n\t addq\t$48, %rcx \n\t cmpq\t%rcx, fromspace_end(%rip) \n\t setl\t%al\n\t movzbq\t%al, %rcx \n\t cmpq\t$0, %rcx \n\t je\tthen9766\n\t movq\t%rbx, 0(%r13) \n\t movq\t%r13, %rbx \n\t addq\t$1, %rbx \n\t movq\t%rbx, %rdi \n\t movq\t$48, %rsi \n\t callq\tcollect\n\t movq\t0(%r13), %rbx \n\t jmp\tifend9767\n\t then9766:\n ifend9767:\n movq\tfree_ptr(%rip), %rcx \n\t addq\t$48, free_ptr(%rip) \n\t movq\t$11, 0(%rcx) \n\t movq\t$1, 8(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$2, 16(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$3, 24(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$4, 32(%rcx) \n\t movq\t$46, %rcx \n\t movq\t$5, 40(%rcx) \n\t movq\t$46, %rcx \n\t callq\tread_int\n\t movq\t%rax, %rcx \n\t cmpq\t$0, %rcx \n\t sete\t%al\n\t movzbq\t%al, %rcx \n\t cmpq\t$1, %rcx \n\t je\tthen9703\n\t movq\t$42, 8(%rcx) \n\t movq\t$46, %rcx \n\t movq\t%rcx, %rdx \n\t jmp\tifend9704\n\t then9703:\n movq\t$42, 8(%rbx) \n\t movq\t$46, %rcx \n\t movq\t%rcx, %rdx \n\t ifend9704:\n movq\t%rdx, %rcx \n\t movq\t8(%rbx), %rax \n\t\tmovq\t%rax, %rdi\n\t\tcallq print_int\n\t\tmovq    $0, %rax\n\taddq\t$0, %rsp\n\tpopq\t%rbp\n\tretq"
+"\t.globl main\nmain:\n\tpushq\t%rbp\n\tmovq\t%rsp, %rbp\n\tsubq\t$0, %rsp\n\tmovq\t$10000, %rdi \n\t movq\t$10000, %rsi \n\t callq\tinitialize\n\t movq\trootstack_begin(%rip), %r13 \n\t movq\tfree_ptr(%rip), %rbx \n\t addq\t$16, %rbx \n\t cmpq\t%rbx, fromspace_end(%rip) \n\t setl\t%al\n\t movzbq\t%al, %rbx \n\t cmpq\t$0, %rbx \n\t je\tthen9805\n\t movq\t%r13, %rbx \n\t addq\t$0, %rbx \n\t movq\t%rbx, %rdi \n\t movq\t$16, %rsi \n\t callq\tcollect\n\t jmp\tifend9806\n\t then9805:\n ifend9806:\n movq\tfree_ptr(%rip), %rbx \n\t addq\t$16, free_ptr(%rip) \n\t movq\t$3, 0(%rbx) \n\t movq\t$0, 8(%rbx) \n\t movq\t$46, %rcx \n\t movq\tfree_ptr(%rip), %rcx \n\t addq\t$48, %rcx \n\t cmpq\t%rcx, fromspace_end(%rip) \n\t setl\t%al\n\t movzbq\t%al, %rcx \n\t cmpq\t$0, %rcx \n\t je\tthen9766\n\t movq\t%rbx, 0(%r13) \n\t movq\t%r13, %rbx \n\t addq\t$1, %rbx \n\t movq\t%rbx, %rdi \n\t movq\t$48, %rsi \n\t callq\tcollect\n\t movq\t0(%r13), %rbx \n\t jmp\tifend9767\n\t then9766:\n ifend9767:\n movq\tfree_ptr(%rip), %r13 \n\t addq\t$48, free_ptr(%rip) \n\t movq\t$11, 0(%r13) \n\t movq\t$1, 8(%r13) \n\t movq\t$46, %rcx \n\t movq\t$2, 16(%r13) \n\t movq\t$46, %rcx \n\t movq\t$3, 24(%r13) \n\t movq\t$46, %rcx \n\t movq\t$4, 32(%r13) \n\t movq\t$46, %rcx \n\t movq\t$5, 40(%r13) \n\t movq\t$46, %rcx \n\t callq\tread_int\n\t movq\t%rax, %rcx \n\t cmpq\t$0, %rcx \n\t sete\t%al\n\t movzbq\t%al, %rcx \n\t cmpq\t$1, %rcx \n\t je\tthen9703\n\t movq\t$42, 8(%r13) \n\t movq\t$46, %rcx \n\t movq\t%rcx, %rdx \n\t jmp\tifend9704\n\t then9703:\n movq\t$42, 8(%rbx) \n\t movq\t$46, %rcx \n\t movq\t%rcx, %rdx \n\t ifend9704:\n movq\t%rdx, %rcx \n\t movq\t8(%rbx), %rax \n\t\tmovq\t%rax, %rdi\n\t\tcallq print_int\n\t\tmovq    $0, %rax\n\taddq\t$0, %rsp\n\tpopq\t%rbp\n\tretq"
 
 done
