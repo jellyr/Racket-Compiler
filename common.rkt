@@ -1,5 +1,10 @@
 #lang racket
 (require "utilities.rkt")
+(require "uncover-types.rkt")
+(provide (all-from-out "utilities.rkt"))
+(provide (all-from-out "uncover-types.rkt"))
+
+
 (provide int? var? reg? stack? scalar? HEAP-LEN)
 (define (int? e)
   (eqv? (car e) 'int))

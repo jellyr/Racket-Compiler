@@ -13,6 +13,7 @@
 (require "pass/typechecker.rkt")
 (require "pass/uniquify.rkt")
 (require "pass/flatten.rkt")
+(require "pass/expose.rkt")
 
 (provide r3-passes typechecker)
 
@@ -23,31 +24,6 @@
 (define  typechecker
   (curry typecheck-R2 '()))
 
-
-
-
-;; expose allocation
-;; figure out what type is
-(define (expose-helper instr types)
-  (match instr
-    [`(assign ,lhs (vector . ,ve)) (let* ([len (length ve)]
-                                          [bytes^ (* 8 (add1 len))])
-                                     `((if (collection-needed? ,bytes^)
-                                           ((collect ,bytes^))
-                                           ())
-                                       (assign ,lhs (allocate ,len ,(lookup lhs types)))
-                                       ,@(map (lambda (val idx)
-                                                (let ([voidvar (gensym 'void)])
-                                                  `(assign ,voidvar (vector-set! ,lhs ,idx ,val))))
-                                              ve
-                                              (build-list (length ve) values))))]
-    [else  `(,instr)]))
-
-(define (expose-allocation e)
-  (let ([ut (uncover-types e)])
-    (append  `(,(car e) ,ut ,(caddr e) (initialize 10000 ,HEAP-LEN)) (append-map (curryr expose-helper ut) (cdddr e)))))
-
-;; =============
 
 (define (live-roots-vector? var type-env)
   (let ([lkp (lookup var type-env #f)])
