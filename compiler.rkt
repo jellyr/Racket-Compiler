@@ -4,29 +4,11 @@
 (require "interp.rkt")
 (require "utilities.rkt")
 (require "uncover-types.rkt")
-
+(require "common.rkt")
 (provide r3-passes typechecker)
 
-(define HEAP-LEN 10000) ;; For Debugging GC
 
 (define SI-VARS '()) ;;Global variable to hold all new variables in select instructions pass
-
-
-
-(define (int? e)
-  (eqv? (car e) 'int))
-
-(define (var? e)
-  (eqv? (car e) 'var))
-
-(define (reg? e)
-  (eqv? (car e) 'reg))
-
-(define (stack? e)
-  (eqv? (car e) 'stack))
-
-(define (scalar? e)
-  (or (fixnum? e) (symbol? e) (boolean? e)))
 
 ;; to read the type check paper
 ;; see the 521 minikaren one
