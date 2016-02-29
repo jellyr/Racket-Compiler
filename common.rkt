@@ -1,5 +1,5 @@
 #lang racket
-
+(require "utilities.rkt")
 (provide int? var? reg? stack? scalar? HEAP-LEN)
 (define (int? e)
   (eqv? (car e) 'int))
