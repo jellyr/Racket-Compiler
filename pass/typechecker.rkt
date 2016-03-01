@@ -90,5 +90,5 @@
      (define body (last expr))
      (define new-env (map (curry typechecker-define-helper '()) defs))
      (define _type (typecheck-R2 new-env body))
-     `(program (type ,_type) ,body)]))
+     `(program (type ,_type) ,@expr)]))
 
