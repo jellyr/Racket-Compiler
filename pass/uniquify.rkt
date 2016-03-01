@@ -16,6 +16,14 @@
            `(let ([,newx ,((uniquify alist) e)])
               ,((uniquify newlist) body)))]
         [`(type ,type) e]
+        [`(,x : ,type) (let ([var-check (lookup x alist)])
+                         (if var-check
+                             `(,var-check : ,type)
+                             (let ([newx newvar]))))]
+        [`(define (,fname ,params) : ,ret-type ,body)
+         (let ([newvar (gensym fname)]
+               [newlist (cons `(,fname . ,newvar) alist)])
+           `(define (,newvar ,@(map (uniquify newlist) params) : ,ret-type ,((uniquify newlist) body))))]
         [`(program ,e) `(program ,((uniquify alist) e))]
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
