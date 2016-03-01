@@ -80,3 +80,8 @@ fails the compiler even with a template runtime.c. It seems that
 you're reading from an undefined variable.
 
 Grade: .5 * (13/14 + 5/11 * 1/14) + .25 * 12/14 = 69%
+
+ASSIGNMENT 4 (late):
+All test cases compile and run successfully. Well done.
+
+Grade: 69% + 31% * .9 = 97%
