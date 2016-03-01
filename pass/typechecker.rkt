@@ -3,18 +3,26 @@
 
 (provide typecheck-R2)
 
+;; input a list of define intrs
+(define (defines-env instrs)
+  (map (lambda (e)
+         (match e
+           [`(define (,funame . ,var-defs) : ,ret-type ,body)
+            (let* ([new-env (map (lambda (def^)
+                            (match def^
+                              [`(,var : ,var-type) `(,var . ,var-type)]
+                              [else (error "in define[new-env]")])) var-defs)])
+              `(,funame . (,@(map cdr new-env) -> ,ret-type)))]))
+       instrs))
+
 (define (typechecker-define-helper env e)
   (match e
     [`(define (,funame . ,var-defs) : ,ret-type ,body)
      (let* ([new-env (map (lambda (def^)
-                           (match def^
-                             [`(,var : ,var-type) `(,var . ,var-type)]
-                             [else (error "in define[new-env]")])) var-defs)]
-            [body-type (typecheck-R2 new-env body)])
-       (if (equal? body-type ret-type)
-           `(,funame . (,@(map cdr new-env) -> ,ret-type))
-           (error "in define[ret-type]")))
-     ]))
+                            (match def^
+                              [`(,var : ,var-type) `(,var . ,var-type)]
+                              [else (error "in define[new-env]")])) var-defs)])
+       (typecheck-R2 (append env new-env) body))]))
 
 (define (typecheck-R2 env e)
   (match e
@@ -86,9 +94,11 @@
                      (error "in func-call"))) paras paras-types)
           ret-type]))]
     [`(program . ,expr)
+     ;; 
      (define defs (drop-right expr 1))
      (define body (last expr))
-     (define new-env (map (curry typechecker-define-helper '()) defs))
+     (define new-env (defines-env defs))
+     (map (curry typechecker-define-helper new-env) defs)
      (define _type (typecheck-R2 new-env body))
      `(program (type ,_type) ,@expr)]))
 
