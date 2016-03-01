@@ -3,6 +3,18 @@
 
 (provide typecheck-R2)
 
+(define (typechecker-define-helper env e)
+  (match e
+    [`(define (,funame . ,var-defs) : ,ret-type ,body)
+     (let* ([new-env (map (lambda (def^)
+                           (match def^
+                             [`(,var : ,var-type) `(,var . ,var-type)]
+                             [else (error "in define[new-env]")])) var-defs)]
+            [body-type (typecheck-R2 new-env body)])
+       (if (equal? body-type ret-type)
+           `(,funame . (,@(map cdr new-env) -> ,ret-type))
+           (error "in define[ret-type]")))
+     ]))
 
 (define (typecheck-R2 env e)
   (match e
@@ -63,6 +75,20 @@
              'Void
              (errorset))
          (errorset))]
-    [`(program ,body)
-     (define _type (typecheck-R2 '() body))
+    [`(,fun-call . ,paras) #:when(lookup fun-call env #f)
+     (let ([func-type (lookup fun-call env)])
+       (match func-type
+         [`(,paras-types ... -> ,ret-type)
+          ;; need to check
+          (map (lambda (v t)
+                 (if (equal? t (typecheck-R2 env v))
+                     #t
+                     (error "in func-call"))) paras paras-types)
+          ret-type]))]
+    [`(program . ,expr)
+     (define defs (drop-right expr 1))
+     (define body (last expr))
+     (define new-env (map (curry typechecker-define-helper '()) defs))
+     (define _type (typecheck-R2 new-env body))
      `(program (type ,_type) ,body)]))
+
