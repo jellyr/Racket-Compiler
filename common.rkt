@@ -5,7 +5,7 @@
 (provide (all-from-out "uncover-types.rkt"))
 
 
-(provide int? var? reg? stack? scalar? HEAP-LEN)
+(provide int? var? reg? stack? scalar? define? HEAP-LEN)
 (define (int? e)
   (eqv? (car e) 'int))
 
@@ -22,6 +22,8 @@
 (define (scalar? e)
   (or (fixnum? e) (symbol? e) (boolean? e)))
 
+(define (define? e)
+  (eqv? (car e) 'define))
 
 (define HEAP-LEN 10000) ;; For Debugging GC
 
