@@ -11,7 +11,7 @@
   (display "--------------------------") (newline)
   (pretty-print exp)
   (display "--------------------------") (newline)
-  (let loop ([ls passes] [prog `(program ,exp)])papa
+  (let loop ([ls passes] [prog `(program ,exp)])
     (if (null? ls) (begin (display "done") (newline))
         (match (car ls)
           (`(,name ,func ,_)
@@ -22,7 +22,10 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(typechecker '(define (map-vec [f : (Integer -> Integer)][v : (Vector Integer Integer)]): (Vector Integer Integer)(vector(f (vector-ref v 0)) (f (vector-ref v 1))))(define (add1 [x : Integer]) : Integer(+ x 1))(vector-ref (map-vec add1 (vector 0 41)) 1))
+(define expr '(program
+  (define (add [x: Integer] [y: Integer]): Integer
+    (+ x y))
+  (add 40 2))
 )
 
 (test `(("typechecker1" ,typechecker ,interp-scheme) ,@r3-passes) expr)

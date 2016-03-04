@@ -28,6 +28,5 @@
 (define HEAP-LEN 10000) ;; For Debugging GC
 
 (define (trivial-func? e)
-  (set-member? (set '+ '- 'and 'not 'or 'eq?) e))
-
+  (set-member? (set '+ '- '* 'and 'not 'or 'eq?) e))
 

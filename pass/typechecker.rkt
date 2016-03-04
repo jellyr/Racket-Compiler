@@ -9,9 +9,9 @@
          (match e
            [`(define (,funame . ,var-defs) : ,ret-type ,body)
             (let* ([new-env (map (lambda (def^)
-                            (match def^
-                              [`(,var : ,var-type) `(,var . ,var-type)]
-                              [else (error "in define[new-env]")])) var-defs)])
+                                   (match def^
+                                     [`(,var : ,var-type) `(,var . ,var-type)]
+                                     [else (error "in define[new-env]")])) var-defs)])
               `(,funame . (,@(map cdr new-env) -> ,ret-type)))]))
        instrs))
 
