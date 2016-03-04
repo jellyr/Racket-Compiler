@@ -18,6 +18,13 @@
                                               (build-list (length ve) values))))]
     [else  `(,instr)]))
 
+(define (expose-func-helper instr types)
+       (match-define `(define (,fname . ,params) : ,ret ,local-vars . ,body) instr)
+       `((define (,fname . ,params) : ,ret ,types . ,(append-map (curryr expose-helper types) body))))
+
 (define (expose-allocation e)
-  (let ([ut (uncover-types e)])
-    (append  `(,(car e) ,ut ,(caddr e) (initialize 10000 ,HEAP-LEN)) (append-map (curryr expose-helper ut) (cdddr e)))))
+  (match-define `(,ftypes ,fvartypes ,types) (uncover-types e))
+  (match-define `(program ,mvars ,ret (defines . ,def) . ,body) e)
+  (append  `(program ,(append ftypes types) ,ret (initialize 10000 ,HEAP-LEN))
+           (append-map expose-func-helper def fvartypes)
+           (append-map (curryr expose-helper types) body)))
