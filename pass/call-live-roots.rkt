@@ -48,17 +48,19 @@
        `(if (collection-needed? ,e1)
             ((call-live-roots ,(set->list livea) (collect ,e2)))
             ())]
-      [`(if (eq? ,e^1 ,e^2) ,thn ,els)
-       `(if (eq? ,e^1 ,e^2) ,thn ,els)]
+      [`(assign ,var (app . ,e1)) `(assign ,var (call-live-roots ,(set->list livea) (app . ,e1)))]
+      [`(define (,fname . ,params) : ,ret ,types . ,body)
+       `(define (,fname . ,params) : ,ret ,types . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
-  
-  (let* ([prog (car e)]
-         [types (cadr e)]
-         [ret-type (caddr e)]
-         [instrs (cdddr e)]
-         [livea (foldr (lambda (instr res)
+  (match-define `(program ,types ,ret-type (defines . ,defs) . ,body) e)
+  (let* ([calc-live (lambda (types instr res)
                          (define value (live-analysis instr (car res) types))
-                         (cons value res))
-                       `(,(set))
-                       instrs)])
-    `(,prog ,(map car types) ,ret-type ,@(map live-instr-helper instrs (cdr livea)))))
+                         (cons value res))]
+         [live-main (foldr (curry calc-live types) `(,(set)) body)]
+         [live-defs (map (lambda (def)
+                           (match-define `(define (,fname . ,params) : ,ret ,def-types . ,def-body) def)
+                           (foldr (curry calc-live def-types) `(,(set)) def-body)) defs)])
+    `(program ,(map car types)
+              ,ret-type
+              (defines ,@(map live-instr-helper defs live-defs))
+              ,@(map live-instr-helper body (cdr live-main)))))
