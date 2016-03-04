@@ -31,7 +31,7 @@
     [`(program ,type . ,e) (let-values ([(e^ stmt^ alist^) (flattens (last e))])
                              `(program ,alist^ ,type ,(flatten-func (drop-right e 1))  ,@stmt^ (return ,e^)))]
     [`(define (,fname . ,params) : ,type ,body) (let-values ([(e^ stmt^ alist^) (flattens body)])
-                                                  `(define (,fname . ,params) : ,type ,@(append stmt^ `((return ,e^)))))]
+                                                  `(define (,fname . ,params) : ,type ,alist^ ,@(append stmt^ `((return ,e^)))))]
     [`(app . ,e1) (let-values ([(e1^ stmt1^ alist1^) (flatten-vec-app e1)])
                       (let ([newvar (gensym)])
                         (values newvar
