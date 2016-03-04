@@ -3,6 +3,25 @@
 
 (provide uniquify)
 
+(define (uniquify-func def-expr alist)
+  (let ([func-vars (foldl (lambda (v res)
+                            (match v
+                              [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym fname)])
+                                                                      (cons `(,fname . ,newvar) res))]))
+                          alist
+                          def-expr)])
+    `(,(map (uniquify func-vars) def-expr) ,func-vars)))
+
+(define (fun-param-helper expr alist)
+  (foldl (lambda (p res)
+           (match p
+             [`(,x : ,type) (let ([var-check (lookup x (last res) #f)])
+                              (if var-check
+                                  `(,(cons `(,var-check : ,type) (car res)) ,(last res))
+                                  (let ([newx (gensym x)])
+                                    `(,(cons `(,newx : ,type) (car res)) ,(cons `(,x . ,newx) (last res)))
+                                    )))])) `(() ,alist) expr))
+
 (define uniquify
   (lambda (alist)
     (lambda (e)
@@ -15,15 +34,16 @@
                [newlist (cons `(,x . ,newx) alist)])
            `(let ([,newx ,((uniquify alist) e)])
               ,((uniquify newlist) body)))]
-        [`(type ,type) e]
-        [`(,x : ,type) (let ([var-check (lookup x alist)])
-                         (if var-check
-                             `(,var-check : ,type)
-                             (let ([newx newvar]))))]
-        [`(define (,fname ,params) : ,ret-type ,body)
-         (let ([newvar (gensym fname)]
-               [newlist (cons `(,fname . ,newvar) alist)])
-           `(define (,newvar ,@(map (uniquify newlist) params) : ,ret-type ,((uniquify newlist) body))))]
-        [`(program ,e) `(program ,((uniquify alist) e))]
+        [`(type ,ty) e]
+        [`(define (,fname . ,params) : ,ret-type ,body)
+         (let ([newvar ((uniquify alist) fname)])
+           (match-define `(,pstmt ,plist) (fun-param-helper params alist))
+           `(define (,newvar ,@pstmt) : ,ret-type ,((uniquify plist) body)))]
+        [`(program ,ret-type . ,e) (begin
+                           (match-define
+                             `(,define-stmt ,flist) (uniquify-func (drop-right e 1) alist))
+                           `(program ,ret-type ,@define-stmt ,((uniquify flist) (last e))))]
+        [`(,op ,es ...) #:when (lookup op alist #f)
+         `(,((uniquify alist) op) ,@(map (uniquify alist) es))]
         [`(,op ,es ...)
           `(,op ,@(map (uniquify alist) es))]))))
