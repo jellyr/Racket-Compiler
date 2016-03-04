@@ -12,6 +12,7 @@
 ;; some passes
 (require "pass/typechecker.rkt")
 (require "pass/uniquify.rkt")
+(require "pass/reveal-functions.rkt")
 (require "pass/flatten.rkt")
 (require "pass/expose.rkt")
 (require "pass/call-live-roots.rkt")
@@ -30,6 +31,7 @@
 
 (define r3-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
+                    ("reveal-functions" ,reveal-functions ,interp-scheme)
                     ("flattens" ,flattens ,interp-C)
                     ("expose-allocation" ,expose-allocation ,interp-C)
                     ("call-live-roots" ,call-live-roots ,interp-C)
