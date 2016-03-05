@@ -8,6 +8,7 @@
     [`(var ,e1) (set e1)]
     [`(xorq (int 1) (var ,s)) (set s)]
     [`(offset ,e1 ,idx) (uncover-live-unwrap e1)]
+    [`(function-ref ,e1) (set e1)]
     ;[`(reg ,r) (set r)]
     [else (set)]))
 
@@ -31,14 +32,20 @@
                                           )
                                      (list `(if (eq? ,e1 ,e2) ,@thenexpr ,@elseexpr)
                                            (set-union thenset elseset)))]
+    [`(leaq ,e1 ,e2) #:when(eq? 'offset (car e2)) (list e (set-union lak^
+                                                                     (uncover-live-unwrap e1)
+                                                                     (uncover-live-unwrap e2)))]
+    [`(leaq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(movq ,e1 ,e2) #:when(eq? 'offset (car e2)) (list e (set-union lak^
-                                                                          (uncover-live-unwrap e1)
-                                                                          (uncover-live-unwrap e2)))]
+                                                                     (uncover-live-unwrap e1)
+                                                                     (uncover-live-unwrap e2)))]
     [`(movq ,e1 ,e2) (list e (set-union (set-subtract lak^ (uncover-live-unwrap e2)) (uncover-live-unwrap e1)))]
     [`(cmpq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(movzbq ,e1 ,e2) (list e (set-subtract lak^ (uncover-live-unwrap e2)))]
     [`(addq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
     [`(subq ,e1 ,e2) (list e (set-union lak^ (uncover-live-unwrap e1) (uncover-live-unwrap e2)))]
+    ;; consider callq?
+    [`(indirect-callq ,e1) (list e (set-union lak^ (uncover-live-unwrap e1)))]
     [else (list e lak^)]))
 
 
@@ -55,13 +62,22 @@
          '() e))
 
 
+(define (foldr-helper instrs)
+  (foldr (lambda (x r)
+           (let* ([expr (if (null? r) '() (car r))]
+                  [lives (if (null? r) `(,(set)) (cadr r))]
+                  [helpexpr (uncover-live-helper x (if (null? lives) (set) (car lives)))])
+             (list (cons (car helpexpr) expr)
+                   (cons (cadr helpexpr) lives))))
+         '() instrs))
+
+(define (def-helper instr)
+  (match-define `(define ,funame ,index (,paras ,maxstack) . ,body) instr)
+  (define defexpr (foldr-helper body))
+  `(define ,funame ,index (,paras ,maxstack (cdadr defexpr)) ,@(car defexpr)))
+
 (define (uncover-live e)
-  (let ((setlist (foldr (lambda (x r)
-                          (let* ([expr (if (null? r) '() (car r))]
-                                 [lives (if (null? r) `(,(set)) (cadr r))]
-                                 [helpexpr (uncover-live-helper x (if (null? lives) (set) (car lives)))])
-                            (list (cons (car helpexpr) expr)
-                                  (cons (cadr helpexpr) lives))))
-                        '() (cdddr e))))
-    `(,(car e) ,(list (cadr e) (cdadr setlist)) ,(caddr e) ,@(car setlist))))
+  (match-define `(program (,paras ,maxstack) ,ret-type (defines . ,defs) . ,body) e)
+  (let ([mainexpr (foldr-helper body)])
+    `(program ,(list paras maxstack (cdadr mainexpr)) ,ret-type (defines ,(map def-helper defs)) ,@(car mainexpr))))
 
