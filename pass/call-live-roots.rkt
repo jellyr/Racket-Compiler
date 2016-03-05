@@ -50,7 +50,7 @@
             ())]
       [`(assign ,var (app . ,e1)) `(assign ,var (call-live-roots ,(set->list livea) (app . ,e1)))]
       [`(define (,fname . ,params) : ,ret ,types . ,body)
-       `(define (,fname . ,params) : ,ret ,types . ,(map live-instr-helper body (cdr livea)))]
+       `(define (,fname . ,params) : ,ret ,(map car types) . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
   (match-define `(program ,types ,ret-type (defines . ,defs) . ,body) e)
   (let* ([calc-live (lambda (types instr res)
