@@ -79,5 +79,5 @@
 (define (uncover-live e)
   (match-define `(program (,paras ,maxstack) ,ret-type (defines . ,defs) . ,body) e)
   (let ([mainexpr (foldr-helper body)])
-    `(program ,(list paras maxstack (cdadr mainexpr)) ,ret-type (defines ,(map def-helper defs)) ,@(car mainexpr))))
+    `(program ,(list paras maxstack (cdadr mainexpr)) ,ret-type (defines . ,(map def-helper defs)) ,@(car mainexpr))))
 
