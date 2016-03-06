@@ -12,6 +12,9 @@
     [`(global-value ,e1) (format "~a(%rip)" e1)]
     [`(byte-reg ,e1) (format "%~a" e1)]
     [`(label ,label) (format "~a:\n" label)]
+    [`(function-ref ,label) (format "\n~a(%rip)" label)]
+    [`(indirect-callq ,arg) (format "\ncallq *~a" arg)]
+    [`(stack-arg ,i) (format "\n~a(%rsp)" i)]
     [`(offset ,reg ,index) (format "~a(~a)" index (print-helper reg))]
     [`(,op ,e1) (string-append (format "~a  " op) (print-helper e1) "\n\t")]
     [`(,op ,e1 ,e2) (string-append (format "~a  " op) (print-helper e1) ", " (print-helper e2)" \n\t")]
@@ -37,18 +40,55 @@
                               (callq-helper (last typexpr1))
                               (format " callq print_vecend\n\t"))]))
 
+;; work on this one
+(define (def-helper e)
+  (match-define `(define (,funame) ,len . ,instrs) e)
+  (string-append
+   (format "\n    .globl ~a
+~a:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    pushq   %r15
+    pushq   %r14
+    pushq   %r13
+    pushq   %r12
+    pushq   %rbx
+    subq    $~a, %rsp\n\t" funame funame (* 8 len))
+   (string-join (map print-helper instrs))
+   (format "    movq    %rax, %rdi\n\t")
+   (format "    movq    $0, %rax
+    addq    $~a, %rsp
+    popq    %rbx
+    popq    %r12
+    popq    %r13
+    popq    %r14
+    popq    %r15
+    popq    %rbp
+    retq" (* 8 len))))
+
 (define (print-x86 e)
-  (let ([type (caddr e)])
-    (string-append
+  (match-define `(program ,len (type ,type) (defines . ,defs) . ,instrs) e)
+  (string-append
    (format "    .globl main
 main:
     pushq   %rbp
     movq    %rsp, %rbp
-    subq    $~a, %rsp\n\t" (* 8 (cadr e)))
-   (string-join (map print-helper (cdddr e)))
+    pushq   %r15
+    pushq   %r14
+    pushq   %r13
+    pushq   %r12
+    pushq   %rbx
+    subq    $~a, %rsp\n\t" (* 8 len))
+   (string-join (map print-helper instrs))
    (format "    movq    %rax, %rdi\n\t")
-   (callq-helper (cadr type))
+   (callq-helper type)
    (format "    movq    $0, %rax
     addq    $~a, %rsp
+    popq    %rbx
+    popq    %r12
+    popq    %r13
+    popq    %r14
+    popq    %r15
     popq    %rbp
-    retq" (* 8 (cadr e))))))
+    retq" (* 8 len))
+   (foldr string-append "\n" (map def-helper defs))))
