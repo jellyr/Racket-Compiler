@@ -19,12 +19,19 @@
     [`(()) '()]
     [else e]))
 
+(define (folder-helper intrs)
+  (foldr (lambda (x r)
+           (define x^ (lower-conditionals-helper x))
+           (if (eq? 'if (car x))
+               (append x^ r)
+               (cons x^ r))
+           )  '() intrs))
+
+(define (def-helper instr)
+  (match-define `(define ,paras ,len . ,instrs) instr)
+  `(define ,paras ,len . ,(folder-helper instrs)))
+
 (define (lower-conditionals e)
-  (define insts (foldr (lambda (x r)
-                       (define x^ (lower-conditionals-helper x))
-                       (if (eq? 'if (car x))
-                           (append x^ r)
-                           (cons x^ r))
-                       )  '() (cdddr e)))
-  ;(define t (if (eq? 1 (length insts)) (car insts) insts))
-  `(,(car e) ,(cadr e) ,(caddr e) ,@insts))
+  (match-define `(program ,len ,ret (defines . ,defs) . ,instrs) e)
+  (define insts (folder-helper instrs))
+  `(program ,len ,ret (defines . (map def-helper defs)) . ,insts))
