@@ -74,7 +74,7 @@
 (define (def-helper instr)
   (match-define `(define ,funame ,index (,paras ,maxstack) . ,body) instr)
   (define defexpr (foldr-helper body))
-  `(define ,funame ,index (,paras ,maxstack (cdadr defexpr)) ,@(car defexpr)))
+  `(define ,funame ,index (,paras ,maxstack ,(cdadr defexpr)) ,@(car defexpr)))
 
 (define (uncover-live e)
   (match-define `(program (,paras ,maxstack) ,ret-type (defines . ,defs) . ,body) e)
