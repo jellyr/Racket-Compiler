@@ -19,6 +19,8 @@
     [`(movq (global-value ,e1) ,e2) #:when (stack? e2) `((movq (global-value ,e1) (reg r11))
                                                          (movq (reg r11) ,e2))]
     [`(movq ,e1 ,e2) #:when (equal? e1 e2) '()]
+    [`(leaq (function-ref ,e1) (stack ,e2)) `((leaq (function-ref ,e1) (reg rax))
+                                              (movq (reg rax) (stack ,e2)))]
     [`(,op (stack ,e1) (stack ,e2)) `((movq (stack ,e1) (reg rax)) (,op (reg rax) (stack ,e2)))]
     [`(movzbq ,e1 ,e2) #:when (stack? e2) `((movzbq ,e1 (reg r11))
                                             (movq (reg r11) ,e2))]
@@ -30,4 +32,6 @@
     [else `(,e)]))
 
 (define (patch-instructions e)
-  (append-map patch-instr-helper e))
+  (match-define `(program ,st ,ret (defines . ,defs) . ,instrs) e)
+  `(program ,st ,ret (defines . ,(map (lambda (def)
+                                        (append-map patch-instr-helper def)) defs)) . ,(append-map patch-instr-helper instrs)))
