@@ -39,7 +39,7 @@
                     ("uncover-live" ,uncover-live ,interp-x86)
                     ("build interference graph" ,build-interference ,interp-x86)
                     ("register allocation" ,allocate-registers ,interp-x86)
-                    ("live" ,lower-conditionals ,interp-x86)
+                    ("lower condition" ,lower-conditionals ,interp-x86)
                     ("patch instructions" ,patch-instructions ,interp-x86)
                     ("print x86" ,print-x86 #f)))
 

@@ -34,4 +34,4 @@
 (define (lower-conditionals e)
   (match-define `(program ,len ,ret (defines . ,defs) . ,instrs) e)
   (define insts (folder-helper instrs))
-  `(program ,len ,ret (defines . (map def-helper defs)) . ,insts))
+  `(program ,len ,ret (defines . ,(map def-helper defs)) . ,insts))
