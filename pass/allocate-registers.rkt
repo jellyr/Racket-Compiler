@@ -69,17 +69,25 @@
            [`(movq (var ,e1) (var ,e2))
             (hash-set! phash e1 (set-add (hash-ref phash e1 (set)) e2))]
            ;; consider if condition
-           [else '()])) insts)
-  phash)
+           [else '()])) insts) phash)
+
+(define (allocate-func-registers def)
+  (match-define `(define (,fname) ,pcnt (,vars ,max-stack ,graph) . ,instrs) def)
+  (let* ([phash (allocate-prefer instrs)]
+         ;;; (hash-remove (cadadr e) 'rax)
+         [assign-list (allocate-registers-helper graph '() (make-graph '()) phash)]
+         [env (allocate-reg-stack assign-list)])
+    ;(print assign-list)
+    `(define (,fname) ,(lookup '_stacklength env) . ,(map (curryr allocate-var env) instrs))))
 
 (define (allocate-registers e)
-  (let* ([phash (allocate-prefer (cdddr e))]
+  (match-define `(program (,vars ,mstack ,graph) ,ret (defines . ,defs) . ,instrs) e)
+  (let* ([phash (allocate-prefer instrs)]
          ;;; (hash-remove (cadadr e) 'rax)
-         [assign-list (allocate-registers-helper (cadadr e) '() (make-graph '()) phash)]
-         [env (allocate-reg-stack assign-list)]
-         [prog (car e)])
+         [assign-list (allocate-registers-helper graph '() (make-graph '()) phash)]
+         [env (allocate-reg-stack assign-list)])
     ;(print assign-list)
-    `(,prog ,(lookup '_stacklength env) ,(caddr e) . ,(cdddr (map (curryr allocate-var env) e)))))
+    `(program ,(lookup '_stacklength env) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
 
 
 
