@@ -25,7 +25,7 @@
 (define (expose-allocation e)
   (match-define `(,ftypes ,fvartypes ,types) (uncover-types e))
   (match-define `(program ,mvars ,ret (defines . ,def) . ,body) e)
-  (append  `(program ,(append ftypes types) ,ret)
+  (append  `(program ,types ,ret)
            `((defines ,@(append-map expose-func-helper def fvartypes)))
            `((initialize 10000 ,HEAP-LEN))
            (append-map (curryr expose-helper types) body)))
