@@ -32,10 +32,16 @@
          (map (lambda (v) (cond
                             [(not (eqv? d v)) (add-edge graph d v)]
                             [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
-      [`(callq ,label) (map (lambda (v1)
-                              (map (lambda (v2)
-                                     (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
-                                   (set->list (set-remove caller-save 'r11)))) lak)]
+      [`(,op ,label)  #:when (or (eqv? 'callq op) (eqv? 'indirect-callq op))
+       (map (lambda (v1)
+              (map (lambda (v2)
+                     (hash-set! graph v1 (set-add (hash-ref graph v1 (set)) v2)))
+                   (set->list (set-remove caller-save 'r11)))) lak)]
+      [`(leaq (function-ref ,e1) ,e2)
+       (let ([d (build-interference-unwrap e2)])
+         (map (lambda (v) (cond
+                            [(not (eqv? d v)) (add-edge graph d v)]
+                            [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
       [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive)
        (let ([s (build-interference-unwrap e1)]
              [d (build-interference-unwrap e2)])
@@ -50,9 +56,15 @@
                   [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
       [else '()])))
 
+(define (define-helper defs)
+  (map (lambda (def)
+         (match-define `(define (,fname) ,pcnt (,vars ,max-stack ,lak) . ,instrs) def)
+         (let ([graph (make-graph '())])
+           (map (curry build-interference-helper graph) instrs lak)
+           `(define (,fname) ,pcnt (,vars ,max-stack ,graph) . ,instrs))) defs))
+
 (define (build-interference e)
-  (let* ([lak (cadadr e)]
-         [instr (cdddr e)]
-         [graph (make-graph '())])
+  (match-define `(program (,vars ,mstack ,lak) ,ret (defines . ,defs) . ,instr) e)
+  (let ([graph (make-graph '())])
     (map (curry build-interference-helper graph) instr lak)
-    `(,(car e) (,(caadr e) ,graph) ,(caddr e) ,@instr)))
+    `(program (,vars ,mstack ,graph) ,ret (defines . ,(define-helper defs))  . ,instr)))
