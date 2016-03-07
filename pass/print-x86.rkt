@@ -55,9 +55,7 @@
     pushq   %rbx
     subq    $~a, %rsp\n\t" funame funame (* 8 len))
    (string-join (map print-helper instrs))
-   (format "    movq    %rax, %rdi\n\t")
-   (format "    movq    $0, %rax
-    addq    $~a, %rsp
+   (format "    addq    $~a, %rsp
     popq    %rbx
     popq    %r12
     popq    %r13
@@ -74,21 +72,11 @@
 main:
     pushq   %rbp
     movq    %rsp, %rbp
-    pushq   %r15
-    pushq   %r14
-    pushq   %r13
-    pushq   %r12
-    pushq   %rbx
     subq    $~a, %rsp\n\t" (* 8 len))
    (string-join (map print-helper instrs))
    (format "    movq    %rax, %rdi\n\t")
    (callq-helper type)
    (format "    movq    $0, %rax
     addq    $~a, %rsp
-    popq    %rbx
-    popq    %r12
-    popq    %r13
-    popq    %r14
-    popq    %r15
     popq    %rbp
     retq" (* 8 len))))
