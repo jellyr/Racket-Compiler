@@ -22,7 +22,10 @@
                             (match def^
                               [`(,var : ,var-type) `(,var . ,var-type)]
                               [else (error "in define[new-env]")])) var-defs)])
-       (typecheck-R2 (append env new-env) body))]))
+       (define ret-type^ (typecheck-R2 (append env new-env) body))
+       (if (equal? ret-type^ ret-type)
+           ret-type^
+           (error "in define")))]))
 
 (define (typecheck-R2 env e)
   (match e
