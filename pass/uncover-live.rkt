@@ -19,14 +19,14 @@
     ;[`(negq ,e1) (set-union lak^^ (uncover-live-unwrap e1))
     [`(if (eq? ,e1 ,e2) ,thn ,els) (let* ([thenexpr (instrs-live-helper thn lak^)]
                                           [elseexpr (instrs-live-helper els lak^)]
-                                          [thenexpr (if (null? thenexpr) (list '(()) `(,(set))) thenexpr)]
-                                          [elseexpr (if (null? elseexpr) (list '(()) `(,(set))) elseexpr)]
-                                          [thenset (if (null? thenexpr) (set) (car (last thenexpr)))]
-                                          [elseset (if (null? elseexpr) (set) (car (last elseexpr)))]
+                                          [thenexpr (if (null? thenexpr) (list '() `()) thenexpr)]
+                                          [elseexpr (if (null? elseexpr) (list '() `()) elseexpr)]
+                                          [thenset (if (null? (car thenexpr)) (set) (car (last thenexpr)))]
+                                          [elseset (if (null? (car elseexpr)) (set) (car (last elseexpr)))]
                                           [thenexpr (list (car thenexpr)
-                                                          (if (null? (caar thenexpr)) `(,(set)) (cdr (last thenexpr))))]
+                                                          (if (null? (car thenexpr)) `() (cdr (last thenexpr))))]
                                           [elseexpr (list (car elseexpr)
-                                                          (if (null? (caar elseexpr)) `(,(set)) (cdr (last elseexpr))))]
+                                                          (if (null? (car elseexpr)) `() (cdr (last elseexpr))))]
                                           
                                           
                                           )
