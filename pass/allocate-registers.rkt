@@ -47,9 +47,18 @@
           (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
                   (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))))
 
+(define (allocate-reg-stack-func assign-list)
+  (define general-registers (vector 'rbx 'r12 'r13 'r14 'r15))
+  (define k (vector-length general-registers)) ;; (vector-length general-registers)
+  (let ([reglist (filter (lambda (v) (< (cdr v) k)) assign-list)]
+        [stacklist (filter (lambda (v) (>= (cdr v) k)) assign-list)])
+    (cons `(_stacklength . ,(set-count (list->set (map cdr stacklist)))) ;; a hack way
+          (append (map (lambda (v) `(,(car v) . (stack ,(* -8 (add1 (- (cdr v) k)))))) stacklist)
+                  (map (lambda (v) `(,(car v) . (reg ,(vector-ref general-registers (cdr v))))) reglist)))))
+
 (define (allocate-var e env)
   (match e
-    ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1)) 
+    ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1))
     [`(var ,e1) (lookup e1 env '(reg rax))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
@@ -75,8 +84,8 @@
   (match-define `(define (,fname) ,pcnt (,vars ,max-stack ,graph) . ,instrs) def)
   (let* ([phash (allocate-prefer instrs)]
          ;;; (hash-remove (cadadr e) 'rax)
-         [assign-list (allocate-registers-helper graph '() (make-graph '()) phash)]
-         [env (allocate-reg-stack assign-list)])
+         [assign-list (allocate-registers-helper graph '() (make-graph '()) (make-hash))]
+         [env (allocate-reg-stack-func assign-list)])
     ;(print assign-list)
     `(define (,fname) ,(lookup '_stacklength env) . ,(map (curryr allocate-var env) instrs))))
 
@@ -88,10 +97,6 @@
          [env (allocate-reg-stack assign-list)])
     ;(print assign-list)
     `(program ,(lookup '_stacklength env) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
-
-
-
-e
 
 
 

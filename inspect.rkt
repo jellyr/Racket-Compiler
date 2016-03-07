@@ -23,9 +23,9 @@
            (loop (cdr ls) new-prog))))))
 
 (define expr '(program
-  (define (add [x: Integer] [y: Integer]): Integer
-    (+ x y))
-  (add 40 2))
-)
+ (define (add [x : Integer] 
+                [y : Integer]) 
+    : Integer (+ x y))
+ (add 40 2)))
 
 (test `(("typechecker1" ,typechecker ,interp-scheme) ,@r3-passes) expr)
