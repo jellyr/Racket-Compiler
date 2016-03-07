@@ -22,11 +22,14 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(
- (define (mult [x : Integer] [y : Integer]) : Integer
-  (if (eq? 0 x)
-      0
-      (+ y (mult (+ (- 1) x) y))))
-(mult 6 7)))
+(define expr '((define (big [a : Integer] [b : Integer] [c : Integer] [d : Integer] [e : Integer] 
+             [f : Integer] [g : Integer] [h : Integer] [i : Integer] [j : Integer]) : Integer
+        (+ d j))
+(big 1 2 3 20 5 6 7 8 9 22)))
+;;  (define (mult [x : Integer] [y : Integer]) : Integer
+;;   (if (eq? 0 x)
+;;       0
+;;       (+ y (mult (+ (- 1) x) y))))
+;; (mult 6 7)))
 
-(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r3-passes) expr)
+(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r4-passes) expr)
