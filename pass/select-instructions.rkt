@@ -20,17 +20,18 @@
          (set! SI-VARS '())
          (match-define `(define (,fname . ,params) : ,ret ,vars . ,body) def)
          (let* ([pcnt (add1 (length params))]
-                [max-stack (if (<= pcnt 6) 0 (- pcnt 6))]
+                [max-stack (if (< pcnt 6) 0 (- pcnt 5))]
                 [in-params (map car params)]
                 [rs (gensym 'rootstack)]
+                [void-set (set! si-rootstack (cons `(,fname . ,rs) si-rootstack))]
+                [void-set1 (set! mstack (if (> max-stack mstack) max-stack mstack))]
                 [func-si (append-map (curry select-instructions-assign fname) body)]
                 [tvars (append (cons rs (remove fname vars)) SI-VARS)])
-           (set! mstack (if (> max-stack mstack) max-stack mstack))
-           (set! si-rootstack (cons `(,fname ,rs) si-rootstack))
            `(define (,fname) ,pcnt (,tvars ,max-stack) ,@(map (lambda (var param)
                                                              `(movq (reg ,param)
                                                                     ,(select-instructions-assign fname var)))
-                                                           `(,rs . ,in-params) (take arg-regs pcnt)) ,@func-si))) defs))
+                                                              `(,rs . ,in-params) (append (take arg-regs (if (< pcnt 6) pcnt 6))
+                                                                                          (map (lambda (v) `(stack-arg ,v)) (range 1 max-stack)))) ,@func-si))) defs))
 
 (define (select-instructions-assign func-ref e)
   (match e
@@ -41,6 +42,7 @@
     [`(not ,e1) `(xorq (int 1) ,(select-instructions-assign e1))]
     [`(assign ,var (function-ref ,e1)) `((leaq (function-ref ,e1) ,(select-instructions-assign func-ref var)))]
     [`(assign ,var (call-live-roots ,la (app ,fun . ,args))) (let ([len (length args)])
+                                                               ;(print si-rootstack) (newline)
                                                                `((movq (var ,(lookup func-ref si-rootstack #f)) (reg rdi))
                                                                  ,@(if (< len 6)
                                                                       (map (lambda (arg reg)

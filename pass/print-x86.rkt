@@ -69,6 +69,7 @@
 (define (print-x86 e)
   (match-define `(program ,len (type ,type) (defines . ,defs) . ,instrs) e)
   (string-append
+   (foldr string-append "\n" (map def-helper defs))
    (format "    .globl main
 main:
     pushq   %rbp
@@ -90,5 +91,4 @@ main:
     popq    %r14
     popq    %r15
     popq    %rbp
-    retq" (* 8 len))
-   (foldr string-append "\n" (map def-helper defs))))
+    retq" (* 8 len))))
