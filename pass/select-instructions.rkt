@@ -126,6 +126,8 @@
     [`(assign ,var (- ,e1)) `((movq ,(select-instructions-assign func-ref e1) (var ,var)) (negq (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e1) `((addq ,(select-instructions-assign func-ref e2) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2))#:when (eq? var e2) `((addq ,(select-instructions-assign func-ref e1) (var ,var)))]
+    [`(assign ,var (+ ,e1 ,e2)) #:when (fixnum? e1)`((movq ,(select-instructions-assign func-ref e2) (var ,var))
+                                                     (addq ,(select-instructions-assign func-ref e1) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign func-ref e1) (var ,var))
                                   (addq ,(select-instructions-assign func-ref e2) (var ,var)))]
     [`(return ,e1) `((movq ,(select-instructions-assign func-ref e1) (reg rax)))]
