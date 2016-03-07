@@ -12,7 +12,7 @@
     [`(global-value ,e1) (format "~a(%rip)" e1)]
     [`(byte-reg ,e1) (format "%~a" e1)]
     [`(label ,label) (format "~a:\n" label)]
-    [`(function-ref ,label) (format "~a(%rip)\n\t" label)]
+    [`(function-ref ,label) (format "~a(%rip)" label)]
     [`(indirect-callq ,arg) (format "callq *~a\n\t" (print-helper arg))]
     [`(stack-arg ,i) (format "~a(%rsp)" i)]
     [`(offset ,reg ,index) (format "~a(~a)" index (print-helper reg))]
