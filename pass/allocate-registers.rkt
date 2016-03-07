@@ -84,7 +84,8 @@
   (match-define `(program (,vars ,mstack ,graph) ,ret (defines . ,defs) . ,instrs) e)
   (let* ([phash (allocate-prefer instrs)]
          ;;; (hash-remove (cadadr e) 'rax)
-         [assign-list (allocate-registers-helper graph '() (make-graph '()) phash)]
+         [assign-list (allocate-registers-helper graph '() (make-graph '()) (make-hash) ;phash
+                                                 )]
          [env (allocate-reg-stack assign-list)])
     ;(print assign-list)
     `(program ,(lookup '_stacklength env) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
