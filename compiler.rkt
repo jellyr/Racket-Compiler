@@ -29,7 +29,7 @@
 (define  typechecker
   (curry typecheck-R2 '()))
 
-(define r3-passes `(
+(define r4-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("reveal-functions" ,reveal-functions ,interp-scheme)
                     ("flattens" ,flattens ,interp-C)

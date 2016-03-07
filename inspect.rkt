@@ -11,7 +11,7 @@
   (display "--------------------------") (newline)
   (pretty-print exp)
   (display "--------------------------") (newline)
-  (let loop ([ls passes] [prog `(program ,exp)])
+  (let loop ([ls passes] [prog `(program ,@exp)])
     (if (null? ls) (begin (display "done") (newline))
         (match (car ls)
           (`(,name ,func ,_)
@@ -22,10 +22,11 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(program
- (define (add [x : Integer] 
-                [y : Integer]) 
-    : Integer (+ x y))
- (add 40 2)))
+(define expr '(
+ (define (mult [x : Integer] [y : Integer]) : Integer
+  (if (eq? 0 x)
+      0
+      (+ y (mult (+ (- 1) x) y))))
+(mult 6 7)))
 
 (test `(("typechecker1" ,typechecker ,interp-scheme) ,@r3-passes) expr)
