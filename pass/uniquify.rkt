@@ -13,7 +13,7 @@
     `(,(map (uniquify func-vars) def-expr) ,func-vars)))
 
 (define (fun-param-helper expr alist)
-  (foldl (lambda (p res)
+  (foldr (lambda (p res)
            (match p
              [`(,x : ,type) (let ([var-check (lookup x (last res) #f)])
                               (if var-check
