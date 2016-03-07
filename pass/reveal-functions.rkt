@@ -20,7 +20,7 @@
     [`(vector . ,e1) `(vector . ,(map (curryr helper env) e1))]
     [`(vector-ref ,expr ,number) `(vector-ref ,(helper expr env) ,number)]
     [`(vector-set! ,expr1 ,number ,expr2) `(vector-set! ,(helper expr1 env) ,number ,(helper expr2 env))]
-    [`(,op . ,e1) #:when(not (trivial-func? op)) `(app ,(helper op env) . ,e1)] ;; consider non-parameters situation
+    [`(,op . ,e1) #:when(not (trivial-func? op)) `(app ,(helper op env) . ,(map (curryr helper env) e1))] ;; consider non-parameters situation
     [`(,op . ,e1) `(,op . ,(map (curryr helper env) e1))]
     [else instr]))
 
