@@ -24,7 +24,7 @@
 (require "pass/patch-instructions.rkt")
 (require "pass/print-x86.rkt")
 
-(provide r3-passes typechecker)
+(provide r4-passes typechecker)
 
 (define  typechecker
   (curry typecheck-R2 '()))
