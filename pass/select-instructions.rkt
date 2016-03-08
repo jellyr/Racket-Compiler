@@ -143,5 +143,6 @@
 (define (select-instructions e)
   (match-define `(program ,args ,ret-type (defines . ,defs) . ,instrs) e)
   (let ([si (append-map (curry select-instructions-assign '_main) instrs)]
-        [tvars SI-VARS])
-    `(program (,(append args tvars) ,mstack) ,ret-type (defines ,@(si-func-helper defs)) ,@si)))
+        [tvars SI-VARS]
+        [si-defs (si-func-helper defs)])
+    `(program (,(append args tvars) ,mstack) ,ret-type (defines ,@si-defs) ,@si)))
