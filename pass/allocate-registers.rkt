@@ -97,7 +97,7 @@
          [assign-list (allocate-registers-helper graph '() (make-graph '()) phash )]
          [env (allocate-reg-stack assign-list)])
     ;(print assign-list)
-    `(program ,mstack  ,(lookup '_stacklength env) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
+    `(program ,(+ mstack (lookup '_stacklength env)) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
 
 
 

@@ -67,8 +67,8 @@
     retq" (* 8 len))))
 
 (define (print-x86 e)
-  (match-define `(program ,st-arg ,st-var (type ,type) (defines . ,defs) . ,instrs) e)
-  (define len (+ st-arg st-var))
+  (match-define `(program ,len (type ,type) (defines . ,defs) . ,instrs) e)
+  ;(define len (+ st-arg st-var))
   (string-append
    (foldr string-append "\n" (map def-helper defs))
    (format "    .globl main

@@ -32,6 +32,6 @@
     [else `(,e)]))
 
 (define (patch-instructions e)
-  (match-define `(program ,st-arg ,st-var ,ret (defines . ,defs) . ,instrs) e)
-  `(program ,st-arg ,st-var ,ret (defines . ,(map (lambda (def)
+  (match-define `(program ,st ,ret (defines . ,defs) . ,instrs) e)
+  `(program ,st ,ret (defines . ,(map (lambda (def)
                                         (append-map patch-instr-helper def)) defs)) . ,(append-map patch-instr-helper instrs)))
