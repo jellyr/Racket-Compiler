@@ -6,7 +6,7 @@
 (define (uniquify-func def-expr alist)
   (let ([func-vars (foldl (lambda (v res)
                             (match v
-                              [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym fname)])
+                              [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym 'func)])
                                                                       (cons `(,fname . ,newvar) res))]))
                           alist
                           def-expr)])
