@@ -43,7 +43,8 @@
 
 ;; work on this one
 (define (def-helper e)
-  (match-define `(define (,funame) ,len . ,instrs) e)
+  (match-define `(define (,funame) ,st-arg ,st-var . ,instrs) e)
+  (define len (+ st-arg st-var))
   (string-append
    (format "\n    .globl ~a
 ~a:
@@ -66,7 +67,8 @@
     retq" (* 8 len))))
 
 (define (print-x86 e)
-  (match-define `(program ,len (type ,type) (defines . ,defs) . ,instrs) e)
+  (match-define `(program ,st-arg ,st-var (type ,type) (defines . ,defs) . ,instrs) e)
+  (define len (+ st-arg st-var))
   (string-append
    (foldr string-append "\n" (map def-helper defs))
    (format "    .globl main

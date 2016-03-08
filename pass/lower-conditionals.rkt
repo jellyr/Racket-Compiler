@@ -28,10 +28,10 @@
            )  '() intrs))
 
 (define (def-helper instr)
-  (match-define `(define ,paras ,len . ,instrs) instr)
-  `(define ,paras ,len . ,(folder-helper instrs)))
+  (match-define `(define ,paras ,st-arg ,st-var . ,instrs) instr)
+  `(define ,paras ,st-arg ,st-var . ,(folder-helper instrs)))
 
 (define (lower-conditionals e)
-  (match-define `(program ,len ,ret (defines . ,defs) . ,instrs) e)
+  (match-define `(program ,st-arg ,st-var ,ret (defines . ,defs) . ,instrs) e)
   (define insts (folder-helper instrs))
-  `(program ,len ,ret (defines . ,(map def-helper defs)) . ,insts))
+  `(program ,st-arg ,st-var ,ret (defines . ,(map def-helper defs)) . ,insts))

@@ -88,7 +88,7 @@
          [assign-list (allocate-registers-helper graph '() (make-graph '()) (make-hash))]
          [env (allocate-reg-stack-func assign-list)])
     ;(print assign-list)
-    `(define (,fname) ,(+ max-stack (lookup '_stacklength env)) . ,(map (curryr allocate-var env) instrs))))
+    `(define (,fname) ,max-stack ,(lookup '_stacklength env) . ,(map (curryr allocate-var env) instrs))))
 
 (define (allocate-registers e)
   (match-define `(program (,vars ,mstack ,graph) ,ret (defines . ,defs) . ,instrs) e)
@@ -97,7 +97,7 @@
          [assign-list (allocate-registers-helper graph '() (make-graph '()) phash )]
          [env (allocate-reg-stack assign-list)])
     ;(print assign-list)
-    `(program ,(+ mstack (lookup '_stacklength env)) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
+    `(program ,mstack  ,(lookup '_stacklength env) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
 
 
 
