@@ -3,7 +3,7 @@
 
 (provide print-x86)
 
-(define (print-helper e)
+(define (print-helper e )
   (match e
     [`(stack ,e1) (format "~a(%rbp)" e1)]
     [`(type ,e1) ""]
@@ -14,7 +14,8 @@
     [`(label ,label) (format "~a:\n" label)]
     [`(function-ref ,label) (format "~a(%rip)" label)]
     [`(indirect-callq ,arg) (format "callq *~a\n\t" (print-helper arg))]
-    [`(stack-arg ,i) (format "~a(%rsp)" (* 8 i))]
+    [`(movq (stack-arg ,i) ,e2) (string-append (format "movq  ~a(%rbp), " (+ 16 (* 8 i))) (print-helper e2) " \n\t")]
+    [`(movq ,e1 (stack-arg ,i)) (string-append "movq  " (print-helper e1) ", " (format "~a(%rsp)" (* 8 i)) " \n\t")]
     [`(offset ,reg ,index) (format "~a(~a)" index (print-helper reg))]
     [`(,op ,e1) (string-append (format "~a  " op) (print-helper e1) "\n\t")]
     [`(,op ,e1 ,e2) (string-append (format "~a  " op) (print-helper e1) ", " (print-helper e2)" \n\t")]
@@ -72,11 +73,21 @@
 main:
     pushq   %rbp
     movq    %rsp, %rbp
+    pushq   %r15
+    pushq   %r14
+    pushq   %r13
+    pushq   %r12
+    pushq   %rbx
     subq    $~a, %rsp\n\t" (* 8 len))
    (string-join (map print-helper instrs))
    (format "    movq    %rax, %rdi\n\t")
    (callq-helper type)
    (format "    movq    $0, %rax
     addq    $~a, %rsp
-    popq    %rbp
+    popq    %rbx
+    popq    %r12
+    popq    %r13
+    popq    %r14
+    popq    %r15
+    popq    %rbp   
     retq" (* 8 len))))
