@@ -5,7 +5,7 @@
 (provide (all-from-out "uncover-types.rkt"))
 
 
-(provide int? var? reg? stack? scalar? define? trivial-func? HEAP-LEN)
+(provide int? var? reg? stack? scalar? define? trivial-func? reg-colors HEAP-LEN)
 (define (int? e)
   (eqv? (car e) 'int))
 
@@ -30,3 +30,8 @@
 (define (trivial-func? e)
   (set-member? (set '+ '- '* 'and 'not 'or 'eq? 'read) e))
 
+(define reg-colors
+  '((rax . -1) (__flag . -1)
+    (rbx . 0) (rcx . 1) (rdx . 2) (rsi . 3) (rdi . 4)
+    (r8 . 5) (r9 . 6) (r10 . 7) (r11 . 8) (r12 . 9) (r13 . 10)
+    (r14 . 11) (r15 . 12)))
