@@ -43,7 +43,8 @@
                              `(,define-stmt ,flist) (uniquify-func (drop-right e 1) alist))
                            `(program ,ret-type ,@define-stmt ,((uniquify flist) (last e))))]
         [`(,op ,es ...) #:when (lookup op alist #f)
-         `(,@((uniquify alist) op) ,@(map (uniquify alist) es))]
+         `(,((uniquify alist) op) ,@(map (uniquify alist) es))]
+        [`(,op ,es ...)#:when (pair? op)
+         `(,((uniquify alist) op) ,@(map (uniquify alist) es))]
         [`(,op ,es ...)
-         `(,@((uniquify alist) op) ,@(map (uniquify alist) es))]
-        [else `(,e)]))))
+         `(,op ,@(map (uniquify alist) es))]))))
