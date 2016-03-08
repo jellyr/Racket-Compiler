@@ -20,7 +20,7 @@
          (set! SI-VARS '())
          (match-define `(define (,fname . ,params) : ,ret ,vars . ,body) def)
          (let* ([pcnt (add1 (length params))]
-                [max-stack (if (< pcnt 6) 0 (- pcnt 5))]
+                [max-stack (if (< pcnt 6) 0 (- pcnt 6))]
                 [in-params (map car params)]
                 [rs (gensym 'rootstack)]
 		[void-set (set! SI-VARS `(,rs))]
@@ -29,12 +29,12 @@
                 [func-si (append-map (curry select-instructions-assign fname) body)]
                 [tvars (append (remove fname vars) SI-VARS)])
            `(define (,fname) ,pcnt (,tvars ,max-stack) ,@(map (lambda (var param)
-                                                                `(movq ,(if (member param arg-regs)                                                                            
-                                                                            `(reg ,param)
-                                                                            param)
-                                                                       ,(select-instructions-assign fname var)))
+                                                                  `(movq ,(if (member param arg-regs)                                                                            
+                                                                              `(reg ,param)
+                                                                              param)
+                                                                         ,(select-instructions-assign fname var)))
                                                               `(,rs . ,in-params) (append (take arg-regs (if (< pcnt 6) pcnt 6))
-                                                                                          (map (lambda (v) `(stack-arg ,v)) (range 1 max-stack)))) ,@func-si))) defs))
+                                                                                          (map (lambda (v) `(stack-arg ,(* 8 v))) (range max-stack)))) ,@func-si))) defs))
 
 (define (select-instructions-assign func-ref e)
   (match e
@@ -55,7 +55,7 @@
                                                                                      `(movq ,(select-instructions-assign func-ref arg) (reg ,reg)))
                                                                                    (take args 5) (cdr arg-regs))
                                                                               (map (lambda (arg st)
-                                                                                     `(movq ,(select-instructions-assign func-ref arg) (stack-arg ,(add1 st))))
+                                                                                     `(movq ,(select-instructions-assign func-ref arg) (stack-arg ,(* 8 st))))
                                                                                    (drop args 5) (range (- len 5)))))
                                                                  (indirect-callq ,(select-instructions-assign func-ref fun))
                                                                  (movq (reg rax) ,(select-instructions-assign func-ref var))))]
