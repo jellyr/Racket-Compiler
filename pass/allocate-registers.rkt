@@ -13,6 +13,8 @@
 (define (assign-minicolor node graph assign-list constrain-graph phash)
   (define colorvals (range 100))
   (define contrains (hash-ref! constrain-graph (car node) (set)))
+  (define regconstrain (list->set (map (lambda (x) (lookup x reg-colors -1)) (set->list (hash-ref graph (car node) (set))))))
+  (set! contrains (set-union contrains regconstrain))
   (if (set-member? (hash-ref graph (car node) (set)) 'rcx)
       (set! contrains (set-union contrains (list->set (range 1 9))))
       '()) 
@@ -94,9 +96,16 @@
   (match-define `(program (,vars ,mstack ,graph) ,ret (defines . ,defs) . ,instrs) e)
   (let* ([phash (allocate-prefer instrs)]
          ;;; (hash-remove (cadadr e) 'rax)
-         [assign-list (allocate-registers-helper graph '() (make-graph '()) phash )]
+         [reg-colors^ '(
+                       (rbx . 0) (rcx . 1) (rdx . 2) (rsi . 3) (rdi . 4)
+                       (r8 . 5) (r9 . 6) (r10 . 7) (r12 . 8) (r13 . 9)
+                       (r14 . 10) (r15 . 11))]
+         [testgraph (make-graph reg-colors^)]
+         [assign-list (allocate-registers-helper graph '() testgraph phash)]
          [env (allocate-reg-stack assign-list)])
-    ;(print assign-list)
+    ;(displayln assign-list)
+    ;(displayln phash)
+    ;(displayln testgraph)
     `(program ,(+ mstack (lookup '_stacklength env)) ,ret (defines . ,(map allocate-func-registers defs)) . ,(map (curryr allocate-var env) instrs))))
 
 
