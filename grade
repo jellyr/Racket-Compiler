@@ -85,3 +85,14 @@ ASSIGNMENT 4 (late):
 All test cases compile and run successfully. Well done.
 
 Grade: 69% + 31% * .9 = 97%
+
+ASSIGNMENT 5:
+18/19 test cases compile successfully. Well done!
+For test case #9, which fails compilation, 8/11 passes of the interpreter work.
+
+Many of your test cases fail the interpreter. This doesn't affect your
+grade except for test #9, which is the one that your compiler fails
+on. It appears that in most cases, its dying in uncover-live, maybe
+because one register isn't tracked properly.
+
+Grade: 97%
