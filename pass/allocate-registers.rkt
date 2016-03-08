@@ -59,7 +59,8 @@
 (define (allocate-var e env)
   (match e
     ;;; consider this situation again, testcase: (let ([x 41]) (+ x 1))
-    [`(var ,e1) (lookup e1 env '(reg rax))]
+    [`(var ,e1) ;;(print env) (newline)
+     (lookup e1 env '(reg rax))]
     [`(,op ,e1 ,e2) `(,op ,(allocate-var e1 env) ,(allocate-var e2 env))]
     [`(,op ,e1) `(,op ,(allocate-var e1 env))]
     [`(if (eq? ,e1 ,e2) ,thn ,thnlive ,els ,elslive) `(if (eq? ,(allocate-var e1 env) ,(allocate-var e2 env))

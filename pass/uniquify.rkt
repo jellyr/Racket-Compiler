@@ -6,14 +6,14 @@
 (define (uniquify-func def-expr alist)
   (let ([func-vars (foldl (lambda (v res)
                             (match v
-                              [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym fname)])
+                              [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym 'func)])
                                                                       (cons `(,fname . ,newvar) res))]))
                           alist
                           def-expr)])
     `(,(map (uniquify func-vars) def-expr) ,func-vars)))
 
 (define (fun-param-helper expr alist)
-  (foldl (lambda (p res)
+  (foldr (lambda (p res)
            (match p
              [`(,x : ,type) (let ([var-check (lookup x (last res) #f)])
                               (if var-check
