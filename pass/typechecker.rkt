@@ -86,16 +86,7 @@
              'Void
              (errorset))
          (errorset))]
-    [`(,fun-call . ,paras) #:when(lookup fun-call env #f)
-     (let ([func-type (lookup fun-call env)])
-       (match func-type
-         [`(,paras-types ... -> ,ret-type)
-          ;; need to check
-          (map (lambda (v t)
-                 (if (equal? t (typecheck-R2 env v))
-                     #t
-                     (error "in func-call"))) paras paras-types)
-          ret-type]))]
+    
     [`(program . ,expr)
      ;; 
      (define defs (drop-right expr 1))
@@ -103,5 +94,16 @@
      (define new-env (defines-env defs))
      (map (curry typechecker-define-helper new-env) defs)
      (define _type (typecheck-R2 new-env body))
-     `(program (type ,_type) ,@expr)]))
+     `(program (type ,_type) ,@expr)]
+    
+    [`(,fun-call . ,paras)
+     (let ([func-type (lookup fun-call env (typecheck-R2 env fun-call))])
+       (match func-type
+         [`(,paras-types ... -> ,ret-type)
+          ;; need to check
+          (map (lambda (v t)
+                 (if (equal? t (typecheck-R2 env v))
+                     #t
+                     (error "in func-call"))) paras paras-types)
+          ret-type]))]))
 
