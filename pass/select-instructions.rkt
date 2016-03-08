@@ -23,10 +23,11 @@
                 [max-stack (if (< pcnt 6) 0 (- pcnt 5))]
                 [in-params (map car params)]
                 [rs (gensym 'rootstack)]
-                [void-set (set! si-rootstack (cons `(,fname . ,rs) si-rootstack))]
-                [void-set1 (set! mstack (if (> max-stack mstack) max-stack mstack))]
+		[void-set (set! SI-VARS `(,rs))]
+                [void-set1 (set! si-rootstack (cons `(,fname . ,rs) si-rootstack))]
+                [void-set2 (set! mstack (if (> max-stack mstack) max-stack mstack))]
                 [func-si (append-map (curry select-instructions-assign fname) body)]
-                [tvars (append (cons rs (remove fname vars)) SI-VARS)])
+                [tvars (append (remove fname vars) SI-VARS)])
            `(define (,fname) ,pcnt (,tvars ,max-stack) ,@(map (lambda (var param)
                                                              `(movq (reg ,param)
                                                                     ,(select-instructions-assign fname var)))
