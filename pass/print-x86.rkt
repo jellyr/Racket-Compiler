@@ -14,7 +14,7 @@
     [`(label ,label) (format "~a:\n" label)]
     [`(function-ref ,label) (format "~a(%rip)" label)]
     [`(indirect-callq ,arg) (format "callq *~a\n\t" (print-helper arg))]
-    [`(stack-arg ,i) (format "~a(%rsp)" i)]
+    [`(stack-arg ,i) (format "~a(%rsp)" (* 8 i))]
     [`(offset ,reg ,index) (format "~a(~a)" index (print-helper reg))]
     [`(,op ,e1) (string-append (format "~a  " op) (print-helper e1) "\n\t")]
     [`(,op ,e1 ,e2) (string-append (format "~a  " op) (print-helper e1) ", " (print-helper e2)" \n\t")]
