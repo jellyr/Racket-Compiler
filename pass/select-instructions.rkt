@@ -29,8 +29,10 @@
                 [func-si (append-map (curry select-instructions-assign fname) body)]
                 [tvars (append (remove fname vars) SI-VARS)])
            `(define (,fname) ,pcnt (,tvars ,max-stack) ,@(map (lambda (var param)
-                                                             `(movq (reg ,param)
-                                                                    ,(select-instructions-assign fname var)))
+                                                                `(movq ,(if (equal? (car param) 'stack-arg)
+                                                                            param
+                                                                            `(reg ,param))
+                                                                       ,(select-instructions-assign fname var)))
                                                               `(,rs . ,in-params) (append (take arg-regs (if (< pcnt 6) pcnt 6))
                                                                                           (map (lambda (v) `(stack-arg ,v)) (range 1 max-stack)))) ,@func-si))) defs))
 
