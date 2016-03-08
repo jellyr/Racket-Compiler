@@ -22,17 +22,15 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '((define (big [a : Integer]
-                            [b : Integer]
-                            [c : Integer]
-                            [d : Integer]
-                            [e : Integer] 
-                            [f : Integer]
-                            [g : Integer]
-                            [h : Integer]
-                            [i : Integer]
-                            [j : Integer]) : Integer
-        (+ d j))
-(big 1 2 3 20 5 6 7 8 9 22)))
+(define expr '((define (mapint [fun : (Integer -> Integer)] [v : (Vector Integer Integer Integer)])
+  : (Vector Integer Integer Integer)
+  (vector (fun (vector-ref v 0)) (fun (vector-ref v 1)) (fun (vector-ref v 2))))
+(define (add1 [x : Integer]) : Integer
+  (+ x 1))
+(let ([vec (vector 1 2 3)])
+  (let ([vec2 (mapint add1 vec)])
+    (+ (vector-ref vec2 0) 
+       (+ (vector-ref vec2 1) 
+          (+ (vector-ref vec2 2) 33)))))))
 
 (test `(("typechecker1" ,typechecker ,interp-scheme) ,@r4-passes) expr)

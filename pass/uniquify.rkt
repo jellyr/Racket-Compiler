@@ -19,8 +19,7 @@
                               (if var-check
                                   `(,(cons `(,var-check : ,type) (car res)) ,(last res))
                                   (let ([newx (gensym x)])
-                                    `(,(cons `(,newx : ,type) (car res)) ,(cons `(,x . ,newx) (last res)))
-                                    )))])) `(() ,alist) expr))
+                                    `(,(cons `(,newx : ,type) (car res)) ,(cons `(,x . ,newx) (last res))))))])) `(() ,alist) expr))
 
 (define uniquify
   (lambda (alist)
@@ -44,6 +43,7 @@
                              `(,define-stmt ,flist) (uniquify-func (drop-right e 1) alist))
                            `(program ,ret-type ,@define-stmt ,((uniquify flist) (last e))))]
         [`(,op ,es ...) #:when (lookup op alist #f)
-         `(,((uniquify alist) op) ,@(map (uniquify alist) es))]
+         `(,@((uniquify alist) op) ,@(map (uniquify alist) es))]
         [`(,op ,es ...)
-          `(,op ,@(map (uniquify alist) es))]))))
+         `(,@((uniquify alist) op) ,@(map (uniquify alist) es))]
+        [else `(,e)]))))
