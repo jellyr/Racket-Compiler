@@ -50,7 +50,8 @@
       [`(if (eq? ,e1 ,e2) ,thn ,els)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
                                             [eexpr (map (curryr live-instr-helper livea) els)])
                                         `(if (eq? ,e1 ,e2) ,texpr ,eexpr))]
-      [`(assign ,var (app . ,e1)) `(assign ,var (call-live-roots ,(set->list livea) (app . ,e1)))]
+       ;;Need to change to make this work in select-instrs
+      [`(assign ,var (app . ,e1)) `(assign ,var (call-live-roots () (app . ,e1)))]
       [`(define (,fname . ,params) : ,ret ,types . ,body)
        `(define (,fname . ,params) : ,ret ,(map car types) . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
