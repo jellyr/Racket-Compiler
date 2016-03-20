@@ -22,9 +22,9 @@
                             (match def^
                               [`(,var : ,var-type) `(,var . ,var-type)]
                               [else (error "in define[new-env]")])) var-defs)])
-       (define ret-type^ (typecheck-R2 (append env new-env) body))
+       (match-define `(,ret-type^ ,ret-e^) (typecheck-R2 (append env new-env) body))
        (if (equal? ret-type^ ret-type)
-           ret-type^
+           (list ret-type^ e)
            (error "in define")))]))
 
 (define (hast type^ expr^)
@@ -91,24 +91,29 @@
      (define value-list (map (curry typecheck-R2 env) expr))
      (hast `(Vector ,@(map car value-list)) `(vector ,@(map last value-list)))]
     
-    ;; [`(vector-ref ,expr ,number)
-    ;;  (define vector_t (typecheck-R2 env expr))
-    ;;  (define erroref (curry error "in vector ref"))
-    ;;  (match vector_t
-    ;;    [`(Vector) (error "empty vector")]
-    ;;    [`(Vector . ,expr) ;; see if we can check index?
-    ;;     (if (eqv? (typecheck-R2 env number) 'Integer)
-    ;;         (list-ref vector_t (add1 number))
-    ;;         (erroref))]
-    ;;    [else (erroref)])]
-    ;; [`(vector-set! ,expr1 ,number ,expr2)
-    ;;  (define vector_t (typecheck-R2 env expr1))
-    ;;  (define errorset (curry error "in vector set"))
-    ;;  (if (eq? (typecheck-R2 env number) 'Integer)
-    ;;      (if (equal? (list-ref vector_t (add1 number)) (typecheck-R2 env expr2))
-    ;;          'Void
-    ;;          (errorset))
-    ;;      (errorset))]
+    [`(vector-ref ,expr ,number)
+     (match-define `(,vector-t^ ,vector-e^) (typecheck-R2 env expr))
+     (define erroref (curry error "in vector ref"))
+     (match vector-t^
+       [`(Vector) (error "empty vector")]
+       [`(Vector . ,type-expr) ;; see if we can check index?
+        (match-define `(,number-t^ ,number-e^) (typecheck-R2 env number))
+        (match-define `(,vector-t^ ,vector-e^) (typecheck-R2 env expr))
+        (if (eqv? number-t^ 'Integer)
+            (hast (list-ref vector-t^ (add1 number)) `(vector-ref ,vector-e^ ,number-e^))
+            (erroref))]
+       [else (erroref)])]
+    
+    [`(vector-set! ,expr1 ,number ,expr2)
+     (define errorset (curry error "in vector set"))
+     (match-let ([`(,vector-t^ ,vector-e^) (typecheck-R2 env expr1)]
+                 [`(,expr-t^ ,expr-e^) (typecheck-R2 env expr2)]
+                 [`(,number-t^ ,number-e^) (typecheck-R2 env number)])
+       (if (eq? number-t^ 'Integer)
+         (if (equal? (list-ref vector-t^ (add1 number)) expr-t^)
+             (hast 'Void `(vector-set! ,vector-e^ ,number-e^ ,expr-e^))
+             (errorset))
+         (errorset)))]
     
     [`(program . ,expr)
      ;; 
@@ -120,22 +125,17 @@
      (match-define `(,type^ ,expr^) (typecheck-R2 new-env body))
      `(program (type ,type^) ,expr^)]
     
-    ;; [`(,fun-call . ,paras)
-    ;;  (let ([func-type (lookup fun-call env (typecheck-R2 env fun-call))])
-    ;;    (match func-type
-    ;;      [`(,paras-types ... -> ,ret-type)
-    ;;       ;; need to check
-    ;;       (map (lambda (v t)
-    ;;              (if (equal? t (typecheck-R2 env v))
-    ;;                  #t
-    ;;                  (error "in func-call"))) paras paras-types)
-    ;;       ret-type]))]
-
+    [`(,fun-call . ,paras)
+     (match-define `(,func-type ,func-e) (typecheck-R2 env fun-call))
+     (match func-type
+       [`(,paras-types ... -> ,ret-type)
+        (define value-list (map (lambda (v t)
+                                  (define tuple (typecheck-R2 env v))
+                                  (if (equal? t (car tuple))
+                                      tuple
+                                      (error "in func-call"))) paras paras-types))
+        (hast ret-type `(,func-e ,@(map last value-list)))])]
     ))
 
 (define test (curry typecheck-R2 '()))
 
-
-
-;; (has-type (let ([(has-type x Int) (has-type 41 Int)])
-;;             (has-type (+ (has-type x Int) (has-type 1 Int)) Int)) Int)
