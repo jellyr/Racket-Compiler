@@ -47,27 +47,29 @@
      (match t1^
        ['Integer (hast 'Integer `(- ,e1^))]
        [else (error "in -")])]
-
-    ;; need to condiser if, let
+    [`(if ,econd ,ethen ,eelse)
+     (match-define `(,cond-t^ ,cond-e^) (typecheck-R2 env econd))
+     (match cond-t^
+       ['Boolean (match-let ([`(,then-t^ ,then-e^) (typecheck-R2 env ethen)]
+                             [`(,else-t^ ,else-e^) (typecheck-R2 env eelse)])
+                   (if (eqv? then-t^ else-t^)
+                       (hast then-t^ `(if ,cond-e^ ,then-e^ ,else-e^))
+                       (error "in if")))]
+       [else (error "in if")])]
     
-    ;; [`(if ,econd ,ethen ,eelse)
-    ;;   (match (typecheck-R2 env econd)
-    ;;     ['Boolean (let ([tthen (typecheck-R2 env ethen)]
-    ;;                     [telse (typecheck-R2 env eelse)])
-    ;;                 (if (eqv? tthen telse)
-    ;;                     tthen
-    ;;                     (error "in if")))]
-    ;;     [else (error "in if")])]
-    ;; [`(let ([,x ,e]) ,body)
-    ;;  (define T (typecheck-R2 env e))
-    ;;  (define new-env (cons (cons x T) env))
-    ;;  (typecheck-R2 new-env body)]
+    [`(let ([,x ,e]) ,body)
+     (match-define `(,para-t ,para-e) (typecheck-R2 env e))
+     (define new-env (cons (cons x para-t) env))
+     (match-define `(,body-t ,body-e) (typecheck-R2 new-env body))
+     (hast body-t `(let ([,x ,para-e] ,body-e)))
+     ]
     
     [`(not ,e1)
      (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
      (match t1^
        ['Boolean (hast 'Boolean `(not ,e1^))]
        [else (error "in not")])]
+    
     [`(eq? ,e1 ,e2)
      (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
      (match-define `(,t2^ ,e2^) (typecheck-R2 env e2))
@@ -75,6 +77,7 @@
        ['(Boolean Boolean) (hast 'Boolean `(eq? ,e1^ ,e2^))]
        ['(Integer Integer) (hast 'Boolean `(eq? ,e1^ ,e2^))]
        [else (error "In eq?")])]
+    
     [`(and ,e1 ,e2)
      (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
      (match-define `(,t2^ ,e2^) (typecheck-R2 env e2))
@@ -84,8 +87,10 @@
 
     ;; need to consider vector
     
-    ;; [`(vector . ,expr)
-    ;;  `(Vector ,@(map (curry typecheck-R2 env) expr))]
+    [`(vector . ,expr)
+     (define value-list (map (curry typecheck-R2 env) expr))
+     (hast `(Vector ,@(map car value-list)) `(vector ,@(map last value-list)))]
+    
     ;; [`(vector-ref ,expr ,number)
     ;;  (define vector_t (typecheck-R2 env expr))
     ;;  (define erroref (curry error "in vector ref"))
@@ -129,3 +134,8 @@
     ))
 
 (define test (curry typecheck-R2 '()))
+
+
+
+;; (has-type (let ([(has-type x Int) (has-type 41 Int)])
+;;             (has-type (+ (has-type x Int) (has-type 1 Int)) Int)) Int)
