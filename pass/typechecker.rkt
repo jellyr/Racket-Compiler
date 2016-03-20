@@ -24,7 +24,7 @@
                               [else (error "in define[new-env]")])) var-defs)])
        (match-define `(,ret-type^ ,ret-e^) (typecheck-R2 (append env new-env) body))
        (if (equal? ret-type^ ret-type)
-           (list ret-type^ e)
+           (list ret-type^ `(define (,funame . ,var-defs) : ,ret-type ,ret-e^))
            (error "in define")))]))
 
 (define (hast type^ expr^)
@@ -41,7 +41,7 @@
      (match-define `(,t2^ ,e2^) (typecheck-R2 env e2))
      (match `(,t1^ ,t2^)
        ['(Integer Integer) (hast 'Integer `(+ ,e1^ ,e2^))]
-       [else (error "In +")])]
+       [else (error "In +:")])]
     [`(- ,e1)
      (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
      (match t1^
@@ -52,7 +52,7 @@
      (match cond-t^
        ['Boolean (match-let ([`(,then-t^ ,then-e^) (typecheck-R2 env ethen)]
                              [`(,else-t^ ,else-e^) (typecheck-R2 env eelse)])
-                   (if (eqv? then-t^ else-t^)
+                   (if (equal? then-t^ else-t^)
                        (hast then-t^ `(if ,cond-e^ ,then-e^ ,else-e^))
                        (error "in if")))]
        [else (error "in if")])]
@@ -114,16 +114,24 @@
              (hast 'Void `(vector-set! ,vector-e^ ,number-e^ ,expr-e^))
              (errorset))
          (errorset)))]
+    [`(lambda: ,paras : ,ret-type ,body)
+     (define lambda-env (map (lambda (para-e)
+                               (match-define `(,var : ,t) para-e)
+                               `(,var . ,t)) paras))
+     (match-define `(,body-type ,body-e) (typecheck-R2 (append lambda-env env) body))
+     (if (equal? body-type ret-type)
+         (list `(,@(map cdr lambda-env) -> ,body-type) `(lambda : ,paras : ,ret-type ,body-e))
+         (error "in lambda"))]
     
     [`(program . ,expr)
      ;; 
      (define defs (drop-right expr 1))
      (define body (last expr))
      (define new-env (defines-env defs))
-     (define new-env^ (map (curry typechecker-define-helper new-env) defs))
+     (define def-values^ (map (curry typechecker-define-helper new-env) defs))
      ;(displayln new-env^)
      (match-define `(,type^ ,expr^) (typecheck-R2 new-env body))
-     `(program (type ,type^) ,expr^)]
+     `(program (type ,type^) ,@(map last def-values^) ,expr^)]
     
     [`(,fun-call . ,paras)
      (match-define `(,func-type ,func-e) (typecheck-R2 env fun-call))
