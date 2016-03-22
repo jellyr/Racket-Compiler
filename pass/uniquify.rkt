@@ -46,7 +46,7 @@
            `(define (,newvar ,@pstmt) : ,ret-type ,((uniquify plist) body)))]
         [`(lambda: ,params : ,ret-type ,body)
          (match-define `(,pstmt ,plist) (fun-param-helper params alist))
-         `(lambda ,@pstmt : ,ret-type ,((uniquify (append alist plist)) body))]
+         `(lambda: ,pstmt : ,ret-type ,((uniquify (append alist plist)) body))]
         [`(program ,ret-type . ,e) (begin
                            (match-define
                              `(,define-stmt ,flist) (uniquify-func (drop-right e 1) alist))
