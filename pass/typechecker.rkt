@@ -115,12 +115,13 @@
              (errorset))
          (errorset)))]
     [`(lambda: ,paras : ,ret-type ,body)
+     ;; (displayln paras)
      (define lambda-env (map (lambda (para-e)
                                (match-define `(,var : ,t) para-e)
                                `(,var . ,t)) paras))
      (match-define `(,body-type ,body-e) (typecheck-R2 (append lambda-env env) body))
      (if (equal? body-type ret-type)
-         (hast `(,@(map cdr lambda-env) -> ,body-type) `(lambda : ,paras : ,ret-type ,body-e))
+         (hast `(,@(map cdr lambda-env) -> ,body-type) `(lambda: ,paras : ,ret-type ,body-e))
          (error "in lambda"))]
     
     [`(program . ,expr)
@@ -137,11 +138,13 @@
      (match-define `(,func-type ,func-e) (typecheck-R2 env fun-call))
      (match func-type
        [`(,paras-types ... -> ,ret-type)
-        (define value-list (map (lambda (v t)
-                                  (define tuple (typecheck-R2 env v))
-                                  (if (equal? t (car tuple))
-                                      tuple
-                                      (error "in func-call"))) paras paras-types))
+        (define value-list (if (eq? (length paras) (length paras-types))
+             (map (lambda (v t)
+                    (define tuple (typecheck-R2 env v))
+                    (if (equal? t (car tuple))
+                        tuple
+                        (error "in func-call"))) paras paras-types)
+             (error "in func-call")))
         (hast ret-type `(,func-e ,@(map last value-list)))])]
     ))
 
