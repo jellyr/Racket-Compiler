@@ -120,7 +120,7 @@
                                `(,var . ,t)) paras))
      (match-define `(,body-type ,body-e) (typecheck-R2 (append lambda-env env) body))
      (if (equal? body-type ret-type)
-         (list `(,@(map cdr lambda-env) -> ,body-type) `(lambda : ,paras : ,ret-type ,body-e))
+         (hast `(,@(map cdr lambda-env) -> ,body-type) `(lambda : ,paras : ,ret-type ,body-e))
          (error "in lambda"))]
     
     [`(program . ,expr)
