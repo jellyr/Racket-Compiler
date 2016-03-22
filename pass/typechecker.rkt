@@ -61,7 +61,7 @@
      (match-define `(,para-t ,para-e) (typecheck-R2 env e))
      (define new-env (cons (cons x para-t) env))
      (match-define `(,body-t ,body-e) (typecheck-R2 new-env body))
-     (hast body-t `(let ([,x ,para-e] ,body-e)))
+     (hast body-t `(let ([,x ,para-e]) ,body-e))
      ]
     
     [`(not ,e1)

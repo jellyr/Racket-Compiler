@@ -24,7 +24,7 @@
 (define uniquify
   (lambda (alist)
     (lambda (e)
-      (displayln e)
+      ;(pretty-display e)
       (match e
         [`(has-type ,expr ,ht) `(has-type ,((uniquify alist) expr) ,ht)]
         [(? symbol?)
@@ -35,7 +35,8 @@
         [`(let ([,x ,e]) ,body)
          (let* ([newx (gensym x)]
                 [newlist (cons `(,x . ,newx) alist)])
-           (displayln newlist)
+           ;(displayln 'here46)
+           
            `(let ([,newx ,((uniquify alist) e)])
               ,((uniquify newlist) body)))]
         [`(type ,ty) e]

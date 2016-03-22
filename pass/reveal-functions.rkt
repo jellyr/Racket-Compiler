@@ -13,7 +13,9 @@
 ;; env -> funame set : (set 'myfun 'myfun1)
 (define (helper instr env)
   (match instr
+    
     [(? (curry set-member? env) ?) `(function-ref ,instr)]
+    [`(has-type ,instr ,t) `(has-type ,(helper instr env) ,t)]
     [`(let ([,x ,e]) ,body) `(let ([,x ,(helper e env)]) ,(helper body env))]
     [`(if ,econd ,ethen ,eelse) `(if ,(helper econd env) ,(helper ethen env) ,(helper eelse env))]
     [`(define (,funame . ,var-defs) : ,ret-type ,body) `(define (,funame . ,var-defs) : ,ret-type ,(helper body env))]
