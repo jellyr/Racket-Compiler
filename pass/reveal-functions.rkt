@@ -18,6 +18,7 @@
     [`(has-type ,instr ,t) `(has-type ,(helper instr env) ,t)]
     [`(let ([,x ,e]) ,body) `(let ([,x ,(helper e env)]) ,(helper body env))]
     [`(if ,econd ,ethen ,eelse) `(if ,(helper econd env) ,(helper ethen env) ,(helper eelse env))]
+    [`(lambda: ,vars : ,ret ,body) `(lambda: ,vars : ,ret ,(helper body env))]
     [`(define (,funame . ,var-defs) : ,ret-type ,body) `(define (,funame . ,var-defs) : ,ret-type ,(helper body env))]
     [`(vector . ,e1) `(vector . ,(map (curryr helper env) e1))]
     [`(vector-ref ,expr ,number) `(vector-ref ,(helper expr env) ,number)]
