@@ -24,13 +24,19 @@
 (define uniquify
   (lambda (alist)
     (lambda (e)
+      ;(pretty-display e)
       (match e
-        [(? symbol?) (lookup e alist)]
+        [`(has-type ,expr ,ht) `(has-type ,((uniquify alist) expr) ,ht)]
+        [(? symbol?)
+;;         (displayln alist)
+         (lookup e alist)]
         [(? boolean?) e]
         [(? integer?) e]
         [`(let ([,x ,e]) ,body)
          (let* ([newx (gensym x)]
-               [newlist (cons `(,x . ,newx) alist)])
+                [newlist (cons `(,x . ,newx) alist)])
+           ;(displayln 'here46)
+           
            `(let ([,newx ,((uniquify alist) e)])
               ,((uniquify newlist) body)))]
         [`(type ,ty) e]
@@ -38,6 +44,9 @@
          (let ([newvar ((uniquify alist) fname)])
            (match-define `(,pstmt ,plist) (fun-param-helper params alist))
            `(define (,newvar ,@pstmt) : ,ret-type ,((uniquify plist) body)))]
+        [`(lambda: ,params : ,ret-type ,body)
+         (match-define `(,pstmt ,plist) (fun-param-helper params alist))
+         `(lambda: ,pstmt : ,ret-type ,((uniquify (append alist plist)) body))]
         [`(program ,ret-type . ,e) (begin
                            (match-define
                              `(,define-stmt ,flist) (uniquify-func (drop-right e 1) alist))

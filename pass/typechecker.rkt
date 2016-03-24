@@ -50,12 +50,17 @@
                        (error "in if")))]
        [else (error "in if")]))
     [`(let ([,x ,e]) ,body)
-     (define T (typecheck-R2 env e))
-     (define new-env (cons (cons x T) env))
-     (typecheck-R2 new-env body)]
-    [`(not ,e)
-     (match (typecheck-R2 env e)
-       ['Boolean 'Boolean]
+
+     (match-define `(,para-t ,para-e) (typecheck-R2 env e))
+     (define new-env (cons (cons x para-t) env))
+     (match-define `(,body-t ,body-e) (typecheck-R2 new-env body))
+     (hast body-t `(let ([,x ,para-e]) ,body-e))
+     ]
+    
+    [`(not ,e1)
+     (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
+     (match t1^
+       ['Boolean (hast 'Boolean `(not ,e1^))]
        [else (error "in not")])]
     [`(eq? ,e1 ,e2)
      (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
@@ -85,7 +90,16 @@
          (if (equal? (list-ref vector_t (add1 number)) (typecheck-R2 env expr2))
              'Void
              (errorset))
-         (errorset))]
+         (errorset)))]
+    [`(lambda: ,paras : ,ret-type ,body)
+     ;; (displayln paras)
+     (define lambda-env (map (lambda (para-e)
+                               (match-define `(,var : ,t) para-e)
+                               `(,var . ,t)) paras))
+     (match-define `(,body-type ,body-e) (typecheck-R2 (append lambda-env env) body))
+     (if (equal? body-type ret-type)
+         (hast `(,@(map cdr lambda-env) -> ,body-type) `(lambda: ,paras : ,ret-type ,body-e))
+         (error "in lambda"))]
     
     [`(program . ,expr)
      ;; 
@@ -97,13 +111,18 @@
      `(program (type ,_type) ,@expr)]
     
     [`(,fun-call . ,paras)
-     (let ([func-type (lookup fun-call env (typecheck-R2 env fun-call))])
-       (match func-type
-         [`(,paras-types ... -> ,ret-type)
-          ;; need to check
-          (map (lambda (v t)
-                 (if (equal? t (typecheck-R2 env v))
-                     #t
-                     (error "in func-call"))) paras paras-types)
-          ret-type]))]))
+     (match-define `(,func-type ,func-e) (typecheck-R2 env fun-call))
+     (match func-type
+       [`(,paras-types ... -> ,ret-type)
+        (define value-list (if (eq? (length paras) (length paras-types))
+             (map (lambda (v t)
+                    (define tuple (typecheck-R2 env v))
+                    (if (equal? t (car tuple))
+                        tuple
+                        (error "in func-call"))) paras paras-types)
+             (error "in func-call")))
+        (hast ret-type `(,func-e ,@(map last value-list)))])]
+    ))
+
+(define test (curry typecheck-R2 '()))
 

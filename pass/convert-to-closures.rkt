@@ -7,6 +7,8 @@
 
 (define (get-free-vars body env free)
   (match body
+
+    [`(has-type ,expr ,ht) (get-free-vars expr env free)]
     [(? symbol?) (if (assoc body env) free (set-union free (set body)))]
     [`(let ,vars ,body) (get-free-vars body (append env vars) free)]
     [`(lambda ,vars ,body) (get-free-vars body (append env vars) free)]
@@ -24,6 +26,7 @@
 
 (define (clos-conv-helper expr)
   (match expr
+    [`(has-type ,instr ,ht) `(has-type ,(clos-conv-helper instr) ,ht)]
     [`(let ,vars ,body) `(let ,(map (lambda (v)
                                       (match-define `(,var ,e) v)
                                       `(,var ,(clos-conv-helper e))) vars)
