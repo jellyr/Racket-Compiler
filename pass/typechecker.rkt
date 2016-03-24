@@ -22,35 +22,42 @@
                             (match def^
                               [`(,var : ,var-type) `(,var . ,var-type)]
                               [else (error "in define[new-env]")])) var-defs)])
-       (define ret-type^ (typecheck-R2 (append env new-env) body))
+       (match-define `(,ret-type^ ,ret-e^) (typecheck-R2 (append env new-env) body))
        (if (equal? ret-type^ ret-type)
-           ret-type^
+           (list ret-type^ `(define (,funame . ,var-defs) : ,ret-type ,ret-e^))
            (error "in define")))]))
+
+(define (hast type^ expr^)
+  (list type^ `(has-type ,expr^ ,type^)))
 
 (define (typecheck-R2 env e)
   (match e
-    [(? fixnum?) 'Integer]
-    [(? boolean?) 'Boolean]
-    [(? symbol?) (lookup e env)]
-    [`(read) 'Integer]
+    [(? fixnum?) (hast 'Integer e)]
+    [(? boolean?) (hast 'Boolean e)]
+    [(? symbol?) (define t^ (lookup e env)) (hast t^ e)]
+    [`(read) (hast 'Integer e)]
     [`(+ ,e1 ,e2)
-     (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
-       ['(Integer Integer) 'Integer]
-       [else (error "In +")])]
+     (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
+     (match-define `(,t2^ ,e2^) (typecheck-R2 env e2))
+     (match `(,t1^ ,t2^)
+       ['(Integer Integer) (hast 'Integer `(+ ,e1^ ,e2^))]
+       [else (error "In +:")])]
     [`(- ,e1)
-     (match (typecheck-R2 env e1)
-       ['Integer 'Integer]
+     (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
+     (match t1^
+       ['Integer (hast 'Integer `(- ,e1^))]
        [else (error "in -")])]
-    (`(if ,econd ,ethen ,eelse)
-     (match (typecheck-R2 env econd)
-       ['Boolean (let ([tthen (typecheck-R2 env ethen)]
-                       [telse (typecheck-R2 env eelse)])
-                   (if (eqv? tthen telse)
-                       tthen
+    [`(if ,econd ,ethen ,eelse)
+     (match-define `(,cond-t^ ,cond-e^) (typecheck-R2 env econd))
+     (match cond-t^
+       ['Boolean (match-let ([`(,then-t^ ,then-e^) (typecheck-R2 env ethen)]
+                             [`(,else-t^ ,else-e^) (typecheck-R2 env eelse)])
+                   (if (equal? then-t^ else-t^)
+                       (hast then-t^ `(if ,cond-e^ ,then-e^ ,else-e^))
                        (error "in if")))]
-       [else (error "in if")]))
+       [else (error "in if")])]
+    
     [`(let ([,x ,e]) ,body)
-
      (match-define `(,para-t ,para-e) (typecheck-R2 env e))
      (define new-env (cons (cons x para-t) env))
      (match-define `(,body-t ,body-e) (typecheck-R2 new-env body))
@@ -62,33 +69,49 @@
      (match t1^
        ['Boolean (hast 'Boolean `(not ,e1^))]
        [else (error "in not")])]
+    
     [`(eq? ,e1 ,e2)
-     (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
-       ['(Boolean Boolean) 'Boolean]
-       ['(Integer Integer) 'Boolean]
+     (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
+     (match-define `(,t2^ ,e2^) (typecheck-R2 env e2))
+     (match `(,t1^ ,t2^)
+       ['(Boolean Boolean) (hast 'Boolean `(eq? ,e1^ ,e2^))]
+       ['(Integer Integer) (hast 'Boolean `(eq? ,e1^ ,e2^))]
        [else (error "In eq?")])]
+    
     [`(and ,e1 ,e2)
-     (match `(,(typecheck-R2 env e1) ,(typecheck-R2 env e2))
-       ['(Boolean Boolean) 'Boolean]
+     (match-define `(,t1^ ,e1^) (typecheck-R2 env e1))
+     (match-define `(,t2^ ,e2^) (typecheck-R2 env e2))
+     (match `(,t1^ ,t2^)
+       ['(Boolean Boolean) (hast 'Boolean `(and ,e1^ ,e2^))]
        [else (error "In and")])]
+
+    ;; need to consider vector
+    
     [`(vector . ,expr)
-     `(Vector ,@(map (curry typecheck-R2 env) expr))]
+     (define value-list (map (curry typecheck-R2 env) expr))
+     (hast `(Vector ,@(map car value-list)) `(vector ,@(map last value-list)))]
+    
     [`(vector-ref ,expr ,number)
-     (define vector_t (typecheck-R2 env expr))
+     (match-define `(,vector-t^ ,vector-e^) (typecheck-R2 env expr))
      (define erroref (curry error "in vector ref"))
-     (match vector_t
+     (match vector-t^
        [`(Vector) (error "empty vector")]
-       [`(Vector . ,expr) ;; see if we can check index?
-        (if (eqv? (typecheck-R2 env number) 'Integer)
-            (list-ref vector_t (add1 number))
+       [`(Vector . ,type-expr) ;; see if we can check index?
+        (match-define `(,number-t^ ,number-e^) (typecheck-R2 env number))
+        (match-define `(,vector-t^ ,vector-e^) (typecheck-R2 env expr))
+        (if (eqv? number-t^ 'Integer)
+            (hast (list-ref vector-t^ (add1 number)) `(vector-ref ,vector-e^ ,number-e^))
             (erroref))]
        [else (erroref)])]
+    
     [`(vector-set! ,expr1 ,number ,expr2)
-     (define vector_t (typecheck-R2 env expr1))
      (define errorset (curry error "in vector set"))
-     (if (eq? (typecheck-R2 env number) 'Integer)
-         (if (equal? (list-ref vector_t (add1 number)) (typecheck-R2 env expr2))
-             'Void
+     (match-let ([`(,vector-t^ ,vector-e^) (typecheck-R2 env expr1)]
+                 [`(,expr-t^ ,expr-e^) (typecheck-R2 env expr2)]
+                 [`(,number-t^ ,number-e^) (typecheck-R2 env number)])
+       (if (eq? number-t^ 'Integer)
+         (if (equal? (list-ref vector-t^ (add1 number)) expr-t^)
+             (hast 'Void `(vector-set! ,vector-e^ ,number-e^ ,expr-e^))
              (errorset))
          (errorset)))]
     [`(lambda: ,paras : ,ret-type ,body)
@@ -106,9 +129,10 @@
      (define defs (drop-right expr 1))
      (define body (last expr))
      (define new-env (defines-env defs))
-     (map (curry typechecker-define-helper new-env) defs)
-     (define _type (typecheck-R2 new-env body))
-     `(program (type ,_type) ,@expr)]
+     (define def-values^ (map (curry typechecker-define-helper new-env) defs))
+     ;(displayln new-env^)
+     (match-define `(,type^ ,expr^) (typecheck-R2 new-env body))
+     `(program (type ,type^) ,@(map last def-values^) ,expr^)]
     
     [`(,fun-call . ,paras)
      (match-define `(,func-type ,func-e) (typecheck-R2 env fun-call))
@@ -125,4 +149,3 @@
     ))
 
 (define test (curry typecheck-R2 '()))
-
