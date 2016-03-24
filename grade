@@ -96,3 +96,15 @@ on. It appears that in most cases, its dying in uncover-live, maybe
 because one register isn't tracked properly.
 
 Grade: 97%
+
+ASSIGNMENT 5 (late):
+All cases pass -- well done!
+Grade: 100% (rounded up)
+
+ASSIGNMENT 6: 
+3/12 test cases pass.  
+
+Test cases that did not pass the compiler did not pass any test cases
+-- it looks like your typechecker is raising a type error for all
+programs with lambdas; the test cases that you pass are the ones that report type errors.
+
