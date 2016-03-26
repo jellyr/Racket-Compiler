@@ -24,6 +24,10 @@
 
 (define (flattens e)
   (match e
+    [`(has-type ,expr ,ty) (let-values ([(e^ stmt^ alist^) (flattens expr)])
+                             (match expr
+                               [(or (? scalar?) (? vector?)) (values e^ `((has-type ,e^ ,ty)) alist^)]
+                               [else (values e^ `((has-type ,stmt^ ,ty)) alist^)]))]
     [(or (? scalar?) (? vector?)) (values e '() '())]
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
@@ -73,18 +77,20 @@
                                      (if op
                                          (append (cons newvar alistt) aliste)
                                          (append (cons newvar alistc) alistt aliste))))))]
-    [`(let ([,x ,e]) ,body) (let-values
+    [`(let ([,x (has-type ,e ,ht1)]) (has-type ,body ,ht2)) (let-values
                                 ([(xe^ stmtx^ alistx^) (flattens e)]
                                  [(be^ stmtb^ alistb^) (flattens body)])
                               (match e
                                 [`(if ,cnd ,thn ,els) (values be^
-                                                              (append stmtx^ `((assign ,x ,xe^)) stmtb^)
+                                                              (append `((has-type ,stmtx^ ,ht1))
+                                                                      `((assign ,x ,xe^))
+                                                                      `((has-type ,stmtb^ ,ht2)))
                                                               (append alistx^ alistb^))]
                                 [else (let* [(alistx^ (cons x (if (null? alistx^) alistx^ (remq xe^ alistx^))))
                                              (xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
                                              (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
                                         (values be^
-                                                (append stmtx^ `((assign ,x ,xe^)) stmtb^)
+                                                (append `((has-type ,stmtx^ ,ht1)) `((assign ,x ,xe^)) `((has-type ,stmtb^ ,ht2)))
                                                 (append alistx^ alistb^)))]))]
     [`(and ,e1 ,e2) (flattens `(if (eq? ,e1 #t) ,e2 #f))]
     [`(,op ,e1 ,e2) (let-values (((e1^ stmt1^ alist1^) (flattens e1))
