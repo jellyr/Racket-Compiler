@@ -44,7 +44,8 @@
                                                    (has-type (app (has-type (vector-ref
                                                                              (has-type ,newvar ,ht2)
                                                                              (has-type 0 Integer)) ,(cadr ht2))
-                                                                  (has-type ,newvar ,ht2)
+                                                                  ;;ht2 replaced with _
+                                                                  (has-type ,newvar _)
                                                                   ,@(map clos-conv-helper es)) ,ht)) ,ht))]
     [`(has-type (lambda: ,vars : ,ret ,body) ,ht)
      (let* ([lamvar (gensym 'lam)]
@@ -56,8 +57,8 @@
        (match-define `(has-type ,b ,htb) def-stmt)
        (define ret-type `(Vector ,ht ,@clos-var-types))
        (define lam-types `(,ret-type  ,@var-types -> ,htb))
-       (set! lambda-functions (append lambda-functions
-                                      `((define (,lamvar [,closvar : ,ret-type] . ,vars) : ,htb ,def-stmt))))
+       (set! lambda-functions (append lambda-functions ;;,ret-type replaced with _
+                                      `((define (,lamvar [,closvar : _] . ,vars) : ,htb ,def-stmt))))
        `(has-type (vector (has-type (function-ref ,lamvar) ,lam-types) ,@(map (lambda (x)
                                                                         `(has-type ,(car x) ,(cdr x)))
                                                                        fvs)) (Vector ,lam-types ,@clos-var-types)))]
