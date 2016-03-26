@@ -12,7 +12,8 @@
                                                      (set-union free (set `(,expr . ,ht))))]
     [`(has-type (let ,vars ,b) ,ht) (get-free-vars b (append env vars) free)]
     [`(has-type (lambda ,vars ,b) ,ht) (get-free-vars b (append env vars) free)]
-    [`(has-type (,op ,e1 ,e2) ,ht) (set-union (get-free-vars e1 env free) (get-free-vars e2 env free))]
+    [`(has-type (,op ,e1 ,e2) ,ht) (set-union (get-free-vars e1 env free)
+                                              (get-free-vars e2 env free))]
     [`(has-type (,op ,e1) ,ht) (get-free-vars e1 env free)]
     [`(has-type (if ,con ,thn ,els) ,ht) (set-union (get-free-vars con env free)
                                                     (get-free-vars thn env free)
@@ -40,19 +41,26 @@
                                       (match-define `(has-type ,expr1 ,ht1) e)
                                       (match-define `(has-type ,expr2 ,ht2) e^)        
                                       `(has-type (let ([,newvar ,e^])
-                                                   (has-type (app (has-type (vector-ref ,newvar 0) ,ht1)
+                                                   (has-type (app (has-type (vector-ref
+                                                                             (has-type ,newvar ,ht2)
+                                                                             (has-type 0 Integer)) ,(cadr ht2))
                                                                   (has-type ,newvar ,ht2)
                                                                   ,@(map clos-conv-helper es)) ,ht)) ,ht))]
-    [`(has-type (lambda: ,vars : ,ret ,body) ,ht) (let* ([lamvar (gensym 'lam)]
-                                                         [closvar (gensym 'clos)]
-                                                         [fvs (set->list (get-free-vars body vars (set)))]
-                                                         [clos-var-types (map cdr fvs)]
-                                                         [def-stmt (fvs-let-builder body closvar clos-var-types fvs 1)]
-                                                         [ret-type `(Vector ,ht ,@clos-var-types)])
-                                                    (match-define `(has-type ,b ,htb) def-stmt)
-                                                    (set! lambda-functions (append lambda-functions
-                                                                                   `((define (,lamvar [,closvar : ,ret-type] . ,vars) : ,htb ,def-stmt))))
-                                                    `(has-type (vector (function-ref ,lamvar) ,@(map car fvs)) ,ret-type))]
+    [`(has-type (lambda: ,vars : ,ret ,body) ,ht)
+     (let* ([lamvar (gensym 'lam)]
+            [closvar (gensym 'clos)]
+            [fvs (set->list (get-free-vars body vars (set)))]
+            [clos-var-types (map cdr fvs)]
+            [var-types (map last vars)]
+            [def-stmt (fvs-let-builder body closvar clos-var-types fvs 1)])
+       (match-define `(has-type ,b ,htb) def-stmt)
+       (define ret-type `(Vector ,ht ,@clos-var-types))
+       (define lam-types `(,ret-type  ,@var-types -> ,htb))
+       (set! lambda-functions (append lambda-functions
+                                      `((define (,lamvar [,closvar : ,ret-type] . ,vars) : ,htb ,def-stmt))))
+       `(has-type (vector (has-type (function-ref ,lamvar) ,lam-types) ,@(map (lambda (x)
+                                                                        `(has-type ,(car x) ,(cdr x)))
+                                                                       fvs)) (Vector ,lam-types ,@clos-var-types)))]
     [`(has-type (if ,con ,thn ,els) ,ht) `(has-type (if ,(clos-conv-helper con)
                                                         ,(map clos-conv-helper thn)
                                                         ,(map clos-conv-helper els)) ,ht)]
@@ -63,5 +71,5 @@
 (define (convert-to-closures expr)
   (match-define `(program ,ret . ,e) expr)
   (define defs (drop-right e 1))
-  (let ([clos (map clos-conv-helper e)])
+  (let ([clos (map clos-conv-helper e)])1
     `(program ,ret ,@lambda-functions ,@clos)))
