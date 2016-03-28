@@ -2,6 +2,19 @@
 (require "../common.rkt")
 (provide flattens)
 
+(define env '())
+
+(define (envend v)
+  (set! env (cons v env)))
+
+(define (applyenv e)
+  (lookup e env 46))
+
+(define (hast-env e)
+  ; (displayln env)
+  (let ([t (applyenv e)])
+    `(has-type ,e ,t)))
+
 (define (if-flatten cnd thn els)
   (match cnd
     [`(not ,cexp) (let-values (((cn tn el op) (if-flatten cexp els thn)))
@@ -23,11 +36,11 @@
   `(defines ,@(map flattens expr)))
 
 (define (flattens e)
+  ; (displayln e)
   (match e
-    [`(has-type ,expr ,ty) (let-values ([(e^ stmt^ alist^) (flattens expr)])
-                             (match expr
-                               [(or (? scalar?) (? vector?)) (values e^ `((has-type ,e^ ,ty)) alist^)]
-                               [else (values e^ `((has-type ,stmt^ ,ty)) alist^)]))]
+    [`(has-type ,expr ,ty)#:when (or (scalar? expr) (vector? expr))
+     (envend `(,expr . ,ty))
+     (values expr `() '())]
     [(or (? scalar?) (? vector?)) (values e '() '())]
     [`(read) (let [(newvar (gensym))]
                (values newvar  `((assign ,newvar (read))) `(,newvar)))]
@@ -36,16 +49,19 @@
                              `(program ,alist^ ,type ,(flatten-func (drop-right e 1))  ,@stmt^ (return ,e^)))]
     [`(define (,fname . ,params) : ,type ,body) (let-values ([(e^ stmt^ alist^) (flattens body)])
                                                   `(define (,fname . ,params) : ,type ,alist^ ,@(append stmt^ `((return ,e^)))))]
-    [`(app . ,e1) (let-values ([(e1^ stmt1^ alist1^) (flatten-vec-app e1)])
-                      (let ([newvar (gensym)])
+    [`(has-type (app . ,e1) ,t) (let-values ([(e1^ stmt1^ alist1^) (flatten-vec-app e1)])
+                                  (let ([newvar (gensym)])
+                                    (envend `(,newvar . ,t))
                         (values newvar
-                                (append stmt1^ `((assign ,newvar (app . ,e1^))))
+                                (append stmt1^ `((assign ,newvar (has-type (app . ,(map hast-env e1^)) ,t))))
                                 (cons newvar alist1^))))]
-    [`(function-ref ,e1) (let-values ([(e^ stmt^ alist^) (flattens e1)])
-                          (let ([newvar (gensym)])
-                            (values newvar
-                                    (append stmt^ `((assign ,newvar (function-ref ,e^))))
-                                    (cons newvar alist^))))]
+    [`(has-type (function-ref ,e1) ,t) (let-values ([(e^ stmt^ alist^) (flattens e1)])
+                                         (let ([newvar (gensym)])
+                                           (envend `(,e^ . ,t))
+                                           (envend `(,newvar . ,t))
+                                           (values newvar
+                                                   (append stmt^ `((assign ,newvar (has-type (function-ref ,e^) ,t))))
+                                                   (cons newvar alist^))))]
     [`(vector . ,e1) (let-values ([(e^ stmt^ alist^) (flatten-vec-app e1)])
                        (let [(newvar (gensym))]
                          (values newvar
