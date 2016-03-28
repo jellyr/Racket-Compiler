@@ -19,9 +19,9 @@
 
 (define (if-flatten cnd thn els)
   (match cnd
-    [`(not ,cexp) (let-values (((cn tn el op) (if-flatten cexp els thn)))
-                    (values cn tn el #f))]
-    [`(eq? ,e1 ,e2) #:when (and (scalar? e1) (scalar? e2)) (values cnd thn els #t)]
+    [`(has-type (not ,cexp) ,t) (let-values (((cn tn el op) (if-flatten cexp els thn)))
+                      (values cn tn el #f))]
+    [`(has-type (eq? ,e1 ,e2) ,t) #:when (and (scalar? e1) (scalar? e2)) (values cnd thn els #t)]
     [else (values cnd thn els #f)]))
 
 (define (flatten-vec-app expr)
@@ -82,22 +82,22 @@
                                                   stmt3^
                                                   `((assign ,newvar (vector-set! ,e1^ ,e2^ ,e3^))))
                                           (append (cons newvar alist1^) alist2^ alist3^)))]
-    [`(if ,cn ,tn ,en) (let-values (((cnd thn els op) (if-flatten cn tn en)))
-                         (let-values (((ec stmtc alistc) (flattens cnd))
-                                      ((et stmtt alistt) (flattens thn))
-                                      ((ee stmte aliste) (flattens els)))
-                           (let ([newvar (gensym)])
-                             (values newvar
-                                     (if op
-                                         (append `((if ,cnd
-                                                       ,(append stmtt `((assign ,newvar ,et)))
-                                                       ,(append stmte `((assign ,newvar ,ee))))))
-                                         (append stmtc `((if (eq? #t ,ec)
-                                                             ,(append stmtt `((assign ,newvar ,et)))
-                                                             ,(append stmte `((assign ,newvar ,ee)))))))
-                                     (if op
-                                         (append (cons newvar alistt) aliste)
-                                         (append (cons newvar alistc) alistt aliste))))))]
+    [`(has-type (if ,cn ,tn ,en) ,t) (let-values (((cnd thn els op) (if-flatten cn tn en)))
+                                       (let-values (((ec stmtc alistc) (flattens cnd))
+                                                    ((et stmtt alistt) (flattens thn))
+                                                    ((ee stmte aliste) (flattens els)))
+                                         (let ([newvar (gensym)])
+                                           (values newvar
+                                                   (if op
+                                                       (append `((if ,cnd
+                                                                     ,(append stmtt `((assign ,newvar ,et)))
+                                                                     ,(append stmte `((assign ,newvar ,ee))))))
+                                                       (append stmtc `((if (eq? #t ,ec)
+                                                                           ,(append stmtt `((assign ,newvar ,et)))
+                                                                           ,(append stmte `((assign ,newvar ,ee)))))))
+                                                   (if op
+                                                       (append (cons newvar alistt) aliste)
+                                                       (append (cons newvar alistc) alistt aliste))))))]
     [`(has-type (let ([,x ,e]) ,body) ,t)
      ;(envend `(,x . ,vartype))
      (let-values
@@ -115,7 +115,7 @@
                  (values be^
                          (append stmtx^ `((assign ,x ,(hast-env xe^))) stmtb^)
                          (append alistx^ alistb^)))]))]
-    [`(and ,e1 ,e2) (flattens `(if (eq? ,e1 #t) ,e2 #f))]
+    [`(has-type (and ,e1 ,e2) ,t) (flattens `(has-type (if (has-type (eq? ,e1 #t) Boolean) ,e2 (has-type #f Boolean)) ,t))]
     [`(has-type (,op ,e1 ,e2) ,t) (let-values
                                       (((e1^ stmt1^ alist1^) (flattens e1))
                                        ((e2^ stmt2^ alist2^) (flattens e2)))
