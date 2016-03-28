@@ -72,16 +72,17 @@
          (values newvar
                  (append stmt^ `((assign ,newvar (has-type (vector . ,(map hast-env e^)) ,vt))))
                  (cons newvar alist^))))]
-    [`(vector-set! ,e1 ,e2 ,e3) (let-values ([(e1^ stmt1^ alist1^) (flattens e1)]
-                                             [(e2^ stmt2^ alist2^) (flattens e2)]
-                                             [(e3^ stmt3^ alist3^) (flattens e3)]
-                                             [(newvar) (gensym)])
-                                  (values newvar
-                                          (append stmt1^
-                                                  stmt2^
-                                                  stmt3^
-                                                  `((assign ,newvar (vector-set! ,e1^ ,e2^ ,e3^))))
-                                          (append (cons newvar alist1^) alist2^ alist3^)))]
+    [`(has-type (vector-set! ,e1 ,e2 ,e3) ,t) (let-values ([(e1^ stmt1^ alist1^) (flattens e1)]
+                                               [(e2^ stmt2^ alist2^) (flattens e2)]
+                                               [(e3^ stmt3^ alist3^) (flattens e3)]
+                                               [(newvar) (gensym)])
+                                    (envend `(,newvar . ,t))
+                                    (values newvar
+                                            (append stmt1^
+                                                    stmt2^
+                                                    stmt3^
+                                                    `((assign ,newvar (has-type (vector-set! ,(hast-env e1^) ,(hast-env e2^) ,(hast-env e3^)) ,t))))
+                                            (append (cons newvar alist1^) alist2^ alist3^)))]
     [`(has-type (if ,cn ,tn ,en) ,t) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                                        (let-values (((ec stmtc alistc) (flattens cnd))
                                                     ((et stmtt alistt) (flattens thn))
@@ -89,12 +90,15 @@
                                          (let ([newvar (gensym)])
                                            (values newvar
                                                    (if op
-                                                       (append `((if ,cnd
-                                                                     ,(append stmtt `((assign ,newvar ,et)))
-                                                                     ,(append stmte `((assign ,newvar ,ee))))))
-                                                       (append stmtc `((if (eq? #t ,ec)
-                                                                           ,(append stmtt `((assign ,newvar ,et)))
-                                                                           ,(append stmte `((assign ,newvar ,ee)))))))
+                                                       (append `((has-type (if ,cnd
+                                                                      ,(append stmtt `((assign ,newvar ,(hast-env et))))
+                                                                      ,(append stmte `((assign ,newvar ,(hast-env ee)))))
+                                                                ,(last tn))))
+                                                       (append stmtc `((has-type
+                                                                        (if (has-type (eq? (has-type #t Boolean) ,(hast-env ec)) Boolean)
+                                                                            ,(append stmtt `((assign ,newvar ,(hast-env et))))
+                                                                            ,(append stmte `((assign ,newvar ,(hast-env ee)))))
+                                                                        ,(last tn)))))
                                                    (if op
                                                        (append (cons newvar alistt) aliste)
                                                        (append (cons newvar alistc) alistt aliste))))))]
