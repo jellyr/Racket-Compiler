@@ -14,7 +14,7 @@
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
   (match instr
     [`(has-type ,x ,t) #:when (and (pair? t) (equal? (car t) 'Vector)) (set instr)]
-    [`(has-type (allocate ,e) ,t) (set)]
+    [`(has-type (allocate ,e ,t1) ,t) (set)]
     [`(has-type (assign ,var ,e) ,t) (let ([forsub (vector-unwrap var)]
                                            [forunion (live-analysis e (set))])
                            (set-union forunion (set-subtract lak forsub)))]

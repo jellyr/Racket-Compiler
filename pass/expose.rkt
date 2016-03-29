@@ -11,7 +11,7 @@
                                      `((if (collection-needed? ,bytes^)
                                            ((collect ,bytes^))
                                            ())
-                                       (assign ,lhs (has-type (allocate ,len) ,vector-types))
+                                       (assign ,lhs (has-type (allocate ,len ,vector-types) ,vector-types))
                                        ,@(map (lambda (val idx)
                                                 (let ([voidvar (gensym 'void)])
                                                   `(has-type
