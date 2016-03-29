@@ -8,10 +8,10 @@
     [`(has-type ,instr ,t) `((has-type ,@(expose-helper instr) ,t))]
     [`(assign ,lhs (has-type (vector . ,ve) ,vector-types)) (let* ([len (length ve)]
                                             [bytes^ (* 8 (add1 len))])
-                                     `((if (collection-needed? ,bytes^)
-                                           ((collect ,bytes^))
-                                           ())
-                                       (assign ,lhs (has-type (allocate ,len ,vector-types) ,vector-types))
+                                       `((has-type (if (collection-needed? ,bytes^)
+                                                       ((collect ,bytes^))
+                                                       ()) Void)
+                                         (assign ,lhs (has-type (allocate ,len ,vector-types) ,vector-types))
                                        ,@(map (lambda (val idx)
                                                 (let ([voidvar (gensym 'void)])
                                                   `(has-type

@@ -4,6 +4,7 @@
 (provide call-live-roots)
 
 (define (live-if-helper e)
+  ;(display "in iffffffff:") (displayln e)
   (foldr (lambda (x r)
            (let* ([lives (if (null? r) (set) (car r))]
                   [newlives (live-analysis x lives)])
@@ -12,36 +13,42 @@
 
 (define (live-analysis instr lak)
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
+  ; (display "lak: ") (displayln lak)
+  ; (display "instr: ")(displayln instr)
   (match instr
-    [`(has-type ,x ,t) #:when (and (pair? t) (equal? (car t) 'Vector)) (set instr)]
+    
     [`(has-type (allocate ,e ,t1) ,t) (set)]
-    [`(has-type (assign ,var ,e) ,t) (let ([forsub (vector-unwrap var)]
-                                           [forunion (live-analysis e (set))])
+    [`(assign ,var (has-type ,e ,t)) (let ([forsub (vector-unwrap var)]
+                               [forunion (live-analysis e (set))])
                            (set-union forunion (set-subtract lak forsub)))]
     [`(has-type (vector-set! ,var ,index ,e) ,t) (let ([forunion (live-analysis e lak)])
                                        (set-union lak forunion))]
     [`(has-type (vector-ref ,v ,index) ,t) (set-union lak (set v))]
     [`(has-type (if (eq? ,e1 ,e2) ,thn ,els) ,t)  (let ([e1set (live-analysis e1 lak)]
-                                            [e2set (live-analysis e2 lak)]
-                                            [thenset (live-if-helper thn)]
-                                            [elseset (live-if-helper els)])
-                                        (set-union e1set e2set (car thenset) (car elseset)))]
+                                                        [e2set (live-analysis e2 lak)]
+                                                        [thenset (live-if-helper thn)]
+                                                        [elseset (live-if-helper els)])
+                                                    ; (display "thenset: ") (displayln thenset)
+                                                    (set-union e1set e2set (car thenset) (car elseset)))]
+    [`(has-type ,x ,t) #:when (and (pair? t) (equal? (car t) 'Vector)) (set x)]
     [`(return ,var) (set)]
     [else lak]))
 
 
 (define (call-live-roots e)
   (define (live-instr-helper instr livea)
+    ; (display "instr: ") (displayln instr)
+     ; (display "livea: ") (displayln livea)
     (match instr
-      [`(if (collection-needed? ,e1)
-            ((collect ,e2))
-            ())
-       `(if (collection-needed? ,e1)
-            ((call-live-roots ,(set->list livea) (collect ,e2)))
-            ())]
-      [`(if (has-type (eq? ,e1 ,e2) ,t) ,thn ,els)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
-                                              [eexpr (map (curryr live-instr-helper livea) els)])
-                                        `(if (eq? ,e1 ,e2) ,texpr ,eexpr))]
+      [`(has-type (if (collection-needed? ,e1)
+             ((collect ,e2))
+             ()) ,t)
+       `(has-type (if (collection-needed? ,e1)
+             ((call-live-roots ,(set->list livea) (collect ,e2)))
+             ()) ,t)]
+      [`(has-type (if (has-type (eq? ,e1 ,e2) ,t) ,thn ,els) ,t)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
+                                                                        [eexpr (map (curryr live-instr-helper livea) els)])
+                                                                    `(has-type (if (eq? ,e1 ,e2) ,texpr ,eexpr) ,t))]
        ;;Need to change to make this work in select-instrs
       [`(assign ,var (has-type (app . ,e1) ,t)) `(assign ,var (call-live-roots () (app . ,e1)))]
       [`(define (,fname . ,params) : ,ret . ,body)
