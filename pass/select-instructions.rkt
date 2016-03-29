@@ -140,8 +140,15 @@
     ;[(? list?) (list (remove ret-v e))]
     [else `(,e)]))
 
+(define (clean-has-type e)
+  (match e
+    [`(has-type ,e^ ,t) (clean-has-type e^)]
+    [(? pair?) (map clean-has-type e)]
+    [else e]))
+
 (define (select-instructions e)
-  (match-define `(program ,args ,ret-type (defines . ,defs) . ,instrs) e)
+  (define clean-e (clean-has-type e))
+  (match-define `(program ,ret-type (defines . ,defs) . ,instrs) clean-e)
   (let ([si (append-map (curry select-instructions-assign '_main) instrs)]
         [tvars SI-VARS]
         [si-defs (si-func-helper defs)])

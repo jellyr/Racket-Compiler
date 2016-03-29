@@ -22,15 +22,10 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '((define (mapint [fun : (Integer -> Integer)] [v : (Vector Integer Integer Integer)])
-  : (Vector Integer Integer Integer)
-  (vector (fun (vector-ref v 0)) (fun (vector-ref v 1)) (fun (vector-ref v 2))))
-(define (add1 [x : Integer]) : Integer
-  (+ x 1))
-(let ([vec (vector 1 2 3)])
-  (let ([vec2 (mapint add1 vec)])
-    (+ (vector-ref vec2 0) 
-       (+ (vector-ref vec2 1) 
-          (+ (vector-ref vec2 2) 33)))))))
+(define expr '( ((lambda: ((x : Integer)) : Integer x) 42)
+)
+)
 
-(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r4-passes) expr)
+(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r5-passes) expr)
+
+
