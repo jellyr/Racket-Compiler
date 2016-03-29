@@ -46,11 +46,12 @@
        `(has-type (if (collection-needed? ,e1)
              ((call-live-roots ,(set->list livea) (collect ,e2)))
              ()) ,t)]
-      [`(has-type (if (has-type (eq? ,e1 ,e2) ,t) ,thn ,els) ,t)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
+      [`(has-type (if (has-type (eq? ,e1 ,e2) ,t1) ,thn ,els) ,t)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
                                                                         [eexpr (map (curryr live-instr-helper livea) els)])
                                                                     `(has-type (if (eq? ,e1 ,e2) ,texpr ,eexpr) ,t))]
        ;;Need to change to make this work in select-instrs
-      [`(assign ,var (has-type (app . ,e1) ,t)) `(assign ,var (call-live-roots () (has-type (app . ,e1) ,t)))]
+      [`(assign ,var (has-type (app . ,e1) ,t))
+       `(assign ,var (call-live-roots ,(set->list livea) (has-type (app . ,e1) ,t)))]
       [`(define (,fname . ,params) : ,ret ,lvars . ,body)
        `(define (,fname . ,params) : ,ret ,lvars . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
