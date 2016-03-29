@@ -50,9 +50,9 @@
                                                                         [eexpr (map (curryr live-instr-helper livea) els)])
                                                                     `(has-type (if (eq? ,e1 ,e2) ,texpr ,eexpr) ,t))]
        ;;Need to change to make this work in select-instrs
-      [`(assign ,var (has-type (app . ,e1) ,t)) `(assign ,var (call-live-roots () (app . ,e1)))]
-      [`(define (,fname . ,params) : ,ret . ,body)
-       `(define (,fname . ,params) : ,ret . ,(map live-instr-helper body (cdr livea)))]
+      [`(assign ,var (has-type (app . ,e1) ,t)) `(assign ,var (call-live-roots () (has-type (app . ,e1) ,t)))]
+      [`(define (,fname . ,params) : ,ret ,lvars . ,body)
+       `(define (,fname . ,params) : ,ret ,lvars . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
   (match-define `(program ,tvars ,ret-type (defines . ,defs) . ,body) e)
   (let* ([calc-live (lambda (instr res)
@@ -60,7 +60,7 @@
                          (cons value res))]
          [live-main (foldr calc-live `(,(set)) body)]
          [live-defs (map (lambda (def)
-                           (match-define `(define (,fname . ,params) : ,ret . ,def-body) def)
+                           (match-define `(define (,fname . ,params) : ,ret ,lvars . ,def-body) def)
                            (foldr calc-live `(,(set)) def-body)) defs)])
     `(program ,tvars ,ret-type
               (defines ,@(map live-instr-helper defs live-defs))

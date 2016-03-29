@@ -23,7 +23,7 @@
 
 (define (expose-func-helper instr)
        (match-define `(define (,fname . ,params) : ,ret ,local-vars . ,body) instr)
-       `((define (,fname . ,params) : ,ret . ,(append-map expose-helper body))))
+       `((define (,fname . ,params) : ,ret ,local-vars . ,(append-map expose-helper body))))
 
 (define (expose-allocation e)
   ;(match-define `(,ftypes ,fvartypes ,types) (uncover-types e))
