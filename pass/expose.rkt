@@ -8,7 +8,7 @@
     [`(has-type ,instr ,t) `((has-type ,(expose-helper instr) ,t))]
     [`(assign ,lhs (has-type (vector . ,ve) ,vector-types)) (let* ([len (length ve)]
                                             [bytes^ (* 8 (add1 len))])
-                                     `((if (has-type (collection-needed? ,bytes^) Boolean)
+                                     `((if (collection-needed? ,bytes^)
                                            ((collect ,bytes^))
                                            ())
                                        (assign ,lhs (has-type (allocate ,len) ,vector-types))

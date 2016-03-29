@@ -3,37 +3,29 @@
 
 (provide call-live-roots)
 
-(define (live-roots-vector? var type-env)
-  (let ([lkp (lookup var type-env #f)])
-    (match lkp
-      [`(Vector . ,e1) #t]
-      [else #f])))
-
-
-(define (live-if-helper e type-env)
+(define (live-if-helper e)
   (foldr (lambda (x r)
            (let* ([lives (if (null? r) (set) (car r))]
-                  [newlives (live-analysis x lives type-env)])
+                  [newlives (live-analysis x lives)])
              (cons newlives r)))
          '() e))
 
-(define (live-analysis instr lak type-env)
-  (define vector? (curryr live-roots-vector? type-env))
+(define (live-analysis instr lak)
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
   (match instr
-    [(? vector?) (set instr)]
-    [`(allocate ,e) (set)]
-    [`(assign ,var ,e) (let ([forsub (vector-unwrap var)]
-                             [forunion (live-analysis e (set) type-env)])
-                         (set-union forunion (set-subtract lak forsub)))]
-    [`(vector-set! ,var ,index ,e) (let ([forunion (live-analysis e lak type-env)])
-                                     (set-union lak forunion))]
-    [`(vector-ref ,v ,index) (set-union lak (set v))]
-    [`(if (eq? ,e1 ,e2) ,thn ,els)  (let ([e1set (live-analysis e1 lak type-env)]
-                                          [e2set (live-analysis e2 lak type-env)]
-                                          [thenset (live-if-helper thn type-env)]
-                                          [elseset (live-if-helper els type-env)])
-                                      (set-union e1set e2set (car thenset) (car elseset)))]
+    [`(has-type ,x ,t) #:when (and (pair? t) (equal? (car t) 'Vector)) (set instr)]
+    [`(has-type (allocate ,e) ,t) (set)]
+    [`(has-type (assign ,var ,e) ,t) (let ([forsub (vector-unwrap var)]
+                                           [forunion (live-analysis e (set))])
+                           (set-union forunion (set-subtract lak forsub)))]
+    [`(has-type (vector-set! ,var ,index ,e) ,t) (let ([forunion (live-analysis e lak)])
+                                       (set-union lak forunion))]
+    [`(has-type (vector-ref ,v ,index) ,t) (set-union lak (set v))]
+    [`(has-type (if (eq? ,e1 ,e2) ,thn ,els) ,t)  (let ([e1set (live-analysis e1 lak)]
+                                            [e2set (live-analysis e2 lak)]
+                                            [thenset (live-if-helper thn)]
+                                            [elseset (live-if-helper els)])
+                                        (set-union e1set e2set (car thenset) (car elseset)))]
     [`(return ,var) (set)]
     [else lak]))
 
@@ -52,11 +44,11 @@
                                         `(if (eq? ,e1 ,e2) ,texpr ,eexpr))]
        ;;Need to change to make this work in select-instrs
       [`(assign ,var (app . ,e1)) `(assign ,var (call-live-roots () (app . ,e1)))]
-      [`(define (,fname . ,params) : ,ret ,types . ,body)
-       `(define (,fname . ,params) : ,ret ,(map car types) . ,(map live-instr-helper body (cdr livea)))]
+      [`(define (,fname . ,params) : ,ret . ,body)
+       `(define (,fname . ,params) : ,ret . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
   (match-define `(program ,ret-type (defines . ,defs) . ,body) e)
-  (let* ([calc-live (lambda (types instr res)
+  (let* ([calc-live (lambda (instr res)
                          (define value (live-analysis instr (car res)))
                          (cons value res))]
          [live-main (foldr calc-live `(,(set)) body)]
