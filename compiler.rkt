@@ -13,6 +13,7 @@
 (require "pass/typechecker.rkt")
 (require "pass/uniquify.rkt")
 (require "pass/reveal-functions.rkt")
+(require "pass/convert-to-closures.rkt")
 (require "pass/flatten.rkt")
 (require "pass/expose.rkt")
 (require "pass/call-live-roots.rkt")
@@ -24,14 +25,15 @@
 (require "pass/patch-instructions.rkt")
 (require "pass/print-x86.rkt")
 
-(provide r4-passes typechecker)
+(provide r5-passes typechecker)
 
 (define  typechecker
   (curry typecheck-R2 '()))
 
-(define r4-passes `(
+(define r5-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("reveal-functions" ,reveal-functions ,interp-scheme)
+                    ("convert-to-closures", convert-to-closures, interp-scheme)
                     ("flattens" ,flattens ,interp-C)
                     ("expose-allocation" ,expose-allocation ,interp-C)
                     ("call-live-roots" ,call-live-roots ,interp-C)
