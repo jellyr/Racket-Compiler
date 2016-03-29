@@ -39,15 +39,15 @@
        `(if (collection-needed? ,e1)
             ((call-live-roots ,(set->list livea) (collect ,e2)))
             ())]
-      [`(if (eq? ,e1 ,e2) ,thn ,els)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
-                                            [eexpr (map (curryr live-instr-helper livea) els)])
+      [`(if (has-type (eq? ,e1 ,e2) ,t) ,thn ,els)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
+                                              [eexpr (map (curryr live-instr-helper livea) els)])
                                         `(if (eq? ,e1 ,e2) ,texpr ,eexpr))]
        ;;Need to change to make this work in select-instrs
-      [`(assign ,var (app . ,e1)) `(assign ,var (call-live-roots () (app . ,e1)))]
+      [`(assign ,var (has-type (app . ,e1) ,t)) `(assign ,var (call-live-roots () (app . ,e1)))]
       [`(define (,fname . ,params) : ,ret . ,body)
        `(define (,fname . ,params) : ,ret . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
-  (match-define `(program ,ret-type (defines . ,defs) . ,body) e)
+  (match-define `(program ,tvars ,ret-type (defines . ,defs) . ,body) e)
   (let* ([calc-live (lambda (instr res)
                          (define value (live-analysis instr (car res)))
                          (cons value res))]
@@ -55,6 +55,6 @@
          [live-defs (map (lambda (def)
                            (match-define `(define (,fname . ,params) : ,ret . ,def-body) def)
                            (foldr calc-live `(,(set)) def-body)) defs)])
-    `(program ,ret-type
+    `(program ,tvars ,ret-type
               (defines ,@(map live-instr-helper defs live-defs))
               ,@(map live-instr-helper body (cdr live-main)))))
