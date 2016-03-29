@@ -148,7 +148,7 @@
 
 (define (select-instructions e)
   (define clean-e (clean-has-type e))
-  (match-define `(program ,ret-type (defines . ,defs) . ,instrs) clean-e)
+  (match-define `(program ,args ,ret-type (defines . ,defs) . ,instrs) clean-e)
   (let ([si (append-map (curry select-instructions-assign '_main) instrs)]
         [tvars SI-VARS]
         [si-defs (si-func-helper defs)])
