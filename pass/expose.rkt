@@ -28,7 +28,7 @@
 (define (expose-allocation e)
   ;(match-define `(,ftypes ,fvartypes ,types) (uncover-types e))
   (match-define `(program ,mvars ,ret (defines . ,def) . ,body) e)
-  (append  `(program ,ret) ;`(program ,types ,ret)
+  (append  `(program ,mvars ,ret) ;`(program ,types ,ret)
            `((defines ,@(append-map expose-func-helper def)))
            `((has-type (initialize 10000 ,HEAP-LEN) Void))
            (append-map expose-helper body)))
