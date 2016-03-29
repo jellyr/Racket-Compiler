@@ -86,7 +86,7 @@
                                        (let-values (((ec stmtc alistc) (flattens cnd))
                                                     ((et stmtt alistt) (flattens thn))
                                                     ((ee stmte aliste) (flattens els)))
-                                         (let ([newvar (gensym)])
+                                         (let ([newvar (gensym)])                                    
                                            (values newvar
                                                    (if op
                                                        (append `((has-type (if ,cnd
@@ -107,11 +107,11 @@
          ([(xe^ stmtx^ alistx^) (flattens e)]
           [(be^ stmtb^ alistb^) (flattens body)])
        (match e
-         [`(if ,cnd ,thn ,els) (values be^
-                                       (append stmtx^
-                                               `((assign ,x ,(hast-env xe^)))
-                                                 stmtb^)
-                                       (append alistx^ alistb^))]
+         [`(has-type (if ,cnd ,thn ,els) ,t1) (values be^
+                                                      (append stmtx^
+                                                              `((assign ,x ,(hast-env xe^)))
+                                                              stmtb^)
+                                                      (append alistx^ alistb^))]
          [else (let* [(alistx^ (cons x (if (null? alistx^) alistx^ (remq xe^ alistx^))))
                       (xe^ (if (null? stmtx^) xe^ (last (last stmtx^))))
                       (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
