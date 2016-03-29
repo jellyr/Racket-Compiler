@@ -11,7 +11,7 @@
                                                      free
                                                      (set-union free (set `(,expr . ,ht))))]
     [`(has-type (let ,vars ,b) ,ht) (get-free-vars b (append env vars) free)]
-    [`(has-type (lambda ,vars ,b) ,ht) (get-free-vars b (append env vars) free)]
+    [`(has-type (lambda: ,vars : ,ret ,b) ,ht) (get-free-vars b (append env vars) free)]
     [`(has-type (,op ,e1 ,e2) ,ht) (set-union (get-free-vars e1 env free)
                                               (get-free-vars e2 env free))]
     [`(has-type (,op ,e1) ,ht) (get-free-vars e1 env free)]
@@ -36,7 +36,7 @@
                                                     ,(clos-conv-helper body)) ,ht)]
     [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)])
                                                `(define (,fname [,closvar : _] . ,vars) : ,ret ,(clos-conv-helper body)))]
-    [`(has-type (function-ref ,f) ,ht) `(has-type (vector (function-ref ,f)) (Vector ,ht))]
+    [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) ,ht)) (Vector ,ht))]
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
                                           [e^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
