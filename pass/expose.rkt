@@ -5,7 +5,7 @@
 
 (define (expose-helper instr)
   (match instr
-    [`(has-type ,instr ,t) `((has-type ,(expose-helper instr) ,t))]
+    [`(has-type ,instr ,t) `((has-type ,@(expose-helper instr) ,t))]
     [`(assign ,lhs (has-type (vector . ,ve) ,vector-types)) (let* ([len (length ve)]
                                             [bytes^ (* 8 (add1 len))])
                                      `((if (collection-needed? ,bytes^)

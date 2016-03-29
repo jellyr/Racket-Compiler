@@ -22,7 +22,9 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '( ((lambda: ((x : Integer)) : Integer x) 42)
+(define expr '( (let ([x (if (let ([x #t]) (if x x #f)) #t #f)]) (if x 42 777))
+
+
 )
 )
 
