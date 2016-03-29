@@ -55,15 +55,14 @@
       [`(define (,fname . ,params) : ,ret ,types . ,body)
        `(define (,fname . ,params) : ,ret ,(map car types) . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
-  (match-define `(program ,types ,ret-type (defines . ,defs) . ,body) e)
+  (match-define `(program ,ret-type (defines . ,defs) . ,body) e)
   (let* ([calc-live (lambda (types instr res)
-                         (define value (live-analysis instr (car res) types))
+                         (define value (live-analysis instr (car res)))
                          (cons value res))]
-         [live-main (foldr (curry calc-live types) `(,(set)) body)]
+         [live-main (foldr calc-live `(,(set)) body)]
          [live-defs (map (lambda (def)
-                           (match-define `(define (,fname . ,params) : ,ret ,def-types . ,def-body) def)
-                           (foldr (curry calc-live def-types) `(,(set)) def-body)) defs)])
-    `(program ,(map car types)
-              ,ret-type
+                           (match-define `(define (,fname . ,params) : ,ret . ,def-body) def)
+                           (foldr calc-live `(,(set)) def-body)) defs)])
+    `(program ,ret-type
               (defines ,@(map live-instr-helper defs live-defs))
               ,@(map live-instr-helper body (cdr live-main)))))

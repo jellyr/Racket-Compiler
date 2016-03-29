@@ -34,7 +34,8 @@
                                                                (match-define `(,var ,e) v)
                                                                `(,var ,(clos-conv-helper e))) vars)
                                                     ,(clos-conv-helper body)) ,ht)]
-    [`(define (,fname . ,vars) : ,ret ,body) `(define (,fname ,vars) : ,ret ,(clos-conv-helper body))]
+    [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)])
+                                               `(define (,fname [,closvar : _] . ,vars) : ,ret ,(clos-conv-helper body)))]
     [`(has-type (function-ref ,f) ,ht) `(has-type (vector (function-ref ,f)) (Vector ,ht))]
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
                                           [e^ (clos-conv-helper e)])
@@ -59,9 +60,10 @@
        (define lam-types `(,ret-type  ,@var-types -> ,htb))
        (set! lambda-functions (append lambda-functions ;;,ret-type replaced with _
                                       `((define (,lamvar [,closvar : _] . ,vars) : ,htb ,def-stmt))))
-       `(has-type (vector (has-type (function-ref ,lamvar) ,lam-types) ,@(map (lambda (x)
-                                                                        `(has-type ,(car x) ,(cdr x)))
-                                                                       fvs)) (Vector ,lam-types ,@clos-var-types)))]
+       `(has-type (vector (has-type (function-ref ,lamvar) _) ,@(map (lambda (x)
+                                                                       `(has-type ,(car x) ,(cdr x)))
+                                                                     fvs))
+                  (Vector _ ,@clos-var-types)))]
     [`(has-type (if ,con ,thn ,els) ,ht) `(has-type (if ,(clos-conv-helper con)
                                                         ,(map clos-conv-helper thn)
                                                         ,(map clos-conv-helper els)) ,ht)]
@@ -72,5 +74,5 @@
 (define (convert-to-closures expr)
   (match-define `(program ,ret . ,e) expr)
   (define defs (drop-right e 1))
-  (let ([clos (map clos-conv-helper e)])1
+  (let ([clos (map clos-conv-helper e)])
     `(program ,ret ,@lambda-functions ,@clos)))

@@ -38,12 +38,11 @@
   `(defines ,@(map flattens expr)))
 
 (define (flattens e)
-  (displayln e)
   (match e
     [`(has-type ,expr ,ty)#:when (or (scalar? expr) (vector? expr))
      (envend `(,expr . ,ty))
      (values expr `() '())]
-     [(or (? scalar?) (? vector?)) (values e '() '())]
+    [(or (? scalar?) (? vector?)) (values e '() '())]
     [`(has-type (read) ,t) (let ([newvar (gensym)])
                              (envend `(,newvar . ,t))
                              (values newvar  `((assign ,newvar ,e)) `(,newvar)))]
