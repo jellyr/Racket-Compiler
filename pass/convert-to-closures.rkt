@@ -73,7 +73,7 @@
     [else expr]))
 
 (define (convert-to-closures expr)
+  (set! lambda-functions '())
   (match-define `(program ,ret . ,e) expr)
-  (define defs (drop-right e 1))
   (let ([clos (map clos-conv-helper e)])
     `(program ,ret ,@lambda-functions ,@clos)))
