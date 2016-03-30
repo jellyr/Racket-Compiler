@@ -17,7 +17,8 @@
     [`(has-type (,op ,e1) ,ht) (get-free-vars e1 env free)]
     [`(has-type (if ,con ,thn ,els) ,ht) (set-union (get-free-vars con env free)
                                                     (get-free-vars thn env free)
-                                                    (get-free-vars els env free))]))
+                                                    (get-free-vars els env free))]
+    [else free]))
 
 (define (fvs-let-builder body cvar clos-var-types fvs idx)
   (cond
