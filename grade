@@ -108,3 +108,10 @@ Test cases that did not pass the compiler did not pass any test cases
 -- it looks like your typechecker is raising a type error for all
 programs with lambdas; the test cases that you pass are the ones that report type errors.
 
+ASSIGNMENT 6 (late):
+9/12 test cases pass.
+Of the failing test cases,
+1/12 test cases passed 10/13 interpreter passes, and
+2/12 test cases passed 4/13 interpreter passes.
+
+Grade: 75%
