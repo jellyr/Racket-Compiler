@@ -41,7 +41,9 @@
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
                                           [e^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
-                                      (match-define `(has-type ,expr2 ,ht2) e^)        
+                                      (match-define `(has-type ,expr2 ,ht2) e^)
+                                      ;;(print "Hello ")
+                                      ;;(displayln expr2)
                                       `(has-type (let ([,newvar ,e^])
                                                    (has-type (app (has-type (vector-ref
                                                                              (has-type ,newvar ,ht2)
@@ -66,9 +68,10 @@
                                                                      fvs))
                   (Vector _ ,@clos-var-types)))]
     [`(has-type (if ,con ,thn ,els) ,ht) `(has-type (if ,(clos-conv-helper con)
-                                                        ,(map clos-conv-helper thn)
-                                                        ,(map clos-conv-helper els)) ,ht)]
-    [`(has-type (,op ,e1 ,e2) ,ht) `(has-type (,op ,(clos-conv-helper e1) ,(clos-conv-helper e2)) ,ht)]
+                                                        ,(clos-conv-helper thn)
+                                                        ,(clos-conv-helper els)) ,ht)]
+    [`(has-type (,op ,e1 ,e2) ,ht) ;;(displayln op) (displayln e2)
+     `(has-type (,op ,(clos-conv-helper e1) ,(clos-conv-helper e2)) ,ht)]
     [`(has-type (,op ,e1) ,ht) `(has-type (,op ,(clos-conv-helper e1)) ,ht)]
     [else expr]))
 

@@ -75,12 +75,12 @@
                                                [(e2^ stmt2^ alist2^) (flattens e2)]
                                                [(e3^ stmt3^ alist3^) (flattens e3)]
                                                [(newvar) (gensym)])
-                                    (envend `(,newvar . ,t))
-                                    (values newvar
-                                            (append stmt1^
-                                                    stmt2^
-                                                    stmt3^
-                                                    `((assign ,newvar (has-type (vector-set! ,(hast-env e1^) ,(hast-env e2^) ,(hast-env e3^)) ,t))))
+                                                (envend `(,newvar . ,t))
+                                                (values newvar
+                                                        (append stmt1^
+                                                                stmt2^
+                                                                stmt3^
+                                                                `((assign ,newvar (has-type (vector-set! ,(hast-env e1^) ,(hast-env e2^) ,(hast-env e3^)) ,t))))
                                             (append (cons newvar alist1^) alist2^ alist3^)))]
     [`(has-type (if ,cn ,tn ,en) ,t) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                                        (let-values (((ec stmtc alistc) (flattens cnd))

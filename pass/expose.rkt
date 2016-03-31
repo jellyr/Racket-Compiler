@@ -6,19 +6,21 @@
 (define (expose-helper instr)
   (match instr
     [`(has-type ,instr ,t) `((has-type ,@(expose-helper instr) ,t))]
-    [`(assign ,lhs (has-type (vector . ,ve) ,vector-types)) (let* ([len (length ve)]
-                                            [bytes^ (* 8 (add1 len))])
-                                       `((has-type (if (collection-needed? ,bytes^)
-                                                       ((collect ,bytes^))
-                                                       ()) Void)
-                                         (assign ,lhs (has-type (allocate ,len ,vector-types) ,vector-types))
-                                       ,@(map (lambda (val idx)
-                                                (let ([voidvar (gensym 'void)])
-                                                  `(has-type
-                                                    (assign ,voidvar (has-type (vector-set! ,lhs ,idx ,val) Void))
-                                                    Void)))
-                                              ve
-                                              (build-list (length ve) values))))]
+    [`(assign ,lhs (has-type (vector . ,ve) ,vector-types))
+     (let* ([len (length ve)]
+            [bytes^ (* 8 (add1 len))])
+       `((has-type (if (collection-needed? ,bytes^)
+                       ((collect ,bytes^))
+                       ()) Void)
+         (assign ,lhs (has-type (allocate ,len ,vector-types) ,vector-types))
+         ,@(map (lambda (val idx)
+                  (let ([voidvar (gensym 'void)])
+                    `(has-type
+                      (assign ,voidvar (has-type (vector-set! (has-type ,lhs ,vector-types)
+                                                              (has-type ,idx Integer)
+                                                              ,val) Void))
+                      Void))) ve (build-list (length ve) values))))]
+    [`(if ,cnd ,thn ,els) `((if ,@(expose-helper cnd) ,(append-map expose-helper thn) ,(append-map expose-helper els)))]
     [else  `(,instr)]))
 
 (define (expose-func-helper instr)
