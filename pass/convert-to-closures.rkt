@@ -39,17 +39,18 @@
                                                `(define (,fname [,closvar : (Vector _)] . ,vars) : ,ret ,(clos-conv-helper body)))]
     [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) ,ht)) (Vector ,ht))]
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
-                                          [e^ (clos-conv-helper e)])
+                                          [fune^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
-                                      (match-define `(has-type ,expr2 ,ht2) e^)
+                                      (match-define `(has-type ,funexpr2 ,funht2) fune^)
                                       ;;(print "Hello ")
                                       ;;(displayln expr2)
-                                      `(has-type (let ([,newvar ,e^])
+                                      `(has-type (let ([,newvar ,fune^])
                                                    (has-type (app (has-type (vector-ref
-                                                                             (has-type ,newvar ,ht2)
-                                                                             (has-type 0 Integer)) ,(cadr `(Vector ht2)))
+                                                                             (has-type ,newvar (Vector ,funht2))
+                                                                             (has-type 0 Integer))
+                                                                            ,funht2)
                                                                   ;;ht2 replaced with _
-                                                                  (has-type ,newvar (Vector _))
+                                                                  (has-type ,newvar _)
                                                                   ,@(map clos-conv-helper es)) ,ht)) ,ht))]
     [`(has-type (lambda: ,vars : ,ret ,body) ,ht)
      (let* ([lamvar (gensym 'lam)]
@@ -70,8 +71,16 @@
     [`(has-type (if ,con ,thn ,els) ,ht) `(has-type (if ,(clos-conv-helper con)
                                                         ,(clos-conv-helper thn)
                                                         ,(clos-conv-helper els)) ,ht)]
+    ;
     [`(has-type (vector . ,e) ,t) (let ([vec-vals (map clos-conv-helper e)])
                                     `(has-type (vector . ,vec-vals) (Vector . ,(map last vec-vals))))]
+    [`(has-type (vector-set! ,vect (has-type ,index Integer) ,value) ,ht)
+     (match-let ([`(has-type ,vect-name ,vect-type) (clos-conv-helper vect)]
+                 [`(has-type ,value-expr ,value-type) (clos-conv-helper value)])
+       `(has-type (vector-set!
+                   (has-type ,vect-name ,(list-set vect-type (add1 index) value-type))
+                   (has-type ,index Integer)
+                   (has-type ,value-expr ,value-type)) ,ht))]
     [`(has-type (,op ,e1 ,e2) ,ht) ;;(displayln op) (displayln e2)
      `(has-type (,op ,(clos-conv-helper e1) ,(clos-conv-helper e2)) ,ht)]
     [`(has-type (,op ,e1) ,ht) `(has-type (,op ,(clos-conv-helper e1)) ,ht)]
