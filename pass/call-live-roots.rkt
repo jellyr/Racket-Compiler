@@ -24,7 +24,7 @@
     [`(has-type (vector-set! ,var ,index ,e) ,t) (let ([forunion (live-analysis e lak)])
                                        (set-union lak forunion))]
     [`(has-type (vector-ref ,v ,index) ,t) (set-union lak (set v))]
-    [`(has-type (if (eq? ,e1 ,e2) ,thn ,els) ,t)  (let ([e1set (live-analysis e1 lak)]
+    [`(has-type (if (has-type (eq? ,e1 ,e2) Boolean) ,thn ,els) ,t)  (let ([e1set (live-analysis e1 lak)]
                                                         [e2set (live-analysis e2 lak)]
                                                         [thenset (live-if-helper thn)]
                                                         [elseset (live-if-helper els)])
@@ -43,14 +43,17 @@
       [`(has-type (if (collection-needed? ,e1)
              ((collect ,e2))
              ()) ,t)
+       ;; (display "e2: ") (displayln e2)
+       ; (display "livea: ") (displayln (set->list livea))
        `(has-type (if (collection-needed? ,e1)
-             ((call-live-roots ,(set->list livea) (collect ,e2)))
-             ()) ,t)]
+                      ((call-live-roots ,(set->list livea) (has-type (collect ,e2) Void)))
+                      ()) ,t)]
       [`(has-type (if (has-type (eq? ,e1 ,e2) ,t1) ,thn ,els) ,t)  (let ([texpr (map (curryr live-instr-helper livea) thn)]
                                                                         [eexpr (map (curryr live-instr-helper livea) els)])
                                                                     `(has-type (if (eq? ,e1 ,e2) ,texpr ,eexpr) ,t))]
        ;;Need to change to make this work in select-instrs
       [`(assign ,var (has-type (app . ,e1) ,t))
+       ;; (display "livea: ")(displayln (set->list livea))
        `(assign ,var (call-live-roots ,(set->list livea) (has-type (app . ,e1) ,t)))]
       [`(define (,fname . ,params) : ,ret ,lvars . ,body)
        `(define (,fname . ,params) : ,ret ,lvars . ,(map live-instr-helper body (cdr livea)))]
