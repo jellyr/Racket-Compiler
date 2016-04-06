@@ -11,10 +11,10 @@
   (match e
     [`(if (eq? ,e1 ,e2) ,thn ,els) `((cmpq ,e1 ,e2)
                                         (je ,thenlabel)
-                                        ,@(lower-conditionals-helper els)
+                                        ,@(folder-helper els)
                                         (jmp ,endlabel)
                                         (label ,thenlabel)
-                                        ,@(lower-conditionals-helper thn)
+                                        ,@(folder-helper thn)
                                         (label ,endlabel))]
     [`(()) '()]
     [else e]))
