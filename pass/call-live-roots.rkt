@@ -13,23 +13,24 @@
 
 (define (live-analysis instr lak)
   (define (vector-unwrap var) (if (vector? var) (set var) (set)))
-  ; (display "lak: ") (displayln lak)
-  ; (display "instr: ")(displayln instr)
+  ;(display "lak: ") (displayln lak)
+  ;(display "instr: ")(displayln instr)
   (match instr
     
     [`(has-type (allocate ,e ,t1) ,t) (set)]
-    [`(assign ,var (has-type ,e ,t)) (let ([forsub (vector-unwrap var)]
+    [`(assign ,var ,e) (let ([forsub (vector-unwrap var)]
                                [forunion (live-analysis e (set))])
                            (set-union forunion (set-subtract lak forsub)))]
     [`(has-type (vector-set! ,var ,index ,e) ,t) (let ([forunion (live-analysis e lak)])
                                        (set-union lak forunion))]
-    [`(has-type (vector-ref ,v ,index) ,t) (set-union lak (set v))]
+    [`(has-type (vector-ref (has-type ,v ,vt^) ,index) ,t) (set-union lak (set v))]
     [`(has-type (if (has-type (eq? ,e1 ,e2) Boolean) ,thn ,els) ,t)  (let ([e1set (live-analysis e1 lak)]
                                                         [e2set (live-analysis e2 lak)]
                                                         [thenset (live-if-helper thn)]
                                                         [elseset (live-if-helper els)])
                                                     ; (display "thenset: ") (displayln thenset)
-                                                    (set-union e1set e2set (car thenset) (car elseset)))]
+                                                                       (set-union e1set e2set (car thenset) (car elseset)))]
+    [`(has-type (app . ,e1) ,t)  (foldr set-union (set) (map (lambda (x^) (live-analysis x^ lak)) e1)) ]
     [`(has-type ,x ,t) #:when (and (pair? t) (equal? (car t) 'Vector)) (set x)]
     [`(return ,var) (set)]
     [else lak]))
@@ -38,13 +39,13 @@
 (define (call-live-roots e)
   (define (live-instr-helper instr livea)
     ; (display "instr: ") (displayln instr)
-     ; (display "livea: ") (displayln livea)
+      (display "livea: ") (displayln livea)
     (match instr
       [`(has-type (if (collection-needed? ,e1)
              ((collect ,e2))
              ()) ,t)
-       ;; (display "e2: ") (displayln e2)
-       ; (display "livea: ") (displayln (set->list livea))
+       ;(display "e2: ") (displayln e2)
+        ;(display "livea: ") (displayln (set->list livea))
        `(has-type (if (collection-needed? ,e1)
                       ((call-live-roots ,(set->list livea) (has-type (collect ,e2) Void)))
                       ()) ,t)]
@@ -66,6 +67,8 @@
          [live-defs (map (lambda (def)
                            (match-define `(define (,fname . ,params) : ,ret ,lvars . ,def-body) def)
                            (foldr calc-live `(,(set)) def-body)) defs)])
+    ;(display "live-main:")(displayln live-main)
+    
     `(program ,tvars ,ret-type
               (defines ,@(map live-instr-helper defs live-defs))
               ,@(map live-instr-helper body (cdr live-main)))))
