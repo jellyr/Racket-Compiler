@@ -33,7 +33,7 @@
                                                     ; (display "thenset: ") (displayln thenset)
                                                                        (set-union e1set e2set (car thenset) (car elseset)))]
     [`(has-type (app . ,e1) ,t)  (foldr set-union (set) (map (lambda (x^) (live-analysis x^ lak)) e1)) ]
-    [`(has-type ,x ,t) #:when (and (pair? t) (equal? (car t) 'Vector)) (set x)]
+    [`(has-type ,x ,t) #:when (and (and (pair? t) (equal? (car t) 'Vector)) (not (equal? (cadr t) '_))) (set x)]
     [`(return ,var) (set)]
     [else lak]))
 
