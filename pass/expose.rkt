@@ -15,11 +15,9 @@
          (assign ,lhs (has-type (allocate ,len ,vector-types) ,vector-types))
          ,@(map (lambda (val idx)
                   (let ([voidvar (gensym 'void)])
-                    `(has-type
-                      (assign ,voidvar (has-type (vector-set! (has-type ,lhs ,vector-types)
-                                                              (has-type ,idx Integer)
-                                                              ,val) Void))
-                      Void))) ve (build-list (length ve) values))))]
+                    `(assign ,voidvar (has-type (vector-set! (has-type ,lhs ,vector-types)
+                                                             (has-type ,idx Integer)
+                                                             ,val) Void)))) ve (build-list (length ve) values))))]
     [`(if ,cnd ,thn ,els) `((if ,@(expose-helper cnd) ,(append-map expose-helper thn) ,(append-map expose-helper els)))]
     [else  `(,instr)]))
 

@@ -46,9 +46,9 @@
                                       ;;(displayln expr2)
                                       `(has-type (let ([,newvar ,fune^])
                                                    (has-type (app (has-type (vector-ref
-                                                                             (has-type ,newvar (Vector ,funht2))
+                                                                             (has-type ,newvar ,funht2)
                                                                              (has-type 0 Integer))
-                                                                            ,funht2)
+                                                                            ,(cadr funht2))
                                                                   ;;ht2 replaced with _
                                                                   (has-type ,newvar _)
                                                                   ,@(map clos-conv-helper es)) ,ht)) ,ht))]

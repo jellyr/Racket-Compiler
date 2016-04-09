@@ -12,15 +12,17 @@
          '() e))
 
 (define (live-analysis instr lak)
-  (define (vector-unwrap var) (if (vector? var) (set var) (set)))
+  (define (vector-unwrap var) (set var))
   ;(display "lak: ") (displayln lak)
   ;(display "instr: ")(displayln instr)
   (match instr
     
     [`(has-type (allocate ,e ,t1) ,t) (set)]
     [`(assign ,var ,e) (let ([forsub (vector-unwrap var)]
-                               [forunion (live-analysis e (set))])
-                           (set-union forunion (set-subtract lak forsub)))]
+                             [forunion (live-analysis e (set))])
+                         ;(display "forunion:")(displayln forunion)
+                         ;(display "forsub")(displayln forsub)
+                         (set-subtract (set-union forunion lak) forsub))]
     [`(has-type (vector-set! ,var ,index ,e) ,t) (let ([forunion (live-analysis e lak)])
                                        (set-union lak forunion))]
     [`(has-type (vector-ref (has-type ,v ,vt^) ,index) ,t) (set-union lak (set v))]
@@ -39,7 +41,7 @@
 (define (call-live-roots e)
   (define (live-instr-helper instr livea)
     ; (display "instr: ") (displayln instr)
-      (display "livea: ") (displayln livea)
+      ;(display "livea: ") (displayln livea)
     (match instr
       [`(has-type (if (collection-needed? ,e1)
              ((collect ,e2))
@@ -55,7 +57,7 @@
        ;;Need to change to make this work in select-instrs
       [`(assign ,var (has-type (app . ,e1) ,t))
        ;; (display "livea: ")(displayln (set->list livea))
-       `(assign ,var (call-live-roots ,(set->list livea) (has-type (app . ,e1) ,t)))]
+       `(assign ,var (call-live-roots ,(set->list (set-remove livea var)) (has-type (app . ,e1) ,t)))]
       [`(define (,fname . ,params) : ,ret ,lvars . ,body)
        `(define (,fname . ,params) : ,ret ,lvars . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))
