@@ -5,6 +5,10 @@
 
 (define lambda-functions '())
 
+(define fun-env '())
+(define (envend v)
+  (set! fun-env (cons v fun-env)))
+
 (define (get-free-vars body env free)
   (match body
     [`(has-type ,expr ,ht) #:when (symbol? expr) (if (assoc expr env)
@@ -32,13 +36,17 @@
   ; (display "expr: ") (displayln expr)
   (match expr
     ;;[`(has-type ,instr ,ht) `(has-type ,(clos-conv-helper instr) ,ht)]
-    [`(has-type (let ,vars ,body) ,ht) `(has-type (let ,(map (lambda (v)
-                                                               (match-define `(,var ,e) v)
-                                                               `(,var ,(clos-conv-helper e))) vars)
-                                                    ,(clos-conv-helper body)) ,ht)]
-    [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)])
-                                               `(define (,fname [,closvar : (Vector _)] . ,vars) : ,ret ,(clos-conv-helper body)))]
-    [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) ,ht)) (Vector ,ht))]
+    [`(has-type (let ,vars ,body) ,ht) (let ([body^ (clos-conv-helper body)])
+                                         `(has-type (let ,(map (lambda (v)
+                                                                 (match-define `(,var ,e) v)
+                                                                 `(,var ,(clos-conv-helper e))) vars)
+                                                      ,body^) ,(last body^)))]
+    [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)]
+                                                   [body^ (clos-conv-helper body)])
+                                               (envend `(,fname . (,vars -> ,(last body^))))
+                                               ; (display "env: ") (displayln fun-env)
+                                               `(define (,fname [,closvar : (Vector _)] . ,vars) : ,ret ,body^))]
+    [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) ,(lookup f fun-env ht))) (Vector ,ht))]
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
                                           [fune^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
