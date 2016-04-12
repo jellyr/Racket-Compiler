@@ -29,6 +29,7 @@
                          ,expr) ,ht))]))
 
 (define (clos-conv-helper expr)
+  ; (display "expr: ") (displayln expr)
   (match expr
     ;;[`(has-type ,instr ,ht) `(has-type ,(clos-conv-helper instr) ,ht)]
     [`(has-type (let ,vars ,body) ,ht) `(has-type (let ,(map (lambda (v)
@@ -42,15 +43,19 @@
                                           [fune^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
                                       (match-define `(has-type ,funexpr2 ,funht2) fune^)
-                                      ;;(print "Hello ")
-                                      ;;(displayln expr2)
+                                      (set! funht2 (if (eqv? (car funht2) 'Vector)
+                                                       funht2
+                                                       `(Vector ,funht2)))
+                                      ;(display "expr: ") (displayln expr)
+                                      ;(display "e: ") (displayln e)
+                                      ;(display "fune^: ") (displayln fune^)
                                       `(has-type (let ([,newvar ,fune^])
                                                    (has-type (app (has-type (vector-ref
                                                                              (has-type ,newvar ,funht2)
                                                                              (has-type 0 Integer))
                                                                             ,(cadr funht2))
                                                                   ;;ht2 replaced with _
-                                                                  (has-type ,newvar _)
+                                                                  (has-type ,newvar (Vector _))
                                                                   ,@(map clos-conv-helper es)) ,ht)) ,ht))]
     [`(has-type (lambda: ,vars : ,ret ,body) ,ht)
      (let* ([lamvar (gensym 'lam)]
