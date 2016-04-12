@@ -29,7 +29,10 @@
     [(> idx (length fvs)) (clos-conv-helper body)]
     [else (let ([expr (fvs-let-builder body cvar clos-var-types fvs (add1 idx))])
             (match-define `(has-type ,b ,ht) expr)
-            `(has-type (let ([,(car (list-ref fvs (sub1 idx))) (has-type (vector-ref ,cvar ,idx) ,(list-ref clos-var-types (sub1 idx)))])
+            `(has-type (let ([,(car (list-ref fvs (sub1 idx)))
+                              (has-type (vector-ref (has-type ,cvar (Vector _))
+                                                    (has-type ,idx Integer))
+                                        ,(list-ref clos-var-types (sub1 idx)))])
                          ,expr) ,ht))]))
 
 (define (clos-conv-helper expr)
@@ -104,6 +107,13 @@
     ;
     [`(has-type (vector . ,e) ,t) (let ([vec-vals (map clos-conv-helper e)])
                                     `(has-type (vector . ,vec-vals) (Vector . ,(map last vec-vals))))]
+    [`(has-type (vector-ref ,vect ,idx) ,ty)
+     (match-let ([`(has-type ,vect-name ,vect-type) (clos-conv-helper vect)]
+                 [`(has-type ,val ,val-type) (clos-conv-helper idx)])
+       (define v-type (lookup vect-name fun-env vect-type))
+       `(has-type (vector-ref
+                   (has-type ,vect-name ,v-type)
+                   (has-type ,val ,val-type) ,(list-ref v-type (add1 val)))))]
     [`(has-type (vector-set! ,vect (has-type ,index Integer) ,value) ,ht)
      (match-let ([`(has-type ,vect-name ,vect-type) (clos-conv-helper vect)]
                  [`(has-type ,value-expr ,value-type) (clos-conv-helper value)])
@@ -114,6 +124,7 @@
     [`(has-type (,op ,e1 ,e2) ,ht) ;;(displayln op) (displayln e2)
      `(has-type (,op ,(clos-conv-helper e1) ,(clos-conv-helper e2)) ,ht)]
     [`(has-type (,op ,e1) ,ht) `(has-type (,op ,(clos-conv-helper e1)) ,ht)]
+    [`(has-type ,instr ,ty) #:when (and (symbol? instr) (assoc instr fun-env)) `(has-type ,instr ,(lookup instr fun-env ty))]
     [else expr]))
 
 (define (convert-to-closures expr)
