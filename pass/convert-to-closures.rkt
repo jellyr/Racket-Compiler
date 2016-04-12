@@ -32,13 +32,17 @@
   ; (display "expr: ") (displayln expr)
   (match expr
     ;;[`(has-type ,instr ,ht) `(has-type ,(clos-conv-helper instr) ,ht)]
-    [`(has-type (let ,vars ,body) ,ht) `(has-type (let ,(map (lambda (v)
-                                                               (match-define `(,var ,e) v)
-                                                               `(,var ,(clos-conv-helper e))) vars)
-                                                    ,(clos-conv-helper body)) ,ht)]
-    [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)])
-                                               `(define (,fname [,closvar : (Vector _)] . ,vars) : ,ret ,(clos-conv-helper body)))]
-    [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) ,ht)) (Vector ,ht))]
+    [`(has-type (let ,vars ,body) ,ht) (let ([body^ (clos-conv-helper body)])
+                                         (match-define `(has-type ,b-expr ,ntype) body^)
+                                         `(has-type (let ,(map (lambda (v)
+                                                                 (match-define `(,var ,e) v)
+                                                                 `(,var ,(clos-conv-helper e))) vars)
+                                                      ,body^) ,ntype))]
+    [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)]
+                                                   [body^ (clos-conv-helper body)])
+                                               (match-define `(has-type ,b-expr^ ,ntype) body^)
+                                               `(define (,fname [,closvar : (Vector _)] . ,vars) : ,ntype ,body^))]
+    [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) _)) (Vector _))]
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
                                           [fune^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
@@ -69,10 +73,10 @@
        (define lam-types `(,ret-type  ,@var-types -> ,htb))
        (set! lambda-functions (append lambda-functions ;;,ret-type replaced with _
                                       `((define (,lamvar [,closvar : (Vector _)] . ,vars) : ,htb ,def-stmt))))
-       `(has-type (vector (has-type (function-ref ,lamvar) (Vector _)) ,@(map (lambda (x)
+       `(has-type (vector (has-type (function-ref ,lamvar) _) ,@(map (lambda (x)
                                                                                 `(has-type ,(car x) ,(cdr x)))
                                                                               fvs))
-                  (Vector (Vector _) ,@clos-var-types)))]
+                  (Vector _ ,@clos-var-types)))]
     [`(has-type (if ,con ,thn ,els) ,ht) `(has-type (if ,(clos-conv-helper con)
                                                         ,(clos-conv-helper thn)
                                                         ,(clos-conv-helper els)) ,ht)]
