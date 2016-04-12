@@ -76,7 +76,8 @@
                                       ;(display "expr: ") (displayln expr)
                                       ;(display "e: ") (displayln e)
                                       ;(display "fune^: ") (displayln fune^)
-                                      `(has-type (let ([,newvar ,fune^])
+                                      `(has-type (let ([,newvar ,fune^])                                                   
+                                                   ;(envend `(,newvar . ))
                                                    (has-type (app (has-type (vector-ref
                                                                              (has-type ,newvar ,funht2)
                                                                              (has-type 0 Integer))
@@ -113,7 +114,7 @@
        (define v-type (lookup vect-name fun-env vect-type))
        `(has-type (vector-ref
                    (has-type ,vect-name ,v-type)
-                   (has-type ,val ,val-type) ,(list-ref v-type (add1 val)))))]
+                   (has-type ,val ,val-type)) ,(list-ref v-type (add1 val))))]
     [`(has-type (vector-set! ,vect (has-type ,index Integer) ,value) ,ht)
      (match-let ([`(has-type ,vect-name ,vect-type) (clos-conv-helper vect)]
                  [`(has-type ,value-expr ,value-type) (clos-conv-helper value)])
