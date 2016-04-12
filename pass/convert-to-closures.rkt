@@ -14,8 +14,15 @@
     [`(has-type ,expr ,ht) #:when (symbol? expr) (if (assoc expr env)
                                                      free
                                                      (set-union free (set `(,expr . ,ht))))]
-    [`(has-type (let ,vars ,b) ,ht) (get-free-vars b (append env vars) free)]
+    [`(has-type (let ,vars ,b) ,ht) (set-union (foldr (lambda (e res)
+                                                        (set-union res
+                                                                   (get-free-vars e env free)))
+                                                      (set) (map last vars))
+                                               (get-free-vars b (append env (map car vars)) free))]
     [`(has-type (lambda: ,vars : ,ret ,b) ,ht) (get-free-vars b (append env vars) free)]
+    [`(has-type (vector-set! ,e1 ,e2 ,e3) ,ht) (set-union (get-free-vars e1 env free)
+                                                          (get-free-vars e2 env free)
+                                                          (get-free-vars e3 env free))]
     [`(has-type (,op ,e1 ,e2) ,ht) (set-union (get-free-vars e1 env free)
                                               (get-free-vars e2 env free))]
     [`(has-type (,op ,e1) ,ht) (get-free-vars e1 env free)]
@@ -70,14 +77,14 @@
                                           [fune^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
                                       (match-define `(has-type ,funexpr2 ,funht2) fune^)
-                                      (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
-                                                                                funht2
-                                                                                `(Vector ,funht2))))
+                                      ;; (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
+                                      ;;                                           funht2
+                                      ;;                                           `(Vector ,funht2))))
+                                      (match-define `(has-type ,fun-expr ,fun-type) fune^)
                                       ;(display "expr: ") (displayln expr)
                                       ;(display "e: ") (displayln e)
                                       ;(display "fune^: ") (displayln fune^)
-                                      `(has-type (let ([,newvar ,fune^])                                                   
-                                                   ;(envend `(,newvar . ))
+                                      `(has-type (let ([,newvar ,fune^])
                                                    (has-type (app (has-type (vector-ref
                                                                              (has-type ,newvar ,funht2)
                                                                              (has-type 0 Integer))
