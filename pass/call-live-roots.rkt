@@ -23,8 +23,11 @@
                          ;(display "forunion:")(displayln forunion)
                          ;(display "forsub")(displayln forsub)
                          (set-subtract (set-union forunion lak) forsub))]
-    [`(has-type (vector-set! ,var ,index ,e) ,t) (let ([forunion (live-analysis e lak)])
-                                       (set-union lak forunion))]
+    [`(has-type (vector-set! ,var ,index ,e) ,t)
+     ;(display "instr: ") (displayln instr)
+     (let ([forunione (live-analysis e lak)]
+           [forunionvar (live-analysis var lak)])
+       (set-union lak forunione forunionvar))]
     [`(has-type (vector-ref (has-type ,v ,vt^) ,index) ,t) (set-union lak (set v))]
     [`(has-type (if (has-type (eq? ,e1 ,e2) Boolean) ,thn ,els) ,t)  (let ([e1set (live-analysis e1 lak)]
                                                         [e2set (live-analysis e2 lak)]
