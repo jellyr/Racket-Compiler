@@ -80,7 +80,7 @@
                                                                             ,(cadr funht2))
                                                                   ;;ht2 replaced with _
                                                                   (has-type ,newvar (Vector _))
-                                                                  ,@(map clos-conv-helper es)) ,ht)) ,ht))]
+                                                                  ,@(map clos-conv-helper es)) ,(last fune^))) ,(last fune^)))]
     [`(has-type (lambda: ,vars : ,ret ,body) ,ht)
      (let* ([lamvar (gensym 'lam)]
             [closvar (gensym 'clos)]
@@ -114,6 +114,10 @@
     [`(has-type (,op ,e1 ,e2) ,ht) ;;(displayln op) (displayln e2)
      `(has-type (,op ,(clos-conv-helper e1) ,(clos-conv-helper e2)) ,ht)]
     [`(has-type (,op ,e1) ,ht) `(has-type (,op ,(clos-conv-helper e1)) ,ht)]
+    [`(has-type ,e ,t)
+     ;(display "expr: ") (displayln expr)
+     ;(display "env: ") (displayln fun-env)
+     `(has-type ,e ,(lookup e fun-env t))]
     [else expr]))
 
 (define (convert-to-closures expr)
