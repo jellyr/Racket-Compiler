@@ -5,6 +5,10 @@
 
 (define lambda-functions '())
 
+(define fun-env '())
+(define (envend v)
+  (set! fun-env (cons v fun-env)))
+
 (define (get-free-vars body env free)
   (match body
     [`(has-type ,expr ,ht) #:when (symbol? expr) (if (assoc expr env)
@@ -32,24 +36,40 @@
   ; (display "expr: ") (displayln expr)
   (match expr
     ;;[`(has-type ,instr ,ht) `(has-type ,(clos-conv-helper instr) ,ht)]
-    [`(has-type (let ,vars ,body) ,ht) (let ([body^ (clos-conv-helper body)])
+    ;; [`(has-type (let ,vars ,body) ,ht) (let ([body^ (clos-conv-helper body)])
+    ;;                                      (match-define `(has-type ,b-expr ,ntype) body^)
+    ;;                                      `(has-type (let ,(map (lambda (v)
+    ;;                                                              (match-define `(,var ,e) v)
+    ;;                                                              `(,var ,(clos-conv-helper e))) vars)
+    ;;                                                   ,body^) ,ntype))]
+    ;; [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)]
+    ;;                                                [body^ (clos-conv-helper body)])
+    ;;                                            (match-define `(has-type ,b-expr^ ,ntype) body^)
+    ;;                                            `(define (,fname [,closvar : (Vector _)] . ,vars) : ,ntype ,body^))]
+    ;; [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) _)) (Vector _))]
+    [`(has-type (let ,vars ,body) ,ht) (let ([vars^ (map (lambda (v)
+                                                           (match-define `(,var ,e) v)
+                                                           (define instre^ (clos-conv-helper e))
+                                                           (envend `(,var . ,(last instre^)))
+                                                           `(,var ,instre^)) vars)]
+                                             [body^ (clos-conv-helper body)])
                                          (match-define `(has-type ,b-expr ,ntype) body^)
-                                         `(has-type (let ,(map (lambda (v)
-                                                                 (match-define `(,var ,e) v)
-                                                                 `(,var ,(clos-conv-helper e))) vars)
-                                                      ,body^) ,ntype))]
+                                         `(has-type (let ,vars^ ,body^) ,ntype))]
     [`(define (,fname . ,vars) : ,ret ,body) (let ([closvar (gensym 'clos)]
                                                    [body^ (clos-conv-helper body)])
                                                (match-define `(has-type ,b-expr^ ,ntype) body^)
+                                               (envend `(,fname . ((Vector _) ,@(map last vars) -> ,ntype)))
+                                               ; (display "env: ") (displayln fun-env)
                                                `(define (,fname [,closvar : (Vector _)] . ,vars) : ,ntype ,body^))]
-    [`(has-type (function-ref ,f) ,ht) `(has-type (vector (has-type (function-ref ,f) _)) (Vector _))]
+    [`(has-type (function-ref ,f) ,ht) (let ([ntype (lookup f fun-env ht)])
+                                         `(has-type (vector (has-type (function-ref ,f) ,ntype)) (Vector ,ntype)))]
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
                                           [fune^ (clos-conv-helper e)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
                                       (match-define `(has-type ,funexpr2 ,funht2) fune^)
-                                      (set! funht2 (if (eqv? (car funht2) 'Vector)
-                                                       funht2
-                                                       `(Vector ,funht2)))
+                                      (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
+                                                         funht2
+                                                         `(Vector ,funht2))))
                                       ;(display "expr: ") (displayln expr)
                                       ;(display "e: ") (displayln e)
                                       ;(display "fune^: ") (displayln fune^)
