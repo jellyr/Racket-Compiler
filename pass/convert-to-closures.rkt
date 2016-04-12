@@ -68,8 +68,8 @@
                                       (match-define `(has-type ,expr1 ,ht1) e)
                                       (match-define `(has-type ,funexpr2 ,funht2) fune^)
                                       (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
-                                                         funht2
-                                                         `(Vector ,funht2))))
+                                                                                funht2
+                                                                                `(Vector ,funht2))))
                                       ;(display "expr: ") (displayln expr)
                                       ;(display "e: ") (displayln e)
                                       ;(display "fune^: ") (displayln fune^)
@@ -93,10 +93,11 @@
        (define lam-types `(,ret-type  ,@var-types -> ,htb))
        (set! lambda-functions (append lambda-functions ;;,ret-type replaced with _
                                       `((define (,lamvar [,closvar : (Vector _)] . ,vars) : ,htb ,def-stmt))))
-       `(has-type (vector (has-type (function-ref ,lamvar) _) ,@(map (lambda (x)
-                                                                                `(has-type ,(car x) ,(cdr x)))
-                                                                              fvs))
-                  (Vector _ ,@clos-var-types)))]
+       (envend `(,lamvar . ((Vector _) ,@(map last vars) -> ,htb)))
+       `(has-type (vector (has-type (function-ref ,lamvar) ,(lookup lamvar fun-env ht))
+                          ,@(map (lambda (x)
+                                   `(has-type ,(car x) ,(cdr x))) fvs))
+                  (Vector ,(lookup lamvar fun-env ht) ,@clos-var-types)))]
     [`(has-type (if ,con ,thn ,els) ,ht) `(has-type (if ,(clos-conv-helper con)
                                                         ,(clos-conv-helper thn)
                                                         ,(clos-conv-helper els)) ,ht)]
