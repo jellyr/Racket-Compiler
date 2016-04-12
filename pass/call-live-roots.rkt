@@ -60,7 +60,7 @@
        ;;Need to change to make this work in select-instrs
       [`(assign ,var (has-type (app . ,e1) ,t))
        ;; (display "livea: ")(displayln (set->list livea))
-       `(assign ,var (call-live-roots ,(set->list (set-remove livea var)) (has-type (app . ,e1) ,t)))]
+       `(call-live-roots ,(set->list (set-remove livea var)) (assign ,var (has-type (app . ,e1) ,t)))]
       [`(define (,fname . ,params) : ,ret ,lvars . ,body)
        `(define (,fname . ,params) : ,ret ,lvars . ,(map live-instr-helper body (cdr livea)))]
       [else instr]))

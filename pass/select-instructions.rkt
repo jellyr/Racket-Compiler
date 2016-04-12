@@ -44,7 +44,7 @@
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
     [`(not ,e1) `(xorq (int 1) ,(select-instructions-assign e1))]
     [`(assign ,var (function-ref ,e1)) `((leaq (function-ref ,e1) ,(select-instructions-assign func-ref var)))]
-    [`(assign ,var (call-live-roots ,la (app ,fun . ,args))) (let ([len (length args)])
+    [`(call-live-roots ,la (assign ,var (app ,fun . ,args))) (let ([len (length args)])
                                                                ;(print si-rootstack) (newline)
                                                                `((movq (var ,(lookup func-ref si-rootstack #f)) (reg rdi))
                                                                  ,@(if (< len 6)
@@ -73,7 +73,7 @@
     [`(assign ,var (vector-set! ,v1 ,idx ,arg)) (let ([v1^ (select-instructions-assign func-ref v1)]
                                                       [arg^ (select-instructions-assign func-ref arg)])                                                 
                                                   `((movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))
-                                                    (movq (int 46) ,(select-instructions-assign func-ref var))))]
+                                                    (movq (int 47) ,(select-instructions-assign func-ref var))))]
     [`(assign ,var (allocate ,len (Vector . ,type))) (let* ([var^ (select-instructions-assign func-ref var)]
                                                             [ptrmask (foldr calc-pointer-mask
                                                                             0
