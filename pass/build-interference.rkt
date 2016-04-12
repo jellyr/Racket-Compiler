@@ -15,9 +15,17 @@
 (define (build-interference-helper graph e lak)
   (let ([lak (set->list lak)])
     (match e
+      [`(movq (offset ,var1 ,index) ,var2)
+       (let ([s (build-interference-unwrap var1)]
+             [d (build-interference-unwrap var2)])
+         (map (lambda (v) (add-edge graph d v)) lak))]
       [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'movq) (eq? op 'movzbq)))
        (let ([s (build-interference-unwrap e1)]
              [d (build-interference-unwrap e2)])
+         ;(display "e:")(displayln e)
+         ;(display "s:")(displayln s)
+         ;(display "d:")(displayln d)
+         ;(display "lak:")(displayln lak)
          (map (lambda (v) (cond
                             [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)]
                             [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
