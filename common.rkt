@@ -28,7 +28,7 @@
 (define HEAP-LEN 10000) ;; For Debugging GC
 
 (define (trivial-func? e)
-  (set-member? (set '+ '- '* 'and 'not 'or 'eq? 'read 'lambda:) e))
+  (set-member? (set '+ '- '* 'and 'not 'or 'eq? '< '<= '>= '> 'read 'lambda 'void) e))
 
 (define reg-colors
   '((rax . -1) (__flag . -1)
