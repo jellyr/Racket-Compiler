@@ -21,7 +21,7 @@
   (lambda (alist)
     (lambda (e)
       (match e
-        [`(has-type ,expr ,ht) `(has-type ,((uniquify alist) expr) ,ht)]
+        ;[`(has-type ,expr ,ht) `(has-type ,((uniquify alist) expr) ,ht)]
         [(? symbol?) (lookup e alist)]
         [(? boolean?) e]
         [(? integer?) e]
