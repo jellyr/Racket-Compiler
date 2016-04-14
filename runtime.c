@@ -4,7 +4,6 @@
 #include <assert.h>
 #include "runtime.h"
 
-
 // Often misunderstood static global variables in C are not
 // accessible to code outside of the module.
 // No one besides the collector ever needs to know tospace exists.
@@ -48,7 +47,6 @@ static inline int64_t get_ptr_bitfield(int64_t tag){
 void initialize(uint64_t rootstack_size, uint64_t heap_size)
 {
   // 1. Check to make sure that our assumptions about the world are correct.
-  //printf("Size of int64_t is: %d\n",sizeof(int64_t));
   assert(sizeof(int64_t) == sizeof(int64_t*));
   assert((heap_size % sizeof(int64_t)) == 0);
   assert((rootstack_size % sizeof(int64_t)) == 0);
@@ -101,6 +99,7 @@ void collect(int64_t** rootstack_ptr, uint64_t bytes_requested)
     assert(fromspace_begin <= a_root && a_root < fromspace_end);
   }
 #endif
+  
   // 2. Perform collection
   cheney(rootstack_ptr);
   
@@ -232,36 +231,7 @@ static void copy_vector(int64_t** vector_ptr_loc);
 
 void cheney(int64_t** rootstack_ptr)
 {
-  //printf("Inside Cheney\n");
-  //1. Set the free_ptr to To Space beginning
-  free_ptr = tospace_begin;
-  
-  //2. Pick all the vectors from rootset(registers, stack) and place in queue
-  for(int64_t* pi = *rootstack_begin;  pi < *rootstack_ptr; pi++){
-          int64_t vec = *pi;
-          int vec_len = get_length(vec);
-          for(int64_t j = 0; j <=get_length(vec) ; j++){
-              int64_t* tmp_ptr = (pi+(sizeof(int64_t)*j));
-	      *free_ptr = *tmp_ptr;
-	      free_ptr++;
-          }
-  }
-  
-  //3. With queue built up for 1st level of vectors call the copy vector in a loop
-  for(int64_t** i = &tospace_begin; *i < free_ptr;){
-          int64_t* tag_ptr = *i;
-	  int vec_len = get_length(*tag_ptr);
-	  copy_vector(i);
-	  *i += (sizeof(int64_t) * vec_len);
-  }
 
-  //4. Swap the From space to To space.
-  int64_t* tmp_from_ptr = (int64_t*)*fromspace_begin;
-  int64_t* tmp_to_ptr = (int64_t*)*fromspace_end;
-  *fromspace_begin = (int64_t)tospace_begin;
-  *fromspace_end = (int64_t)tospace_end;
-  tospace_begin = tmp_from_ptr;
-  tospace_end = tmp_to_ptr;
 }
 
 
@@ -315,39 +285,11 @@ void cheney(int64_t** rootstack_ptr)
  the invariant that the free_ptr points to the next free memory address.
 
 */
-int powr(int v1, int v2){
-  int res=1;
-  for(int i = 0;i < v2; i++){
-    res = res*v1;
-  }
-  return res;
-}
-
-
 void copy_vector(int64_t** vector_ptr_loc)
 {
-  //printf("Inside Copy Vector\n");
-  int64_t* vec = *vector_ptr_loc;
-  if (!is_forwarding(*vec)){
-    int vec_len = get_length(*vec);
-    int64_t vec_ptr_mask = get_ptr_bitfield(*vec);
-    for(int i = 0; i < vec_len; i++){
-      int64_t byte_adder = powr(2 ,i);
-      int64_t byte_contents = (vec_ptr_mask & byte_adder) >> i;
-      if(byte_contents == 1){
-	int64_t* from_vec_ptr = vec+(sizeof(int64_t) * (i+1));
-	int64_t child_vec = *from_vec_ptr;
-	int child_vec_len = get_length(child_vec);
-	for(int j = 0; j <= child_vec_len; j++){
-	  int64_t* cp_val_ptr = from_vec_ptr+(sizeof(int64_t) * j);
-	  *free_ptr = *cp_val_ptr;
-	  free_ptr++;
-	}
-	(*from_vec_ptr >> TAG_LENGTH_RSHIFT) << TAG_LENGTH_RSHIFT;
-      }
-    }
-   }
+  
 }
+
 
 
 // Read an integer from stdin
@@ -389,4 +331,45 @@ void print_vecend() {
 
 void print_ellipsis() {
   printf("#(...)");
+}
+
+#define ANY_TAG_MASK 3
+#define ANY_TAG_LEN 2
+#define ANY_TAG_INT 0
+#define ANY_TAG_BOOL 1
+#define ANY_TAG_VEC 2
+#define ANY_TAG_FUN 3
+
+int any_tag(int64_t any) {
+  return any & ANY_TAG_MASK;
+}
+
+/* to do: need to cycle detection. -Jeremy */
+void print_any(int64_t any) {
+  switch (any_tag(any)) {
+  case ANY_TAG_INT:
+    printf("%" PRId64, any >> ANY_TAG_LEN);
+    break;
+  case ANY_TAG_BOOL:
+    if (any >> ANY_TAG_LEN) {
+      printf("#t");
+    } else {
+      printf("#f");
+    }
+    break;
+  case ANY_TAG_VEC: {
+    int64_t* vector_ptr = (int64_t*) (any & ~ANY_TAG_MASK);
+    int64_t tag = vector_ptr[0];
+    unsigned char len = get_length(tag);
+    printf("#(");
+    for (int i = 0; i != len; ++i) {
+      print_any(vector_ptr[i + 1]);
+    }
+    printf(")");
+    break;
+  }
+  case ANY_TAG_FUN:
+    printf("#<procedure>");
+    break;
+  }
 }
