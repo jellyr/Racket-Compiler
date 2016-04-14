@@ -22,17 +22,15 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '( (define (even? [x : Integer]) : Boolean 
-  (if (eq? x 0)
-      #t
-      (odd? (+ (- 1) x))))
-(define (odd? [x : Integer]) : Boolean 
-  (if (eq? x 0)
-      #f
-      (even? (+ (- 1) x))))
-(let ([vec (vector odd?)])
-  (let ([dummy (vector-set! vec 0 even?)])
-    (if ((vector-ref vec 0) 21) 999 42)))
+(define expr '( (define (f [x : Integer]) : (Integer -> Integer)
+   (let ([y 4])
+      (lambda: ([z : Integer]) : Integer
+   (+ x (+ y z)))))
+
+(let ([g (f 5)])
+  (let ([h (f 3)])
+    (+ (g 11) (h 15))))
+
 )
 )
 
