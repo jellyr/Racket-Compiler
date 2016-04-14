@@ -3,6 +3,7 @@
 (require racket/set)
 
 ;; prof's stuff
+(require "dynamic-interp.rkt")
 (require "interp.rkt")
 (require "utilities.rkt")
 (require "uncover-types.rkt")
@@ -13,6 +14,7 @@
 (require "pass/typechecker.rkt")
 (require "pass/uniquify.rkt")
 (require "pass/reveal-functions.rkt")
+(require "pass/untyped-typed.rkt")
 (require "pass/convert-to-closures.rkt")
 (require "pass/flatten.rkt")
 (require "pass/expose.rkt")
@@ -25,14 +27,16 @@
 (require "pass/patch-instructions.rkt")
 (require "pass/print-x86.rkt")
 
-(provide r5-passes typechecker)
+(provide r7-passes typechecker)
 
 (define  typechecker
   (curry typecheck-R2 '()))
 
-(define r5-passes `(
-                    ("uniquify" ,(uniquify '()) ,interp-scheme)
-                    ("reveal-functions" ,reveal-functions ,interp-scheme)
+(define r7-passes `(
+                    ("uniquify" ,(uniquify '()) ,interp-r7)
+                    ("reveal-functions" ,reveal-functions ,interp-r7)
+                    ("untyped-typed", untyped-typed, interp-scheme)
+                    ("typechecker", typechecker, interp-scheme)
                     ("convert-to-closures", convert-to-closures, interp-scheme)
                     ("flattens" ,flattens ,interp-C)
                     ("expose-allocation" ,expose-allocation ,interp-C)
