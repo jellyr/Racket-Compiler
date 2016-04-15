@@ -3,6 +3,9 @@
 
 (provide typecheck-R2)
 
+(define type-predicates
+  (set 'boolean? 'integer? 'vector? 'procedure?))
+
 ;; input a list of define intrs
 (define (defines-env instrs)
   (map (lambda (e)
@@ -31,9 +34,57 @@
   (list type^ `(has-type ,expr^ ,type^)))
 
 (define (typecheck-R2 env e)
+  ; (display "e: ") (displayln e)
+  (define recur (curry typecheck-R2 env))
   (match e
-    [(? fixnum?) (hast 'Integer e)]
-    [(? boolean?) (hast 'Boolean e)]
+    [`(inject ,e^ ,ty)
+     (match-define `(,t1^ ,e1^) (recur e^))
+     ;(displayln e1^)
+     (cond
+       [(equal? ty t1^) (hast 'Any `(inject ,e1^ ,ty))]
+       [else (error "In inject")])]
+    [`(project ,e^ ,ty)
+     (match-define `(,t1^ ,e1^) (recur e^))
+     (cond
+       [(equal? t1^ 'Any) (hast ty `(project ,e1^ ,ty))]
+       [else (error "In project")])]
+    [`(,pred ,e^) #:when (set-member? type-predicates pred)
+        (match-define `(,e-ty ,e1^) (recur e^))
+        (cond
+         [(equal? e-ty 'Any)
+          (hast 'Boolean `(,pred e1^))]
+         [else
+          (error "predicate expected arg of type Any, not" e-ty)])]
+    [`(vector-ref ,e^ ,i)
+     (match-define `(,t ,e1^) (recur e^))
+     (match t
+       ; change me
+       ;[`(Vector ,ts ...) ...]
+       [`(Vectorof ,t)
+        (unless (exact-nonnegative-integer? i)
+          (error 'type-check "invalid index ~a" i))
+        (list t `(has-type (vector-ref ,e1^ (has-type ,i Integer)) ,t))]
+       [else (error "expected a vector in vector-ref, not" t)])]
+       [`(vector-set! ,vec ,i ,vec-arg)
+        (match-define `(,t-vec ,e-vec^) (recur vec))
+        (match-define `(,t-arg ,e-arg^) (recur vec-arg))
+        (match t-vec
+          ; change me
+          ; [`(Vector ,ts ...) ...]
+          [`(Vectorof ,t)
+           (unless (exact-nonnegative-integer? i)
+             (error 'type-check "invalid index ~a" i))
+           (unless (equal? t t-arg)
+             (error 'type-check "type mismatch in vector-set! ~a ~a" 
+                    t t-arg))
+           (values `(has-type (vector-set! ,e-vec^
+                                           (has-type ,i Integer)
+                                           ,e-arg^) Void) 'Void)]
+          [else (error 'type-check
+                       "expected a vector in vector-set!, not ~a"
+                       t-vec)])]
+    [(? fixnum?) (list 'Integer e)]
+    [(? boolean?) (list 'Boolean e)]
     [(? symbol?) (define t^ (lookup e env)) (hast t^ e)]
     [`(read) (hast 'Integer e)]
     [`(+ ,e1 ,e2)
