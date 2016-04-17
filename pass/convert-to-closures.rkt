@@ -10,7 +10,7 @@
   (set! fun-env (cons v fun-env)))
 
 (define (get-free-vars body env free)
-  (match body
+  23(match body
     [`(has-type (let ,vars ,b) ,ht) (set-union (foldr (lambda (e res)
                                                        (set-union res
                                                                   (get-free-vars e env free)))
@@ -30,6 +30,8 @@
     [`(has-type (if ,con ,thn ,els) ,ht) (set-union (get-free-vars con env free)
                                                     (get-free-vars thn env free)
                                                     (get-free-vars els env free))]
+    [`(has-type (inject ,e ,t) Any) (get-free-vars e env free)]
+    [`(has-type (project ,e ,t) ,t) (get-free-vars e env free)]
     [else free]))
 
 (define (fvs-let-builder body cvar clos-var-types fvs idx)
