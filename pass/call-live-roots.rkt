@@ -16,7 +16,9 @@
   ;(display "lak: ") (displayln lak)
   ;(display "instr: ")(displayln instr)
   (match instr
-    
+
+    [`(project ,e^ ,t) (live-analysis e^ lak)]
+    [`(inject ,e^ ,t) (live-analysis e^ lak)]
     [`(has-type (allocate ,e ,t1) ,t) (set)]
     [`(assign ,var ,e) (let ([forsub (vector-unwrap var)]
                              [forunion (live-analysis e (set))])

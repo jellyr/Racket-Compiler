@@ -33,8 +33,8 @@
   (curry typecheck-R2 '()))
 
 (define r7-passes `(
-                    ("uniquify" ,(uniquify '()) ,interp-r7)
-                    ("reveal-functions" ,reveal-functions ,interp-r7)
+                    ("uniquify" ,(uniquify '()) ,(interp-r7 '()))
+                    ("reveal-functions" ,reveal-functions ,(interp-r7 '()))
                     ("untyped-typed", untyped-typed, interp-scheme)
                     ("typechecker", typechecker, interp-scheme)
                     ("convert-to-closures", convert-to-closures, interp-scheme)
