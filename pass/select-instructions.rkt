@@ -43,28 +43,34 @@
     [(? boolean?) (if e '(int 1) '(int 0))]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
     [`(not ,e1) `(xorq (int 1) ,(select-instructions-assign func-ref e1))]
-    [`(assign ,lhs (inject ,e^ ,T)) #:when (or (eq? T 'Integer) (eq? T 'Boolean))
+    
+    [`(assign ,lhs1 (inject ,e^ ,T)) #:when (or (eq? T 'Integer) (eq? T 'Boolean))
+     (define lhs (select-instructions-assign func-ref lhs1))
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (salq (int 2) ,lhs)
-       (orq (int tagof(,T) ,lhs)))]
-    [`(assign ,lhs (inject ,e^ ,T)) #:when (eq? T 'Vector)
+       (orq (int ,(tagof T)) ,lhs))]
+    [`(assign ,lhs1 (inject ,e^ ,T)) #:when (eq? T 'Vector)
+     (define lhs (select-instructions-assign func-ref lhs1))
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
-       (orq (int tagof(,T)) ,lhs))]
-    [`(assign ,lhs (project ,e^ ,T)) #:when (or (eq? T 'Integer) (eq? T 'Boolean))
+       (orq (int ,(tagof T)) ,lhs))]
+    [`(assign ,lhs1 (project ,e^ ,T)) #:when (or (eq? T 'Integer) (eq? T 'Boolean))
+     (define lhs (select-instructions-assign func-ref lhs1))
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (andq (int 3) ,lhs)
-       (if (eq? ,lhs (int tagof(,T)))
+       (if (eq? ,lhs (int ,(tagof T)))
            ((movq ,(select-instructions-assign func-ref e^) ,lhs)
             (sarq (int 2) ,lhs))
            ((callq exit))))]
-    [`(assign ,lhs (project ,e^ ,T))
+    [`(assign ,lhs1 (project ,e^ ,T))
+     (define lhs (select-instructions-assign func-ref lhs1))
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (andq (int 3) ,lhs)
-       (if (eq? ,lhs (int tagof(,T)))
+       (if (eq? ,lhs (int ,(tagof T)))
            ((movq (int 3) ,lhs)
             (notq ,lhs)
             (andq ,(select-instructions-assign func-ref e^) ,lhs))
            ((callq exit))))]
+    
     [`(assign ,var (function-ref ,e1)) `((leaq (function-ref ,e1) ,(select-instructions-assign func-ref var)))]
     [`(call-live-roots ,la (assign ,var (app ,fun . ,args))) (let ([len (length args)])
                                                                ;(print si-rootstack) (newline)
