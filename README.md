@@ -45,6 +45,9 @@ Interpreter Tests:
 (interp-tests "r5" typechecker r5-passes interp-scheme "r5" (range 1 13))
 (display "r5 tests passed!") (newline)
 
+(compiler-tests "r7" #f r7-passes  "r7" (range 0 1))
 (compiler-tests "r7" #f r7-passes  "r7" (range 1 2))
+(compiler-tests "r7" #f r7-passes  "r7" (range 2 3))
+(compiler-tests "r7" #f r7-passes  "r7" (range 3 4))
 (display "r7 tests passed!") (newline)
 

@@ -13,13 +13,13 @@
 
 (define (live-analysis instr lak)
   (define (vector-unwrap var) (set var))
-  ;(display "lak: ") (displayln lak)
-  ;(display "instr: ")(displayln instr)
+  ;; (display "lak: ") (displayln lak)
+  
   (match instr
 
-    [`(project ,e^ ,t) (live-analysis e^ lak)]
-    [`(inject ,e^ ,t) (live-analysis e^ lak)]
-    [`(has-type (allocate ,e ,t1) ,t) (set)]
+    [`(has-type (project ,e^ ,t) ,t^) (live-analysis e^ lak)]
+    [`(has-type (inject ,e^ ,t) ,t^) (live-analysis e^ lak)]
+    [`(has-type (allocate ,e) ,t) (set)]
     [`(assign ,var ,e) (let ([forsub (vector-unwrap var)]
                              [forunion (live-analysis e (set))])
                          ;(display "forunion:")(displayln forunion)
@@ -32,10 +32,10 @@
        (set-union lak forunione forunionvar))]
     [`(has-type (vector-ref (has-type ,v ,vt^) ,index) ,t) (set-union lak (set v))]
     [`(has-type (if (has-type (eq? ,e1 ,e2) Boolean) ,thn ,els) ,t)  (let ([e1set (live-analysis e1 lak)]
-                                                        [e2set (live-analysis e2 lak)]
-                                                        [thenset (live-if-helper thn)]
-                                                        [elseset (live-if-helper els)])
-                                                    ; (display "thenset: ") (displayln thenset)
+                                                                           [e2set (live-analysis e2 lak)]
+                                                                           [thenset (live-if-helper thn)]
+                                                                           [elseset (live-if-helper els)])
+                                                                       ; (display "thenset: ") (displayln thenset)
                                                                        (set-union e1set e2set (car thenset) (car elseset)))]
     [`(has-type (app . ,e1) ,t)  (foldr set-union (set) (map (lambda (x^) (live-analysis x^ lak)) e1)) ]
     [`(has-type ,x ,t) #:when (and (and (pair? t) (equal? (car t) 'Vector)) (not (equal? (cadr t) '_))) (set x)]

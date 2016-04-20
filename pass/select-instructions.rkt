@@ -56,7 +56,7 @@
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (salq (int 2) ,lhs)
        (orq (int ,(tagof T)) ,lhs))]
-    [`(assign ,lhs1 (inject ,e^ ,T))
+    [`(assign ,lhs1 (inject ,e^ ,T)) #:when (not (eq? T 'Any))
      (define lhs (select-instructions-assign func-ref lhs1))
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (orq (int ,(tagof T)) ,lhs))]
@@ -68,7 +68,7 @@
            ((movq ,(select-instructions-assign func-ref e^) ,lhs)
             (sarq (int 2) ,lhs))
            ((callq exit))))]
-    [`(assign ,lhs1 (project ,e^ ,T))
+    [`(assign ,lhs1 (project ,e^ ,T)) #:when (not (eq? T 'Any))
      (define lhs (select-instructions-assign func-ref lhs1))
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (andq (int 3) ,lhs)
@@ -111,13 +111,13 @@
                                                       [arg^ (select-instructions-assign func-ref arg)])                                                 
                                                   `((movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))
                                                     (movq (int 47) ,(select-instructions-assign func-ref var))))]
-    [`(assign ,var (allocate ,len (Vector . ,type))) (let* ([var^ (select-instructions-assign func-ref var)]
-                                                            [ptrmask (foldr calc-pointer-mask
-                                                                            0
-                                                                            type
-                                                                            (build-list len (curry expt 2)))]
-                                                            [tag (bitwise-ior (arithmetic-shift ptrmask 7)
-                                                                              (bitwise-ior (arithmetic-shift len 1) 1))])
+    [`(assign ,var (has-type (allocate ,len) ,type)) (let* ([var^ (select-instructions-assign func-ref var)]
+                                             [ptrmask (foldr calc-pointer-mask
+                                                             0
+                                                             type
+                                                             (build-list (add1 len) (curry expt 2)))]
+                                             [tag (bitwise-ior (arithmetic-shift ptrmask 7)
+                                                               (bitwise-ior (arithmetic-shift len 1) 1))])
                                                        `((movq (global-value free_ptr) ,var^)
                                                          (addq (int ,(* 8 (add1 len))) (global-value free_ptr))
                                                          (movq (int ,tag) (offset ,var^ 0))))]
@@ -179,6 +179,7 @@
 
 (define (clean-has-type e)
   (match e
+    [`(has-type (allocate ,len) ,type) e]
     [`(has-type ,e^ ,t) (clean-has-type e^)]
     [(? pair?) (map clean-has-type e)]
     [else e]))

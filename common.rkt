@@ -43,5 +43,6 @@
     ['Boolean 1]
     [`(Vector . ,e1) 2]
     [`(Vectorof . ,e1) 2]
+    [(? (curry memq '->) ?) 3]
     ['Void 4]
-    [else 3]))
+    [else (displayln T) (error "in tagof in common.rkt")]))

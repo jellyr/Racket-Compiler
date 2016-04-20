@@ -73,25 +73,27 @@
                                       (match-define `(has-type ,expr1 ,ht1) e)
                                       (match-define `(has-type ,funexpr2 ,funht2) fune^)
                                       ;check if funht2 is working
-                                      ;; (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
-                                      ;;                                           funht2
-                                      ;;                                           `(Vector ,funht2))))
+                                      (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
+                                                                                funht2
+                                                                                `(Vector ,funht2))))
                                       ;(display "expr: ") (displayln expr)
                                       ;(display "e: ") (displayln e)
                                       ;(display "fune^: ") (displayln fune^)
                                       `(has-type (let ([,newvar ,fune^])
-                                                   (has-type (app (has-type (project (has-type (vector-ref
-                                                                                                (has-type (project
-                                                                                                           (has-type (inject
-                                                                                                                      (has-type ,newvar ,funht2)
-                                                                                                                      ,funht2) Any)
-                                                                                                           (Vectorof Any)) (Vectorof Any))
-                                                                                                (has-type (project
-                                                                                                           (has-type (inject
-                                                                                                                      (has-type 0 Integer)
-                                                                                                                      Integer) Any)
-                                                                                                           Integer) Integer))
-                                                                                               Any) ,app-proj-ty) ,app-proj-ty)
+                                                   (has-type (app (has-type
+                                                                   (project (has-type
+                                                                             (vector-ref
+                                                                              (has-type (project
+                                                                                         (has-type (inject
+                                                                                                    (has-type ,newvar ,funht2)
+                                                                                                    ,funht2) Any)
+                                                                                         (Vector (Any -> Any))) (Vector (Any -> Any)))
+                                                                              (has-type (project
+                                                                                         (has-type (inject
+                                                                                                    (has-type 0 Integer)
+                                                                                                    Integer) Any)
+                                                                                         Integer) Integer))
+                                                                             Any) ,app-proj-ty) ,app-proj-ty)
                                                                   ;;ht2 replaced with _
                                                                   (has-type (inject (has-type ,newvar (Vector _)) (Vector _)) Any)
                                                                   ,@(map clos-conv-helper es)) Any)) Any))]
@@ -108,7 +110,7 @@
        (set! lambda-functions (append lambda-functions ;;,ret-type replaced with _
                                       `((define (,lamvar [,closvar : Any] . ,vars) : ,htb ,def-stmt))))
        (envend `(,lamvar . (Any ,@(map last vars) -> ,htb)))
-       (let ([lkp (lookup lamvar fun-env ht)])
+       (let ([lkp (cdr (lookup lamvar fun-env ht))])
          `(has-type (vector (has-type (inject (has-type (function-ref ,lamvar) ,lkp) ,lkp) Any)
                           ,@(map (lambda (x)
                                    `(has-type (inject (has-type ,(car x) ,(cdr x)) ,(cdr x)) Any)) fvs))
