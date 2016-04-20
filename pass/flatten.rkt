@@ -43,12 +43,31 @@
      (envend `(,expr . ,ty))
      (values expr `() '())]
     [(or (? scalar?) (? vector?)) (values e '() '())]
+    [`(has-type (inject ,expr ,ty) Any)  (match-define `(has-type ,ex ,ty1) expr)
+     (let-values ([(e^ stmt^ alist^) (flattens expr)])
+;;           (displayln e^)
+;;           (displayln stmt^)
+           (if (or #f (null? stmt^))
+               (values e^ stmt^ alist^)
+               (match-let ([`(assign ,newvar ,res-stmt) (last stmt^)])
+                 (match-define `(has-type ,expr^ ,ty2) res-stmt)
+                 (values e^ (cons (drop-right (car stmt^) 1) `((assign ,newvar (has-type (inject ,res-stmt ,ty2) Any)))) alist^))))]
+    [`(has-type (project ,expr ,ty) ,ty)  (match-define `(has-type ,ex ,ty1) expr)
+     (let-values ([(e^ stmt^ alist^) (flattens expr)])
+           ;(displayln e^)
+           ;(displayln stmt^)
+           (if (or #f (null? stmt^))
+               (values e^ stmt^ alist^)
+               (match-let ([`(,prev-assign (assign ,newvar ,res-stmt)) stmt^])
+                 (match-define `(has-type ,expr^ ,ty2) res-stmt)
+                 (values e^ (append `(,prev-assign) `((assign ,newvar (has-type (project ,res-stmt ,ty2) ,ty2)))) alist^))))]
+    [`(has-type ) (void)]
     [`(has-type (read) ,t) (let ([newvar (gensym)])
                              (envend `(,newvar . ,t))
                              (values newvar  `((assign ,newvar ,e)) `(,newvar)))]
     ;; be careful here 
     [`(program ,type . ,e) (let-values ([(e^ stmt^ alist^) (flattens (last e))])
-                             `(program ,alist^ ,type ,(flatten-func (drop-right e 1))  ,@stmt^ (return ,e^)))]
+                             `(program ,alist^ ,type ,(flatten-func (drop-right e 1))  ,@stmt^ (return (has-type (inject ,e^ ,(lookup e^ env)) Any))))]
     [`(define (,fname . ,params) : ,type ,body) (let-values ([(e^ stmt^ alist^) (flattens body)])
                                                   `(define (,fname . ,params) : ,type ,alist^ ,@(append stmt^ `((return ,e^)))))]
     [`(has-type (app . ,e1) ,t) (let-values ([(e1^ stmt1^ alist1^) (flatten-vec-app e1)])
@@ -81,7 +100,7 @@
                                                                 stmt2^
                                                                 stmt3^
                                                                 `((assign ,newvar (has-type (vector-set! ,(hast-env e1^) ,(hast-env e2^) ,(hast-env e3^)) ,t))))
-                                            (append (cons newvar alist1^) alist2^ alist3^)))]
+                                                        (append (cons newvar alist1^) alist2^ alist3^)))]
     [`(has-type (if ,cn ,tn ,en) ,t) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                                        (let-values (((ec stmtc alistc) (flattens cnd))
                                                     ((et stmtt alistt) (flattens thn))

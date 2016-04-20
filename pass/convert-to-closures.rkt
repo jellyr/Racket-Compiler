@@ -10,7 +10,7 @@
   (set! fun-env (cons v fun-env)))
 
 (define (get-free-vars body env free)
-  23(match body
+  (match body
     [`(has-type (let ,vars ,b) ,ht) (set-union (foldr (lambda (e res)
                                                        (set-union res
                                                                   (get-free-vars e env free)))
@@ -37,9 +37,13 @@
 (define (fvs-let-builder body cvar clos-var-types fvs idx)
   (cond
     [(> idx (length fvs)) (clos-conv-helper body)]
-    [else (let ([expr (fvs-let-builder body cvar clos-var-types fvs (add1 idx))])
+    [else (let ([expr (fvs-let-builder body cvar clos-var-types fvs (add1 idx))]
+                [tmp1 (gensym 'tmp)]
+                [tmp2 (gensym 'tmp)])
             (match-define `(has-type ,b ,ht) expr)
-            `(has-type (let ([,(car (list-ref fvs (sub1 idx))) (has-type (vector-ref ,cvar ,idx) ,(list-ref clos-var-types (sub1 idx)))])
+            `(has-type (let ([,(car (list-ref fvs (sub1 idx))) (has-type (let ([,tmp1 (project ,cvar (Vectorof Any))]
+                                                                               [,tmp2 (project ,idx Integer)])
+                                                                           (has-type (vector-ref ,tmp1 ,tmp2) Any)) Any)])
                          ,expr) ,ht))]))
 
 (define (clos-conv-helper expr)
@@ -64,21 +68,30 @@
                                                         (inject (has-type (function-ref ,f) ,ntype) ,ntype)
                                                         Any)) (Vector Any)))]
     [`(has-type (app ,e . ,es) ,ht) (let ([newvar (gensym)]
-                                          [fune^ (clos-conv-helper e)])
+                                          [fune^ (clos-conv-helper e)]
+                                          [app-proj-ty `(,@(map (lambda (d) 'Any) es) -> Any)])
                                       (match-define `(has-type ,expr1 ,ht1) e)
                                       (match-define `(has-type ,funexpr2 ,funht2) fune^)
                                       ;check if funht2 is working
-                                      (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
-                                                                                funht2
-                                                                                `(Vector ,funht2))))
+                                      ;; (set! funht2 (lookup funexpr2 fun-env (if (eqv? (car funht2) 'Vector)
+                                      ;;                                           funht2
+                                      ;;                                           `(Vector ,funht2))))
                                       ;(display "expr: ") (displayln expr)
                                       ;(display "e: ") (displayln e)
                                       ;(display "fune^: ") (displayln fune^)
                                       `(has-type (let ([,newvar ,fune^])
-                                                   (has-type (app (project (has-type (vector-ref
-                                                                                      (has-type (project (has-type (inject (has-type ,newvar ,funht2) ,funht2) Any) (Vectorof Any)) (Vectorof Any))
-                                                                                      (has-type (project (has-type (inject (has-type 0 Integer) Integer) Any) Integer) Integer))
-                                                                                     Any) )
+                                                   (has-type (app (has-type (project (has-type (vector-ref
+                                                                                                (has-type (project
+                                                                                                           (has-type (inject
+                                                                                                                      (has-type ,newvar ,funht2)
+                                                                                                                      ,funht2) Any)
+                                                                                                           (Vectorof Any)) (Vectorof Any))
+                                                                                                (has-type (project
+                                                                                                           (has-type (inject
+                                                                                                                      (has-type 0 Integer)
+                                                                                                                      Integer) Any)
+                                                                                                           Integer) Integer))
+                                                                                               Any) ,app-proj-ty) ,app-proj-ty)
                                                                   ;;ht2 replaced with _
                                                                   (has-type (inject (has-type ,newvar (Vector _)) (Vector _)) Any)
                                                                   ,@(map clos-conv-helper es)) Any)) Any))]
@@ -103,25 +116,27 @@
     [`(has-type (if ,con ,thn ,els) ,ht) `(has-type (if ,(clos-conv-helper con)
                                                         ,(clos-conv-helper thn)
                                                         ,(clos-conv-helper els)) ,ht)]
-    ;
     [`(has-type (vector . ,e) ,t) (let ([vec-vals (map clos-conv-helper e)])
                                     `(has-type (vector . ,vec-vals) (Vector . ,(map last vec-vals))))]
-    [`(has-type (vector-set! ,vect (has-type ,index Integer) ,value) ,ht)
+    [`(has-type (vector-set! ,vect ,idx ,value) ,ht)
      (match-let ([`(has-type ,vect-name ,vect-type) (clos-conv-helper vect)]
-                 [`(has-type ,value-expr ,value-type) (clos-conv-helper value)])
+                 [`(has-type ,value-expr ,value-type) (clos-conv-helper value)]
+                 [`(has-type ,index ,idx-type) (clos-conv-helper idx)])
        `(has-type (vector-set!
                    (has-type ,vect-name ,(list-set vect-type (add1 index) value-type))
-                   (has-type ,index Integer)
+                   (has-type ,index ,idx-type)
                    (has-type ,value-expr ,value-type)) ,ht))]
+    [`(has-type (inject ,e ,t) Any) (match-define `(has-type ,e1 ,t1) (clos-conv-helper e))
+                                    `(has-type (inject (has-type ,e1 ,t1) ,t1) Any)]
+    [`(has-type (project ,e ,t) ,t) (match-define `(has-type ,e1 Any) (clos-conv-helper e))
+                                    `(has-type (project (has-type ,e1 Any) ,t) ,t)]
     [`(has-type (,op ,e1 ,e2) ,ht) ;;(displayln op) (displayln e2)
      `(has-type (,op ,(clos-conv-helper e1) ,(clos-conv-helper e2)) ,ht)]
     [`(has-type (,op ,e1) ,ht) `(has-type (,op ,(clos-conv-helper e1)) ,ht)]
     [`(has-type ,e ,t) `(has-type ,e ,(lookup e fun-env t))]
-    [`(has-type (inject ,e ,t) Any) (match-define `(has-type ,e1 ,t1) (clos-conv-helper e))
-                     `(has-type (inject (has-type ,e1 ,t1) ,t1) Any)]
-    [`(has-type (project ,e ,t) ,t) (match-define `(has-type ,e1 Any) (clos-conv-helper e))
-                     `(has-type (project (has-type ,e1 Any) ,t) ,t)]
     [else expr]))
+
+;; Add env load types of new variables creted here.
 
 (define (convert-to-closures expr)
   (set! lambda-functions '())
