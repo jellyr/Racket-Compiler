@@ -38,29 +38,41 @@
   `(defines ,@(map flattens expr)))
 
 (define (flattens e)
+  ;(display "e: ")(displayln e)
   (match e
     [`(has-type ,expr ,ty)#:when (or (scalar? expr) (vector? expr))
      (envend `(,expr . ,ty))
      (values expr `() '())]
     [(or (? scalar?) (? vector?)) (values e '() '())]
-    [`(has-type (inject ,expr ,ty) Any)  (match-define `(has-type ,ex ,ty1) expr)
-     (let-values ([(e^ stmt^ alist^) (flattens expr)])
-;;           (displayln e^)
-;;           (displayln stmt^)
-           (if (or #f (null? stmt^))
-               (values e^ stmt^ alist^)
-               (match-let ([`(assign ,newvar ,res-stmt) (last stmt^)])
-                 (match-define `(has-type ,expr^ ,ty2) res-stmt)
-                 (values e^ (cons (drop-right (car stmt^) 1) `((assign ,newvar (has-type (inject ,res-stmt ,ty2) Any)))) alist^))))]
-    [`(has-type (project ,expr ,ty) ,ty)  (match-define `(has-type ,ex ,ty1) expr)
-     (let-values ([(e^ stmt^ alist^) (flattens expr)])
-           ;(displayln e^)
-           ;(displayln stmt^)
-           (if (or #f (null? stmt^))
-               (values e^ stmt^ alist^)
-               (match-let ([`(,prev-assign (assign ,newvar ,res-stmt)) stmt^])
-                 (match-define `(has-type ,expr^ ,ty2) res-stmt)
-                 (values e^ (append `(,prev-assign) `((assign ,newvar (has-type (project ,res-stmt ,ty2) ,ty2)))) alist^))))]
+    
+    [`(has-type (inject ,expr ,ty) Any)
+     (match-define `(has-type ,has-expr ,has-T) expr)
+     (define newvar (gensym))
+     (envend `(,newvar .,ty))
+     ;(display "has-T: ") (displayln has-T)
+     (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
+         (values newvar
+                 `((assign ,newvar (has-type (inject ,expr ,ty) Any)))
+                 `(,newvar))         
+         (let-values ([(e^ stmt^ alist^) (flattens expr)])
+           ;(displayln "imhere")
+           (values newvar
+                   (append stmt^ `((assign ,newvar (has-type (inject ,e^ ,ty) Any))))
+                   (cons newvar alist^))))]
+    [`(has-type (project ,expr ,ty) ,ty)
+     (match-define `(has-type ,has-expr ,has-T) expr)
+     (define newvar (gensym))
+     (envend `(,newvar .,ty))
+     (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
+         (values newvar
+                 `((assign ,newvar (has-type (project ,expr ,ty) ,ty)))
+                 `(,newvar))         
+         (let-values ([(e^ stmt^ alist^) (flattens expr)])
+           (values newvar
+                   (append stmt^ `((assign ,newvar (has-type (project ,e^ ,ty) ,ty))))
+                   (cons newvar alist^))))
+     ]
+    
     [`(has-type ) (void)]
     [`(has-type (read) ,t) (let ([newvar (gensym)])
                              (envend `(,newvar . ,t))
@@ -90,6 +102,16 @@
          (values newvar
                  (append stmt^ `((assign ,newvar (has-type (vector . ,(map hast-env e^)) ,vt))))
                  (cons newvar alist^))))]
+    [`(has-type (vector-ref ,e1 (has-type ,e2 Integer)) ,t)
+     (let-values ([(e1^ stmt1^ alist1^) (flattens e1)]
+                  [(newvar) (gensym)])
+       ;(displayln "vect-ref!!!")
+       
+       (envend `(,newvar . ,t))
+       (values newvar
+               (append stmt1^
+                       `((assign ,newvar (has-type (vector-ref ,(hast-env e1^) (has-type ,e2 Integer)) ,t))))
+               (cons newvar alist1^)))]
     [`(has-type (vector-set! ,e1 ,e2 ,e3) ,t) (let-values ([(e1^ stmt1^ alist1^) (flattens e1)]
                                                [(e2^ stmt2^ alist2^) (flattens e2)]
                                                [(e3^ stmt3^ alist3^) (flattens e3)]

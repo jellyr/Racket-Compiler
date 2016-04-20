@@ -24,6 +24,7 @@ Mandatory require statements:
 (require "interp.rkt")
 (require "utilities.rkt")
 (require "compiler.rkt")
+(require "dynamic-interp.rkt")
 
 Interpreter Tests:
 (interp-tests "r1" typechecker r5-passes interp-scheme "r1" (range 1 22))
@@ -44,6 +45,6 @@ Interpreter Tests:
 (interp-tests "r5" typechecker r5-passes interp-scheme "r5" (range 1 13))
 (display "r5 tests passed!") (newline)
 
-(interp-tests "r7" typechecker r5-passes interp-scheme "r7" (range 0 12))
+(compiler-tests "r7" #f r7-passes  "r7" (range 1 2))
 (display "r7 tests passed!") (newline)
 

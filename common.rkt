@@ -43,6 +43,5 @@
     ['Boolean 1]
     [`(Vector . ,e1) 2]
     [`(Vectorof . ,e1) 2]
-    [`(,para -> . ,e1) 3]
     ['Void 4]
-    [else (error "wrong in tag func in common.rkt")]))
+    [else 3]))

@@ -36,6 +36,13 @@
                                                               `(,rs . ,in-params) (append (take arg-regs (if (< pcnt 6) pcnt 6))
                                                                                           (map (lambda (v) `(stack-arg ,(* 8 v))) (range max-stack)))) ,@func-si))) defs))
 
+(define (unwrap e)
+  (match e
+    [`(project ,e ,t) (unwrap e)]
+    [`(inject ,e ,t) (unwrap e)]
+    [`(has-type ,e ,t)  (unwrap e)]
+    [else e]))
+
 (define (select-instructions-assign func-ref e)
   (match e
     [(? fixnum?) `(int ,e)]
@@ -49,7 +56,7 @@
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (salq (int 2) ,lhs)
        (orq (int ,(tagof T)) ,lhs))]
-    [`(assign ,lhs1 (inject ,e^ ,T)) #:when (eq? T 'Vector)
+    [`(assign ,lhs1 (inject ,e^ ,T))
      (define lhs (select-instructions-assign func-ref lhs1))
      `((movq ,(select-instructions-assign func-ref e^) ,lhs)
        (orq (int ,(tagof T)) ,lhs))]
@@ -96,7 +103,9 @@
                                          (movq (global-value rootstack_begin)
                                                ,(select-instructions-assign func-ref newvar1))))]
     [`(assign ,var (vector-ref ,v1 ,idx)) (let ([v1^ (select-instructions-assign func-ref v1)]
-                                                [var^ (select-instructions-assign func-ref var)])
+                                                [var^ (select-instructions-assign func-ref var)]
+                                                [idx (unwrap idx)]
+                                                )
                                             `((movq (offset ,v1^ ,(* 8 (add1 idx))) ,var^)))]
     [`(assign ,var (vector-set! ,v1 ,idx ,arg)) (let ([v1^ (select-instructions-assign func-ref v1)]
                                                       [arg^ (select-instructions-assign func-ref arg)])                                                 
@@ -163,7 +172,7 @@
                                                      (addq ,(select-instructions-assign func-ref e1) (var ,var)))]
     [`(assign ,var (+ ,e1 ,e2)) `((movq ,(select-instructions-assign func-ref e1) (var ,var))
                                   (addq ,(select-instructions-assign func-ref e2) (var ,var)))]
-    [`(return ,e1) `((movq ,(select-instructions-assign func-ref e1) (reg rax)))]
+    [`(return ,e1) `((movq ,(select-instructions-assign func-ref (unwrap e1)) (reg rax)))]
     [`(assign ,var ,e1) `((movq ,(select-instructions-assign func-ref e1) (var ,var)))]
     ;[(? list?) (list (remove ret-v e))]
     [else `(,e)]))
