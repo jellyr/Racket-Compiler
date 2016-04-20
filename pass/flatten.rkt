@@ -89,9 +89,9 @@
                              (values newvar  `((assign ,newvar ,e)) `(,newvar)))]
     ;; be careful here 
     [`(program ,type . ,e) (let-values ([(e^ stmt^ alist^) (flattens (last e))])
-                             `(program ,alist^ ,type ,(flatten-func (drop-right e 1))  ,@stmt^ (return (has-type (inject ,e^ ,(lookup e^ env)) Any))))]
+                             `(program ,alist^ ,type ,(flatten-func (drop-right e 1))  ,@stmt^ (return (has-type ,e^ Any))))]
     [`(define (,fname . ,params) : ,type ,body) (let-values ([(e^ stmt^ alist^) (flattens body)])
-                                                  `(define (,fname . ,params) : ,type ,alist^ ,@(append stmt^ `((return ,e^)))))]
+                                                  `(define (,fname . ,params) : ,type ,alist^ ,@(append stmt^ `((return (has-type ,e^ Any))))))]
     [`(has-type (app . ,e1) ,t)
      (let-values ([(e1^ stmt1^ alist1^) (flatten-vec-app e1)])
        ;(display "app -> e1^: ") (displayln e1^)
