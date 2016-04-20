@@ -132,7 +132,7 @@
                                     `(has-type (inject (has-type ,e1 ,t1) ,t1) Any)]
     [`(has-type (project ,e ,t) ,t) (match-define `(has-type ,e1 Any) (clos-conv-helper e))
      (match e1
-       [`(inject ,e2 ,t1) `(has-type (project (has-type ,e1 Any) ,t) ,t1)]
+       [`(inject ,e2 ,t1) `(has-type (project (has-type ,e1 Any) ,t1) ,t1)]
        [else `(has-type (project (has-type ,e1 Any) ,t) ,t)])]
     [`(has-type (,op ,e1 ,e2) ,ht) ;;(displayln op) (displayln e2)
      `(has-type (,op ,(clos-conv-helper e1) ,(clos-conv-helper e2)) ,ht)]
