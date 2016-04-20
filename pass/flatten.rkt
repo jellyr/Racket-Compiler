@@ -54,13 +54,13 @@
      ;(display "e: ")(displayln e)       
      (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
          (values newvar
-                 `((assign ,newvar (has-type (inject ,expr ,ty) Any)))
+                 `((assign ,newvar (has-type (inject (has-type ,expr ,ty) ,ty) Any)))
                  `(,newvar))         
          (let-values ([(e^ stmt^ alist^) (flattens expr)])
          
            (envend `(,e^ . ,ty))
            (values newvar
-                   (append stmt^ `((assign ,newvar (has-type (inject ,e^ ,ty) Any))))
+                   (append stmt^ `((assign ,newvar (has-type (inject (has-type ,e^ ,ty) ,ty) Any))))
                    (cons newvar alist^))))]
     [`(has-type (project ,expr ,ty) ,ty)
      (match-define `(has-type ,has-expr ,has-T) expr)
@@ -71,7 +71,7 @@
      (envend `(,newvar . ,ty))
      (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
          (values newvar
-                 `((assign ,newvar (has-type (project ,expr ,ty) ,ty)))
+                 `((assign ,newvar (has-type (project (has-type ,expr Any) ,ty) ,ty)))
                  `(,newvar))         
          (let-values ([(e^ stmt^ alist^) (flattens expr)])
            ;; (display "e^: ")(displayln e^)
@@ -79,7 +79,7 @@
            ;; (display "env: ")(displayln env)
            
            (values newvar
-                   (append stmt^ `((assign ,newvar (has-type (project ,e^ ,(lookup e^ (cdr env) ty)) ,ty))))
+                   (append stmt^ `((assign ,newvar (has-type (project (has-type ,e^ Any) ,(lookup e^ (cdr env) ty)) ,ty))))
                    (cons newvar alist^))))
      ]
     
