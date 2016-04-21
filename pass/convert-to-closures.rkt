@@ -117,7 +117,7 @@
                  [`(has-type ,value-expr ,value-type) (clos-conv-helper value)]
                  [`(has-type ,index ,idx-type) (clos-conv-helper idx)])
        `(has-type (vector-set!
-                   (has-type ,vect-name ,(list-set vect-type (add1 index) value-type))
+                   (has-type ,vect-name ,vect-type)
                    (has-type ,index ,idx-type)
                    (has-type ,value-expr ,value-type)) ,ht))]
     [`(has-type (inject ,e ,t) Any) (match-define `(has-type ,e1 ,t1) (clos-conv-helper e))
