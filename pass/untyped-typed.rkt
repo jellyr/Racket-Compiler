@@ -20,11 +20,9 @@
     [`(- ,e1) `(inject (- (project ,(conv-helper e1) Integer)) Integer)]
     [`(vector . ,e1) (let ([val (map conv-helper e1)])
                        `(inject (vector . ,val) (Vector . ,(map (lambda x: 'Any) val))))]
-    [`(vector-ref ,e1 ,e2) #:when (fixnum? e2) (let ([tmp1 (gensym 'tmp)]
-                                                     [tmp2 (gensym 'tmp)])
+    [`(vector-ref ,e1 ,e2) #:when (fixnum? e2) (let ([tmp1 (gensym 'tmp)])
                                                  `(let ([,tmp1 (project ,(conv-helper e1) (Vectorof Any))])
-                                                    (let ([,tmp2 (project ,(conv-helper e2) Integer)])
-                                                      (vector-ref ,tmp1 ,tmp2))))]
+                                                    (vector-ref ,tmp1 (project ,(conv-helper e2) Integer))))]
     [`(vector-set! ,e1 ,e2 ,e3) #:when (fixnum? e2) (let ([tmp1 (gensym 'tmp)]
                                                           [tmp2 (gensym 'tmp)]
                                                           [tmp3 (gensym 'tmp)])
