@@ -39,10 +39,10 @@
 
 (define (tagof T)
   (match T
+    ['Void 4]
     ['Integer 0]
     ['Boolean 1]
     [`(Vector . ,e1) 2]
     [`(Vectorof . ,e1) 2]
     [(? (curry memq '->) ?) 3]
-    ['Void 4]
     [else (displayln T) (error "in tagof in common.rkt")]))
