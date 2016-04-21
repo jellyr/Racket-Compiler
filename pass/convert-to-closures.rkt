@@ -15,7 +15,7 @@
                                                        (set-union res
                                                                   (get-free-vars e env free)))
                                                      (set) (map last vars))
-                                               (get-free-vars b (append env (map car vars)) free))]
+                                               (get-free-vars b (cons (map car vars) env) free))]
     [`(has-type (vector-set! ,e1 ,e2 ,e3) ,ht) (set-union (get-free-vars e1 env free)
                                                           (get-free-vars e2 env free)
                                                           (get-free-vars e3 env free))]
