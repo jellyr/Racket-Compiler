@@ -12,11 +12,17 @@
 
 (define (hast-env e)
   ; (displayln env)
-  (let ([t (applyenv e)])
-    (if t
-        `(has-type ,e ,t)
-        e)))
-
+  (if (and (pair? e) (eq? (car e) 'has-type))
+      e
+      (let ([t (applyenv e)])
+        (if t
+            `(has-type ,e ,t)
+            e))))
+(define (hast e t)
+  (if (and (pair? e) (eq? (car e) 'has-type))
+      e
+      `(hat-type ,e ,t)))
+ 
 (define (if-flatten cnd thn els)
   (match cnd
     [`(has-type (not ,cexp) ,t) (let-values (((cn tn el op) (if-flatten cexp els thn)))
@@ -52,16 +58,12 @@
      (envend `(,newvar . Any))
      
      ;(display "e: ")(displayln e)       
-     (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
-         (values newvar
-                 `((assign ,newvar (has-type (inject ,expr ,ty) Any)))
-                 `(,newvar))         
-         (let-values ([(e^ stmt^ alist^) (flattens expr)])
-         
-           (envend `(,e^ . ,ty))
-           (values newvar
-                   (append stmt^ `((assign ,newvar (has-type (inject (has-type ,e^ ,ty) ,ty) Any))))
-                   (cons newvar alist^))))]
+     (let-values ([(e^ stmt^ alist^) (flattens expr)])
+       
+       (envend `(,e^ . ,ty))
+       (values newvar
+               (append stmt^ `((assign ,newvar (has-type (inject ,(hast e^ ty) ,ty) Any))))
+               (cons newvar alist^)))]
     [`(has-type (project ,expr ,ty) ,ty)
      (match-define `(has-type ,has-expr ,has-T) expr)
      (define newvar (gensym))
@@ -69,19 +71,15 @@
      
      ;(display "e: ")(displayln e)
      (envend `(,newvar . ,ty))
-     (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
-         (values newvar
-                 `((assign ,newvar (has-type (project ,expr ,ty) ,ty)))
-                 `(,newvar))         
-         (let-values ([(e^ stmt^ alist^) (flattens expr)])
-           ;; (display "e^: ")(displayln e^)
-           ;; (display "ty: ")(displayln ty)
-           ;; (display "env: ")(displayln env)
-           
-           (values newvar
-                   ;;(lookup e^ (cdr env) ty) -- is this needed for return type
-                   (append stmt^ `((assign ,newvar (has-type (project (has-type ,e^ Any) ,ty) ,ty))))
-                   (cons newvar alist^))))
+     (let-values ([(e^ stmt^ alist^) (flattens expr)])
+       ;; (display "e^: ")(displayln e^)
+       ;; (display "ty: ")(displayln ty)
+       ;; (display "env: ")(displayln env)
+       
+       (values newvar
+               ;;(lookup e^ (cdr env) ty) -- is this needed for return type
+               (append stmt^ `((assign ,newvar (has-type (project ,(hast e^ 'Any) ,ty) ,ty))))
+               (cons newvar alist^)))
      ]
     
     [`(has-type (void) Void) (values '() `() `())]
@@ -180,7 +178,7 @@
                       (stmtx^ (if (null? stmtx^) '() (take stmtx^ (sub1 (length stmtx^)))))]
                  ;; (display "env: ")(displayln env)
                  ;; (display "x: ")(displayln x)
-                 ;; (display "xe^: ")(displayln xe^)
+                 ;(display "xe^: ")(displayln xe^)
                  (values be^
                          (append stmtx^ `((assign ,x ,(hast-env xe^))) stmtb^)
                          (append alistx^ alistb^)))]))]
