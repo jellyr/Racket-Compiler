@@ -34,6 +34,9 @@
     [`(if ,con ,thn, els) `(if (eq? ,(conv-helper con) (inject #f Boolean))
                                ,(conv-helper els)
                                ,(conv-helper thn))]
+    [`(not ,e1) (let ([tmp (gensym 'tmp)])
+                      `(let ([,tmp ,(conv-helper e1)])
+                         (inject (not (project ,tmp Boolean)) Boolean)))]
     [`(and ,e1 ,e2) (let ([tmp (gensym 'tmp)])
                       `(let ([,tmp ,(conv-helper e1)])
                          (if (eq? ,tmp (inject #f Boolean))
