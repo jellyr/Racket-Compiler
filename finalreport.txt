@@ -1,0 +1,74 @@
+
+After uniquify pass
+## inline
+
+
+Add `define-inline` keyword.
+
+This idea is come from c, c++ programming language. Since it is quite diffcult to do the automatically inline function, how about let the humman being decide whether the function need to be inlined or not.
+
+### r5_2.rkt
+
+(define-inline (doubleid [x : Integer]) : Integer
+  ((lambda: ([x : Integer]) : Integer x) x))
+
+===> after inline should be:
+
+((lambda: ([x : Integer]) : Integer x) 42) ;; directly
+
+
+### r5_5.rkt
+
+(define-inline (app [f : (Integer -> Integer)] [x : Integer])
+  : Integer
+  (f x))
+
+(app (lambda: ([x : Integer]) : Integer x) 42)
+
+===> after inline should be:
+
+((lambda: ([x : Integer]) : Integer x) 42)
+
+
+### r5_6.rkt
+
+(define-inline (f [x : Integer]) : (Integer -> Integer)
+   (let ([y 4])
+      (lambda: ([z : Integer]) : Integer
+     (+ x (+ y z)))))
+
+(let ([g (f 5)])
+  (let ([h (f 3)])
+    (+ (g 11) (h 15))))
+
+
+===> after inline should be:  ;; run the inline pass to generate it
+
+
+
+partial evaluation pass: after inline
+---------------
+
+add partial evaluation level
+
+
+### r4_6.rkt  ==> how to do this???
+
+(define (mult [x : Integer] [y : Integer]) : Integer
+  (if (eq? 0 x)
+      0
+      (+ y (mult (+ (- 1) x) y))))
+(mult 6 7)
+
+after inline:
+
+
+
+
+
+
+
+
+
+
+
