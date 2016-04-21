@@ -21,17 +21,17 @@
     [`(vector . ,e1) (let ([val (map conv-helper e1)])
                        `(inject (vector . ,val) (Vector . ,(map (lambda x: 'Any) val))))]
     [`(vector-ref ,e1 ,e2) #:when (fixnum? e2) (let ([tmp1 (gensym 'tmp)]
-                                                    [tmp2 (gensym 'tmp)])
-                                                `(let ([,tmp1 (project ,(conv-helper e1) (Vectorof Any))]
-                                                       [,tmp2 (project ,(conv-helper e2) Integer)])
-                                                  (vector-ref ,tmp1 ,tmp2)))]
+                                                     [tmp2 (gensym 'tmp)])
+                                                 `(let ([,tmp1 (project ,(conv-helper e1) (Vectorof Any))])
+                                                    (let ([,tmp2 (project ,(conv-helper e2) Integer)])
+                                                      (vector-ref ,tmp1 ,tmp2))))]
     [`(vector-set! ,e1 ,e2 ,e3) #:when (fixnum? e2) (let ([tmp1 (gensym 'tmp)]
-                                                        [tmp2 (gensym 'tmp)]
-                                                        [tmp3 (gensym 'tmp)])
-                                                    `(let ([,tmp1 (project ,(conv-helper e1) (Vectorof Any))]
-                                                           [,tmp2 (project ,(conv-helper e2) Integer)]
-                                                           [,tmp3 ,(conv-helper e3)])
-                                                       (inject (vector-set! ,tmp1 ,tmp2 ,tmp3) Void)))]
+                                                          [tmp2 (gensym 'tmp)]
+                                                          [tmp3 (gensym 'tmp)])
+                                                      `(let ([,tmp1 (project ,(conv-helper e1) (Vectorof Any))])
+                                                         (let([,tmp2 (project ,(conv-helper e2) Integer)])
+                                                           (let ([,tmp3 ,(conv-helper e3)])
+                                                             (inject (vector-set! ,tmp1 ,tmp2 ,tmp3) Void)))))]
     [`(eq? ,e1 ,e2) `(inject (eq? ,(conv-helper e1) ,(conv-helper e2)) Boolean)]
     [`(if ,con ,thn, els) `(if (eq? ,(conv-helper con) (inject #f Boolean))
                                ,(conv-helper els)

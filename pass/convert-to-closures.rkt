@@ -41,9 +41,9 @@
                 [tmp1 (gensym 'tmp)]
                 [tmp2 (gensym 'tmp)])
             (match-define `(has-type ,b ,ht) expr)
-            `(has-type (let ([,(car (list-ref fvs (sub1 idx))) (has-type (let ([,tmp1 (project ,cvar (Vectorof Any))]
-                                                                               [,tmp2 (project ,idx Integer)])
-                                                                           (has-type (vector-ref ,tmp1 ,tmp2) Any)) Any)])
+            `(has-type (let ([,(car (list-ref fvs (sub1 idx))) (has-type (let ([,tmp1 (project ,cvar (Vectorof Any))])
+                                                                           (let ([,tmp2 (project ,idx Integer)])
+                                                                             (has-type (vector-ref ,tmp1 ,tmp2) Any))) Any)])
                          ,expr) ,ht))]))
 
 (define (clos-conv-helper expr)
