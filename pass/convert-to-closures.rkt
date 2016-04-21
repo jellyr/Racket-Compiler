@@ -83,16 +83,8 @@
                                                    (has-type (app (has-type
                                                                    (project (has-type
                                                                              (vector-ref
-                                                                              (has-type (project
-                                                                                         (has-type (inject
-                                                                                                    (has-type ,newvar ,funht2)
-                                                                                                    ,funht2) Any)
-                                                                                         (Vector (Any -> Any))) (Vector (Any -> Any)))
-                                                                              (has-type (project
-                                                                                         (has-type (inject
-                                                                                                    (has-type 0 Integer)
-                                                                                                    Integer) Any)
-                                                                                         Integer) Integer))
+                                                                              (has-type ,newvar ,funht2)
+                                                                              (has-type 0 Integer))
                                                                              Any) ,app-proj-ty) ,app-proj-ty)
                                                                   ;;ht2 replaced with _
                                                                   (has-type (inject (has-type ,newvar (Vector _)) (Vector _)) Any)

@@ -49,7 +49,7 @@
     [`(has-type (inject ,expr ,ty) Any)
      (match-define `(has-type ,has-expr ,has-T) expr)
      (define newvar (gensym))
-     (envend `(,newvar . ,ty))
+     (envend `(,newvar . Any))
      
      ;(display "e: ")(displayln e)       
      (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
@@ -79,7 +79,8 @@
            ;; (display "env: ")(displayln env)
            
            (values newvar
-                   (append stmt^ `((assign ,newvar (has-type (project (has-type ,e^ Any) ,(lookup e^ (cdr env) ty)) ,ty))))
+                   ;;(lookup e^ (cdr env) ty) -- is this needed for return type
+                   (append stmt^ `((assign ,newvar (has-type (project (has-type ,e^ Any) ,ty) ,ty))))
                    (cons newvar alist^))))
      ]
     
@@ -106,7 +107,7 @@
                                            (envend `(,e^ . ,t))
                                            (envend `(,newvar . ,t))
                                            (values newvar
-                                                   (append stmt^ `((assign ,newvar (has-type (function-ref ,e^) (Vector _)))))
+                                                   (append stmt^ `((assign ,newvar (has-type (function-ref ,e^) ,t))))
                                                    (cons newvar alist^))))]
     [`(has-type (vector . ,e1) ,vt)
      (let-values ([(e^ stmt^ alist^) (flatten-vec-app e1)])
