@@ -49,7 +49,7 @@
     ;[(? symbol?) #:when (eq? e ret-v) '(reg rax)]
     [(? boolean?) (if e '(int 1) '(int 0))]
     [(? symbol?) #:when (not (eq? e 'program)) `(var ,e)]
-    ;[`(void) `(int 47)]
+    [`(void) `(int 47)]
     [`(not ,e1) `(xorq (int 1) ,(select-instructions-assign func-ref e1))]
     
     [`(assign ,lhs1 (inject ,e^ ,T)) #:when (or (eq? T 'Integer) (eq? T 'Boolean))
