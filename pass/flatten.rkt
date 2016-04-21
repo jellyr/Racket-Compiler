@@ -54,7 +54,7 @@
      ;(display "e: ")(displayln e)       
      (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
          (values newvar
-                 `((assign ,newvar (has-type (inject (has-type ,expr ,ty) ,ty) Any)))
+                 `((assign ,newvar (has-type (inject ,expr ,ty) Any)))
                  `(,newvar))         
          (let-values ([(e^ stmt^ alist^) (flattens expr)])
          
@@ -71,7 +71,7 @@
      (envend `(,newvar . ,ty))
      (if (or (eq? has-T 'Integer) (eq? has-T 'Boolean))
          (values newvar
-                 `((assign ,newvar (has-type (project (has-type ,expr Any) ,ty) ,ty)))
+                 `((assign ,newvar (has-type (project ,expr ,ty) ,ty)))
                  `(,newvar))         
          (let-values ([(e^ stmt^ alist^) (flattens expr)])
            ;; (display "e^: ")(displayln e^)
