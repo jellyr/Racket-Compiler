@@ -21,7 +21,7 @@
 (define (hast e t)
   (if (and (pair? e) (eq? (car e) 'has-type))
       e
-      `(hat-type ,e ,t)))
+      `(has-type ,e ,t)))
  
 (define (if-flatten cnd thn els)
   (match cnd
