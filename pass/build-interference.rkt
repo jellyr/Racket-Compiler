@@ -33,7 +33,8 @@
                                                               (eq? op 'cmpq)
                                                               (eq? op 'sarq)
                                                               (eq? op 'salq)
-                                                              (eq? op 'orq)))
+                                                              (eq? op 'orq)
+                                                              (eq? op 'andq)))
        (let ([s (build-interference-unwrap e1)]
              [d (build-interference-unwrap e2)])
          (map (lambda (v) (cond
