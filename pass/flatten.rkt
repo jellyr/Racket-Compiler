@@ -132,6 +132,17 @@
                (append stmt1^
                        `((assign ,newvar (has-type (vector-ref ,(hast-env e1^) ,(hast-env e2^) ) ,t))))
                (cons newvar (append alist1^ alist2^))))]
+    [`(has-type (vector-set! ,e1 (has-type ,e2 Integer) ,e3) ,t)
+     (let-values ([(e1^ stmt1^ alist1^) (flattens e1)]
+                                                                     
+                  [(e3^ stmt3^ alist3^) (flattens e3)]
+                  [(newvar) (gensym)])
+       (envend `(,newvar . ,t))
+       (values newvar
+               (append stmt1^
+                       stmt3^
+                       `((assign ,newvar (has-type (vector-set! ,(hast-env e1^) (has-type ,e2 Integer) ,(hast-env e3^)) ,t))))
+                                                                  (append (cons newvar alist1^) alist3^)))]
     [`(has-type (vector-set! ,e1 ,e2 ,e3) ,t) (let-values ([(e1^ stmt1^ alist1^) (flattens e1)]
                                                [(e2^ stmt2^ alist2^) (flattens e2)]
                                                [(e3^ stmt3^ alist3^) (flattens e3)]
@@ -143,6 +154,7 @@
                                                                 stmt3^
                                                                 `((assign ,newvar (has-type (vector-set! ,(hast-env e1^) ,(hast-env e2^) ,(hast-env e3^)) ,t))))
                                                         (append (cons newvar alist1^) alist2^ alist3^)))]
+    
     [`(has-type (if ,cn ,tn ,en) ,t) (let-values (((cnd thn els op) (if-flatten cn tn en)))
                                        (let-values (((ec stmtc alistc) (flattens cnd))
                                                     ((et stmtt alistt) (flattens thn))

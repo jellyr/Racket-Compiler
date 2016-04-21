@@ -109,7 +109,8 @@
                                                 )
                                             `((movq (offset ,v1^ ,(* 8 (add1 idx))) ,var^)))]
     [`(assign ,var (vector-set! ,v1 ,idx ,arg)) (let ([v1^ (select-instructions-assign func-ref v1)]
-                                                      [arg^ (select-instructions-assign func-ref arg)])                                                 
+                                                      [arg^ (select-instructions-assign func-ref arg)]
+                                                      [idx (unwrap idx)])                                                 
                                                   `((movq ,arg^ (offset ,v1^ ,(* 8 (add1 idx))))
                                                     (movq (int 47) ,(select-instructions-assign func-ref var))))]
     [`(assign ,var (has-type (allocate ,len) ,type)) (let* ([var^ (select-instructions-assign func-ref var)]
