@@ -82,7 +82,7 @@
                (cons newvar alist^)))
      ]
     
-    [`(has-type (void) Void) (values '() `() `())]
+    [`(has-type (void) Void) (values '(void) `() `())]
     [`(has-type (read) ,t) (let ([newvar (gensym)])
                              (envend `(,newvar . ,t))
                              (values newvar  `((assign ,newvar ,e)) `(,newvar)))]
