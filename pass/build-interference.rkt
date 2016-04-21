@@ -29,7 +29,11 @@
          (map (lambda (v) (cond
                             [(not (or (eqv? s v) (eqv? d v))) (add-edge graph d v)]
                             [else (hash-set! graph v (hash-ref graph v (set)))])) lak))]
-      [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'addq) (eq? op 'cmpq)))
+      [`(,op ,e1 ,e2)#:when (and (or (var? e2) (reg? e2)) (or (eq? op 'addq)
+                                                              (eq? op 'cmpq)
+                                                              (eq? op 'sarq)
+                                                              (eq? op 'salq)
+                                                              (eq? op 'orq)))
        (let ([s (build-interference-unwrap e1)]
              [d (build-interference-unwrap e2)])
          (map (lambda (v) (cond
