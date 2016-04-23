@@ -1,0 +1,46 @@
+;;; input ==> change typechecker
+
+'(program (define-inline (doubleid [x : Integer]) : Integer
+  ((lambda: ([x : Integer]) : Integer x) x))
+(doubleid 42))
+
+
+============================
+
+;;;;;;;;;; type-checker
+
+
+'(program
+  (type Integer)
+  (define-inline (doubleid (x : Integer))
+    :
+    Integer
+    (has-type
+     ((has-type
+       (lambda: ((x : Integer)) : Integer (has-type x Integer))
+       (Integer -> Integer))
+      (has-type x Integer))
+     Integer))
+  (has-type
+   ((has-type doubleid (Integer -> Integer)) (has-type 42 Integer))
+   Integer))
+
+
+===========================
+
+;;;;;;;;;; uniquify
+
+'(program
+  (type Integer)
+  (define-inline (func7459 (x7460 : Integer))
+    :
+    Integer
+    (has-type
+     ((has-type
+       (lambda: ((x7460 : Integer)) : Integer (has-type x7460 Integer))
+       (Integer -> Integer))
+      (has-type x7460 Integer))
+     Integer))
+  (has-type
+   ((has-type func7459 (Integer -> Integer)) (has-type 42 Integer))
+   Integer))
