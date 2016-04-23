@@ -7,7 +7,9 @@
 (define (substution instr env)
   (define recur (curryr substution env))
   (match instr
-
+    [`(has-type ,e^ ,type) (has-type ,(recur e^) ,type)]
+    [(? symbol?) (lookup instr env instr)]
+    [`(lambda: ,paras : ,ret-t ,body) `(lambda: ,paras : ,ret-t ,(map recur body))]
     [`(,func . ,arg) `(,func ,@(map recur arg))]))
 
 (define (inline-helper instr)
