@@ -6,7 +6,7 @@
 (define (uniquify-func def-expr alist)
   (let ([func-vars (foldl (lambda (v res)
                             (match v
-                              [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym 'func)])
+                              [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym 'fun)])
                                                                       (cons `(,fname . ,newvar) res))]))
                           alist
                           def-expr)])
@@ -15,11 +15,17 @@
 (define (fun-param-helper expr alist)
   (foldr (lambda (p res)
            (match p
-             [`(,x : ,type) (let ([var-check (lookup x (last res) #f)])
-                              (if var-check
-                                  `(,(cons `(,var-check : ,type) (car res)) ,(last res))
-                                  (let ([newx (gensym x)])
-                                    `(,(cons `(,newx : ,type) (car res)) ,(cons `(,x . ,newx) (last res))))))])) `(() ,alist) expr))
+             [`(,x : ,type)
+              (let ([newx (gensym x)])
+                `(,(cons `(,newx : ,type) (car res)) ,(cons `(,x . ,newx) (last res))))]))                 `(() ,alist)
+                expr))
+
+;; Not needed as the func params should have new parameters should always be new variables.
+;; (let ([var-check (lookup x (last res) #f)])
+;;                               (if var-check
+;;                                   `(,(cons `(,var-check : ,type) (car res)) ,(last res))
+;;                                   ))
+
 
 (define uniquify
   (lambda (alist)
@@ -35,8 +41,6 @@
         [`(let ([,x ,e]) ,body)
          (let* ([newx (gensym x)]
                 [newlist (cons `(,x . ,newx) alist)])
-           ;(displayln 'here46)
-           
            `(let ([,newx ,((uniquify alist) e)])
               ,((uniquify newlist) body)))]
         [`(type ,ty) e]
@@ -44,9 +48,13 @@
          (let ([newvar ((uniquify alist) fname)])
            (match-define `(,pstmt ,plist) (fun-param-helper params alist))
            `(define (,newvar ,@pstmt) : ,ret-type ,((uniquify plist) body)))]
+        [`(define-inline (,fname . ,params) : ,ret-type ,body)
+         (let ([newvar ((uniquify alist) fname)])
+           (match-define `(,pstmt ,plist) (fun-param-helper params alist))
+           `(define-inline (,newvar ,@pstmt) : ,ret-type ,((uniquify plist) body)))]
         [`(lambda: ,params : ,ret-type ,body)
          (match-define `(,pstmt ,plist) (fun-param-helper params alist))
-         `(lambda: ,pstmt : ,ret-type ,((uniquify (append alist plist)) body))]
+         `(lambda: ,pstmt : ,ret-type ,((uniquify (append plist alist)) body))]
         [`(program ,ret-type . ,e) (begin
                            (match-define
                              `(,define-stmt ,flist) (uniquify-func (drop-right e 1) alist))
