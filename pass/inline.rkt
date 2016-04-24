@@ -5,14 +5,18 @@
 
 
 (define (substution instr env def-env)
-  (display "substution instr:") (displayln instr)
-  (display "env: ")(displayln env)
+  ;(display "substution instr:") (displayln instr)
+  ;(display "env: ")(displayln env)
   (define recur (lambda (x) (substution x env def-env)))
   (match instr
     [`(has-type ,e^ ,type) `(has-type ,(recur e^) ,type)]
     [(? symbol?) (lookup instr env instr)]
     [(? fixnum?) instr]
     [`(lambda: ,paras : ,ret-t ,body) `(lambda: ,paras : ,ret-t ,(map recur body))]
+    [`((has-type ,funame ,ftype) . ,args) #:when (lookup funame env #f)
+     (define new-fun (lookup funame env))
+     `((has-type ,new-fun ,ftype) ,@(map recur args))]
+    
     [`((has-type ,funame ,ftype) . ,args)
      (define fdata (lookup funame def-env #f))
      (if fdata
@@ -21,9 +25,13 @@
                 [fargs (car fdata)]
                 [fbody (cdr fdata)]
                 [new-env (map (lambda (x y) `(,x . ,y)) fargs vars)])
-           (substution fbody (append new-env env) def-env))
+           (match-define `(has-type ,expr ,t) (substution fbody (append new-env env) def-env))
+           expr)
          ;; else
          `((has-type ,funame ,ftype) ,@(map recur args)))]
+    [`(,def (,funame . ,var-defs) : ,ret-type ,body) #:when (or (equal? def 'define)
+                                                                (equal? def 'define-inline))
+     `(define (,funame . ,var-defs) : ,ret-type ,(map recur body))]
     [else instr]
     ))
 

@@ -98,11 +98,47 @@
     (has-type 42 Integer))
    Integer))
 
+;;; uniquify
 
+'(program
+  (type Integer)
+  (define-inline (func50024 (f50026 : (Integer -> Integer)) (x50025 : Integer))
+    :
+    Integer
+    (has-type
+     ((has-type f50026 (Integer -> Integer)) (has-type x50025 Integer))
+     Integer))
+  (has-type
+   ((has-type func50024 ((Integer -> Integer) Integer -> Integer))
+    (has-type
+     (lambda: ((x50027 : Integer)) : Integer (has-type x50027 Integer))
+     (Integer -> Integer))
+    (has-type 42 Integer))
+   Integer))
 
+;;;; inline
 
+'(program
+  (type Integer)
+  (define-inline
+   (func50024 (f50026 : (Integer -> Integer)) (x50025 : Integer))
+   :
+   Integer
+   (has-type
+    ((has-type f50026 (Integer -> Integer)) (has-type x50025 Integer))
+    Integer))
+  (has-type
+   (has-type
+    ((has-type
+      (has-type
+       (lambda: ((x50027 : Integer)) : Integer (has-type x50027 Integer))
+       (Integer -> Integer))
+      (Integer -> Integer))
+     (has-type (has-type 42 Integer) Integer))
+    Integer)
+   Integer))
 
-
+;;;;; input
 
 
 

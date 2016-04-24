@@ -32,13 +32,19 @@ This idea is come from c, c++ programming language. Since it is quite diffcult t
 
 ### r5_6.rkt
 
+== > an example for partial evaluate
+
 (define-inline (f [x : Integer]) : (Integer -> Integer)
    (let ([y 4])
       (lambda: ([z : Integer]) : Integer
      (+ x (+ y z)))))
 
-(let ([g (f 5)])
-  (let ([h (f 3)])
+(let ([g (let ([y 4])
+      (lambda: ([z : Integer]) : Integer
+     (+ 5 (+ y z))))])
+  (let ([h (let ([y 4])
+      (lambda: ([z : Integer]) : Integer
+     (+ 3 (+ y z))))])
     (+ (g 11) (h 15))))
 
 
@@ -54,6 +60,8 @@ add partial evaluation level
 
 ### r4_6.rkt  ==> how to do this???
 
+====> do not do it
+
 (define (mult [x : Integer] [y : Integer]) : Integer
   (if (eq? 0 x)
       0
@@ -61,6 +69,23 @@ add partial evaluation level
 (mult 6 7)
 
 after inline:
+
+
+
+;;
+
+
+;;;;;;;; r4_5.rkt  ==> 
+
+(define (id [x : Integer]) : Integer x)
+(let ([fun id])
+  (fun 42))
+
+
+====> after inline:
+42
+
+
 
 
 
