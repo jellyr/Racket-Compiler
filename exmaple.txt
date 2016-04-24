@@ -37,10 +37,17 @@
     Integer
     (has-type
      ((has-type
-       (lambda: ((x7460 : Integer)) : Integer (has-type x7460 Integer))
+       (lambda: ((x74601 : Integer)) : Integer (has-type x74601 Integer))
        (Integer -> Integer))
       (has-type x7460 Integer))
      Integer))
   (has-type
    ((has-type func7459 (Integer -> Integer)) (has-type 42 Integer))
    Integer))
+
+
+;;;;;;;;;;; 
+
+
+
+
