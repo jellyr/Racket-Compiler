@@ -7,24 +7,27 @@
 (define (defines-env instrs)
   (map (lambda (e)
          (match e
-           [`(define (,funame . ,var-defs) : ,ret-type ,body)
+           [`(,def (,funame . ,var-defs) : ,ret-type ,body) #:when (or (equal? def 'define)
+                                                                (equal? def 'define-inline))
             (let* ([new-env (map (lambda (def^)
                                    (match def^
                                      [`(,var : ,var-type) `(,var . ,var-type)]
                                      [else (error "in define[new-env]")])) var-defs)])
-              `(,funame . (,@(map cdr new-env) -> ,ret-type)))]))
+              `(,funame . (,@(map cdr new-env) -> ,ret-type)))]
+           ))
        instrs))
 
 (define (typechecker-define-helper env e)
   (match e
-    [`(define (,funame . ,var-defs) : ,ret-type ,body)
+    [`(,def (,funame . ,var-defs) : ,ret-type ,body) #:when (or (equal? def 'define)
+                                                                (equal? def 'define-inline))
      (let* ([new-env (map (lambda (def^)
                             (match def^
                               [`(,var : ,var-type) `(,var . ,var-type)]
                               [else (error "in define[new-env]")])) var-defs)])
        (match-define `(,ret-type^ ,ret-e^) (typecheck-R2 (append env new-env) body))
        (if (equal? ret-type^ ret-type)
-           (list ret-type^ `(define (,funame . ,var-defs) : ,ret-type ,ret-e^))
+           (list ret-type^ `(,def (,funame . ,var-defs) : ,ret-type ,ret-e^))
            (error "in define")))]))
 
 (define (hast type^ expr^)

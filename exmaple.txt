@@ -48,6 +48,68 @@
 
 ;;;;;;;;;;; 
 
+'(program
+  (type Integer)
+  (define-inline
+   (func7459 (x7460 : Integer))
+   :
+   Integer
+   (has-type
+    ((has-type
+      (lambda: ((x74601 : Integer)) : Integer (has-type x74601 Integer))
+      (Integer -> Integer))
+     (has-type x7460 Integer))
+    Integer))
+  (has-type
+   (has-type
+    ((has-type
+      (lambda: ((x74601 : Integer)) : Integer (has-type x74601 Integer))
+      (Integer -> Integer))
+     (has-type (has-type 42 Integer) Integer))
+    Integer)
+   Integer))
+
+
+=======================
+;;;;;;;;;;;;;;;;;; input: r5_5.rkt
+
+'(program
+  (define-inline (app [f : (Integer -> Integer)] [x : Integer])
+    : Integer
+    (f x))
+
+  (app (lambda: ([x : Integer]) : Integer x) 42))
+
+
+
+;;;; typechecker 
+'(program
+  (type Integer)
+  (define-inline
+   (app (f : (Integer -> Integer)) (x : Integer))
+   :
+   Integer
+   (has-type ((has-type f (Integer -> Integer)) (has-type x Integer)) Integer))
+  (has-type
+   ((has-type app ((Integer -> Integer) Integer -> Integer))
+    (has-type
+     (lambda: ((x : Integer)) : Integer (has-type x Integer))
+     (Integer -> Integer))
+    (has-type 42 Integer))
+   Integer))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
