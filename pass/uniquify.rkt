@@ -7,7 +7,10 @@
   (let ([func-vars (foldl (lambda (v res)
                             (match v
                               [`(define (,fname . ,params) : ,ret ,b) (let ([newvar (gensym 'fun)])
-                                                                      (cons `(,fname . ,newvar) res))]))
+                                                                        (cons `(,fname . ,newvar) res))]
+                              [`(define-inline (,fname . ,params) : ,ret ,b) (let ([newvar (gensym 'fun)])
+                                                                        (cons `(,fname . ,newvar) res))]
+                              ))
                           alist
                           def-expr)])
     `(,(map (uniquify func-vars) def-expr) ,func-vars)))
