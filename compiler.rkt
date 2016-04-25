@@ -34,6 +34,7 @@
 (define r5-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("inline functions" ,inline-func ,interp-scheme)
+                    ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("reveal-functions" ,reveal-functions ,interp-scheme)
                     ("convert-to-closures", convert-to-closures, interp-scheme)
                     ("flattens" ,flattens ,interp-C)
