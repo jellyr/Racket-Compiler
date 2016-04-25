@@ -77,7 +77,7 @@ after inline:
 
 ;;;;;;;; r4_5.rkt  ==> 
 
-(define (id [x : Integer]) : Integer x)
+(define-inline (id [x : Integer]) : Integer x)
 (let ([fun id])
   (fun 42))
 

@@ -24,10 +24,12 @@
 
 (define expr '( 
 
-(define-inline (doubleid [x : Integer]) : Integer
-  ((lambda: ([x : Integer]) : Integer x) x))
-(doubleid 42))
+(define-inline (id [x : Integer]) : Integer x)
+(let ([fun id])
+  (fun 42))
 
+
+)
 )
 
 (test `(("typechecker1" ,typechecker ,interp-scheme) ,@r5-passes) expr)
