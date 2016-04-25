@@ -30,8 +30,9 @@
 ;; ------------------------------------------
 
 (define var-cnt 0)
+(define fun-env '())
 (define (reset-var-cnt) (set! var-cnt 0))
-
+(define (load-fun-env val) (cons val fun-env))
 (define acc-keywords-sexp-list
   '(lambda if let : use
     generate map zipwith fold generate stencil3x3 acc-array-ref))
@@ -185,8 +186,8 @@
 ; [Lit] : Exp -> InferRecord
 (define (infer-lit exp)
   (let ([t (match exp
-             [(? number?) 'Int]
-             [(? boolean?) 'Bool]
+             [(? number?) 'Integer]
+             [(? boolean?) 'Boolean]
              [`(Array ,n ,el) `(Array n ,@(map infer-lit el))]
              [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)])])
     (infer-record (mutable-set)
@@ -261,7 +262,7 @@
              (match var
                [`(,x ,e1)
                 (match-define (infer-record a c t te) (infer-types e1 env))
-                (displayln (list a c t te))
+                ;(displayln (list a c t te))
                 (match-define (infer-record ares cres tres te-res) res)
                 (set-union! ares a)
                 (set-union! cres c)
@@ -399,17 +400,12 @@
     [else `(,(cons var type))]))
 
 (define environment
-  '((+ . (-> "t1" "t1" "t1"))
-    (add1 . (-> "ta" "ta"))
-    (- . (-> "t2" "t2" "t2"))
-    (sub1 . (-> "ts" "ts"))
-    (* . (-> "t3" "t3" "t3"))
-    (/ . (-> "t4" "t4" "t4"))
-    (< . (-> "t5" "t5" Bool))
-    (= . (-> "t6" "t6" Bool))
-    (eq? . (-> "t7" "t7" Bool))))
+  '((+ . (-> Integer Integer Integer))
+    (- . (-> Integer Integer))
+    (< . (-> "t5" "t5" Boolean))
+    (eq? . (-> "t7" "t7" Boolean))))
 ;;(define environment
-;;  '((+ . (-> Int Int Int))
+;;  '(
 ;;    (add1 . (-> Int Int))
 ;;    (- . (-> Int Int Int))
 ;;    (sub1 . (-> Int Int))
@@ -443,7 +439,7 @@
     [`(has-type ,expr ,ty) `(has-type ,(annotate-expr expr subs) ,(annotate-type ty subs))]
     [x #:when (or (symbol? x) (number? x) (boolean? x)) type-expr]
     [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
-    [`(lambda ,x : ,ty ,b) `(lambda ,(foldr (lambda (val res)
+    [`(lambda ,x : ,ty ,b) `(lambda: ,(foldr (lambda (val res)
                                              (append (annotate-expr val subs) res)) '() x)
                              : ,(annotate-type ty subs)
                              ,(annotate-expr b subs))]
@@ -452,27 +448,31 @@
                                        (append `((,@(annotate-expr x subs)
                                                   ,(annotate-expr e subs))) res))) '() vars)
                         ,(annotate-expr b subs))]
-    [`(map ,fun ,arr) `(map ,(annotate-expr fun subs) ,(annotate-expr arr subs))]
-    [`(fold ,fun ,res ,arr) `(fold ,(annotate-expr fun subs) ,(annotate-expr res subs) ,(annotate-expr arr subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
                          ,@(map (curryr annotate-expr subs) rand))]
     [else (error 'error type-expr)]))
 
-(define (infer e)
-  
-  ;(display "ASSUMPTIONS:") (displayln assumptions)
-  ;(display "FINAL TYPE:") (displayln type)
-  ;(display "CONSTRAINTS: ")(displayln constraints)
-  ;(display "TYPE EXPR: ")(displayln type-expr)
-  ;;(displayln type-expr)
-  ;; (print "Infer types done")
-  (list assumptions constraints type  type-expr))
 
 (define (infer-program exp)
   (reset-var-cnt)
-  (match-define (infer-record assumptions constraints type type-expr) (infer-types e (set)))
+  (match-define (infer-record fun-as fun-con fun-type fun-ty-ex)
+    (foldl (lambda (bl res)
+             (match-define `(define (,fname . ,vars) : ,ret ,body) bl)
+             (match-let* (((infer-record as con ty ty-ex) (infer-types bl (set)))
+                          ((infer-record ra rc rt rex) res))
+               (set-union! ra as)
+               (set-union! rc con)
+               (load-fun-env `(,fname . ,ty))
+               (set! rex (cons ty-ex rex))
+               (infer-record ra rc 'None rex)))
+             (infer-record (mutable-set) (mutable-set) 'None '())
+             (drop-right exp 1)))
+  (match-define (infer-record assumptions constraints type type-expr) (infer-types (last exp) (set)))
+  (set-union! constraints fun-con)
+  ;(displayln type-expr)
+  ;(displayln fun-ty-ex)
+  (set! type-expr (append fun-ty-ex type-expr))
   (define substitutions (solve (set->list constraints)))
-  (match-define `(,assumptions ,constraints ,type ,substitutions ,type-expr) (infer exp))
   ;;(displayln "--- Input: ------------------------------------------------------")
   ;;(displayln exp)
   ;;(displayln "--- Output: -----------------------------------------------------")  
@@ -484,7 +484,7 @@
   ;;(displayln "-----------------------------------------------------------------")
   ;; (values (substitute substitutions type)
   ;;         (annotate-expr type-expr substitutions))
-  `(program ,(str->sym (annotate-expr type-expr substitutions)))
+  `(program (type ,(substitute substitutions type)) ,(str->sym (annotate-expr type-expr substitutions)))
   )
 
 ;; ========================================================================
@@ -494,7 +494,7 @@
 (define e1 'x)
 (define e2 '(lambda (x) x))
 (define e3 '(x 2))
-(define e4 '((lambda (x y) (+ x y)) 2 3))
+(define e4 '(((lambda (x y) (+ x y)) 2 3)))
 (define e5 '(let ((x (+ 5 2))) x))
 (define e6 '(let ((x 2) (y 5)) (+ x y)))
 (define e7 '((lambda (x) (let ((x x)) x)) 2))
@@ -512,7 +512,7 @@
 ;; (p-infer e1 (box '()))
 
 ;; (p-infer e2 (box '()))
-;;(infer-program e4)
+(infer-program e4)
 ;; ;;(p-infer #`#,(p-infer e4 (box '())) (box '()))
 ;;(infer-program e2)
 ;; ;;(p-infer #`#,(p-infer e6 '()) '())

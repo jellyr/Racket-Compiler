@@ -10,7 +10,7 @@
 ;; ours
 (require "common.rkt")
 ;; some passes
-(require "pass/typechecker.rkt")
+(require "pass/typechecker-hm.rkt")
 (require "pass/uniquify.rkt")
 (require "pass/inline.rkt")
 (require "pass/reveal-functions.rkt")
@@ -26,10 +26,7 @@
 (require "pass/patch-instructions.rkt")
 (require "pass/print-x86.rkt")
 
-(provide r5-passes typechecker)
-
-(define  typechecker
-  (curry typecheck-R2 '()))
+(provide r5-passes infer-program)
 
 (define r5-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
