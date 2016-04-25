@@ -141,10 +141,30 @@
 ;;;;; input
 
 
-(define (id [x : Integer]) : Integer x)
+(define (id x) x)
 (let ([fun id])
   (fun 42))
 
+
+;;;;
+
+'(program
+  (type Integer)
+  (define (fun12848 (x12849 : Integer))
+    :
+    Integer
+    (has-type
+     ((has-type
+       (lambda: ((x12850 : Integer)) : Integer (has-type x12850 Integer))
+       (Integer -> Integer))
+      (has-type x12849 Integer))
+     Integer))
+  (has-type
+   ((has-type
+     (lambda: ((x12850 : Integer)) : Integer (has-type x12850 Integer))
+     (Integer -> Integer))
+    (has-type (has-type 42 Integer) Integer))
+   Integer))
 
 
 

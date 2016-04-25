@@ -63,8 +63,15 @@
                                 ;(display "x: ")(displayln x)
                                 (equal? 'define-inline (car x))) defs))
   (define def-env (map inline-env defs-inline))
-  ;(display "defs: ")(displayln defs)
-  ;(display "defs-inline: ")(displayln defs-inline)
-  ;(display "def-env: ")(displayln def-env)
-  
-  `(program ,type . ,(map (lambda (x) (substution x '() def-env)) exprs)))
+  (if (null? def-env)
+      prog
+      `(program ,type . ,(map (lambda (x) (substution x '() def-env)) exprs))))
+
+
+
+
+
+
+
+
+

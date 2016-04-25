@@ -5,7 +5,8 @@
 (provide (all-from-out "uncover-types.rkt"))
 
 
-(provide int? var? reg? stack? scalar? define? trivial-func? reg-colors HEAP-LEN)
+(provide int? var? reg? stack? scalar? define? trivial-func? 
+          reg-colors HEAP-LEN clean-has-type)
 (define (int? e)
   (eqv? (car e) 'int))
 
@@ -35,3 +36,11 @@
     (rbx . 0) (rcx . 1) (rdx . 2) (rsi . 3) (rdi . 4)
     (r8 . 5) (r9 . 6) (r10 . 7) (r11 . 8) (r12 . 9) (r13 . 10)
     (r14 . 11) (r15 . 12)))
+
+(define (clean-has-type e)
+  (match e
+    [`(has-type (allocate ,len) ,type) e]
+    [`(has-type ,e^ ,t) (clean-has-type e^)]
+    [(? pair?) (map clean-has-type e)]
+    [else e]))
+
