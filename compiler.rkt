@@ -12,6 +12,7 @@
 ;; some passes
 (require "pass/typechecker.rkt")
 (require "pass/uniquify.rkt")
+(require "pass/inline.rkt")
 (require "pass/reveal-functions.rkt")
 (require "pass/convert-to-closures.rkt")
 (require "pass/flatten.rkt")
@@ -32,6 +33,7 @@
 
 (define r5-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
+                    ("inline functions" ,inline-func ,interp-scheme)
                     ("reveal-functions" ,reveal-functions ,interp-scheme)
                     ("convert-to-closures", convert-to-closures, interp-scheme)
                     ("flattens" ,flattens ,interp-C)
