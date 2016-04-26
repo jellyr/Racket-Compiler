@@ -23,10 +23,8 @@
            (loop (cdr ls) new-prog))))))
 
 (define expr '(
-(define-inline (id x) x)
-(let ([fun id])
-  (fun 42))
-
+(let ([v (read)])
+  42)
 
 )
 )

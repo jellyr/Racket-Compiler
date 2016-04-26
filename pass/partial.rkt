@@ -55,7 +55,9 @@
       (list instr #f)
       (match instr
         [(? fixnum?) (list instr #f)]
-        [(? symbol?) (list (lookup instr env instr) #f)]
+        [(? symbol?) (if (lookup instr env #f)
+                         (list (lookup instr env) #t)
+                         (list instr #f))]
         [`(has-type ,e^ ,t)
          (match-define `(,eval-e ,changed) (recur e^))
          (if (and (pair? eval-e) (equal? (car eval-e) 'has-type))
@@ -80,22 +82,28 @@
          ]
 
     ;;; if condition
-        [`(if #f ,thn ,els) (list els #t)]
-        [`(if #t ,thn ,els) (list thn #t)]
+        [`(if ,conde ,thn ,els)
+         (if conde
+             (list thn #t)
+             (list els #t))]
+        
         
     ;;; let parameter estimate
 
         [`(let ([,var ,para]) ,body)
          (display "(var-occurs? var body): ") (displayln (var-occurs? var body))
-         (if (var-occurs? var body)
-             (let* ([var-result (recur para)]
-                    [eval-var (car var-result)]
-                    [var-changed (cadr var-result)]
-                    [new-env (cons `(,var . ,eval-var) env)])
-               (match-define `(,eval-e ,changed) (partial-helper body new-env (add1 curdepth)))
-               (list `(let ([,var ,eval-var]) ,eval-e) (or changed var-changed)))
-             (let ([result (recur body)])
-               (list (car result) #t)))]
+         (if (decidable? para)
+             (if (var-occurs? var body)
+                 (let* ([var-result (recur para)]
+                        [eval-var (car var-result)]
+                        [var-changed (cadr var-result)]
+                        [new-env (cons `(,var . ,eval-var) env)])
+                   (match-define `(,eval-e ,changed) (partial-helper body new-env (add1 curdepth)))
+                   (list `(let ([,var ,eval-var]) ,eval-e) (or changed var-changed)))
+                 (let ([result (recur body)])
+                   (list (car result) #t)))
+             
+             )]
         [else (list instr #f)]
         )))
 
@@ -107,14 +115,17 @@
   ;; (define defs (drop-right exprs 1))
   (define partial-result (map (lambda (x)
                                 (partial-helper x '() 1)) exprs))
-  ;; (display "partial result: ") (displayln partial-result)
+  (display "partial result: ") (displayln partial-result)
   (define result `(program ,ret-type ,@(map car partial-result)))
+  (define changed (foldr (lambda (x r) (or x r)) #f (map cadr partial-result)))
   (display "cur-level: ") (displayln level)
   (display "result: ") (displayln result)
-  (if (> level 1)
+  (display "changed: ") (displayln changed)
+  (if (and (> level 1) changed)
       (partial-with-level result (sub1 level))
       result))
 
 
 (define (partial prog)
-  (partial-with-level prog 2))
+  (partial-with-level prog 5))
+
