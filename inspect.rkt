@@ -11,7 +11,7 @@
   (display "--------------------------") (newline)
   (pretty-print exp)
   (display "--------------------------") (newline)
-  (let loop ([ls passes] [prog exp])
+  (let loop ([ls passes] [prog `(program ,@exp)])
     (if (null? ls) (begin (display "done") (newline))
         (match (car ls)
           (`(,name ,func ,_)
@@ -22,10 +22,15 @@
                (begin (pretty-print new-prog) (newline))) 
            (loop (cdr ls) new-prog))))))
 
-(define expr '(((lambda (x y) (+ x y)) 21 21)
+(define expr '(
+(define-inline (id [x : Integer]) : Integer x)
+(let ([fun id])
+  (fun 42))
+
+
 )
 )
 
-(test `(("typechecker1" ,infer-program ,interp-scheme) ,@r5-passes) expr)
+(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r5-passes) expr)
 
 

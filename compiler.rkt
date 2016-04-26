@@ -11,8 +11,10 @@
 (require "common.rkt")
 ;; some passes
 (require "pass/typechecker-hm.rkt")
+(require "pass/typechecker.rkt")
 (require "pass/uniquify.rkt")
 (require "pass/inline.rkt")
+(require "pass/partial.rkt")
 (require "pass/reveal-functions.rkt")
 (require "pass/convert-to-closures.rkt")
 (require "pass/flatten.rkt")
@@ -26,12 +28,15 @@
 (require "pass/patch-instructions.rkt")
 (require "pass/print-x86.rkt")
 
-(provide r5-passes infer-program)
+(provide r5-passes infer-program typechecker)
+
+(define typechecker (curry typecheck-R2 '()))
 
 (define r5-passes `(
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
                     ("inline functions" ,inline-func ,interp-scheme)
                     ("uniquify" ,(uniquify '()) ,interp-scheme)
+                    ("partial eval" ,partial ,interp-scheme)
                     ("reveal-functions" ,reveal-functions ,interp-scheme)
                     ("convert-to-closures", convert-to-closures, interp-scheme)
                     ("flattens" ,flattens ,interp-C)
