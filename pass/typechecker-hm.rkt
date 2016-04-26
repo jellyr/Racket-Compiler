@@ -1,4 +1,5 @@
 #lang racket
+(require racket/trace)
 (require "../utilities.rkt")
 (provide infer-program)
 
@@ -53,32 +54,45 @@
 
 (define (infer-types e env)
   (match e
-    [`(define (,fname . ,fvars) ,b) (infer-def e env)]
+    [`(,def-type (,fname . ,fvars) ,b) #:when (or (eq? def-type 'define)
+                                                  (eq? def-type 'define-inline)) (infer-def e env)]
     [`(lambda ,x ,b) (infer-abs e env)]
     [`(let ,vars ,b) (infer-let e env)]
-    [(? symbol?) (infer-var e)]
+    [`(vector . ,el) (infer-vector e env)]
+    [`(vector-ref ,v ,n) (infer-vref e env)]
+    [`(vector-set ,v ,n ,el) (infer-vset e env)]
     [`(if ,cnd ,thn ,els) (infer-cond e env)]
+    [(? symbol?) (infer-var e)]
     [(or (? boolean?) (? fixnum?)) (infer-lit e)]
+    [`(read) (infer-record (mutable-set) (mutable-set) 'Integer `(has-type (read) Integer))]
+    [`(void) (infer-record (mutable-set) (mutable-set) 'Integer `(has-type (void) Integer))]
     [`(,rator . ,rand) (infer-app e env)]
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
 
 
-;; (define (infer-array e env syn-table)
-;;   (match-define `(acc-array ,ls) e)
-;;   (let ([len (length ls)]
-;;         [el (foldl (lambda (val res)
-;;                    (match-define (infer-record a1 c1 t1 te1) (infer-types val env syn-table))
-;;                    (match-define (infer-record a0 c0 t0 te0) res)
-;;                    (set-union! a0 a1)
-;;                    (set-union! c0 c1)
-;;                    (infer-record a0
-;;                                  c0
-;;                                  (if (eqv? t0 'None) (list t1) (cons t1 t0))
-;;                                  (cons te1 te0)))
-;;                  (infer-record (mutable-set) (mutable-set) 'None '())
-;;                  ls)])
-;;     (match-define (infer-record a2 c2 t2 te2) el)
-;;     (infer-record a2 c2 `(Array ,len ,(car t2)) `(acc-array ,(reverse te2)))))
+(define (infer-vector e env)
+  (match-define `(vector . ,el) e)
+  (match-define (infer-record a2 c2 t2 te2) (foldr (lambda (val res)
+                                                     (match-define (infer-record a1 c1 t1 te1) (infer-types val env))
+                                                     (match-define (infer-record a0 c0 t0 te0) res)
+                                                     (set-union! a0 a1)
+                                                     (set-union! c0 c1)
+                                                     (infer-record a0
+                                                                   c0
+                                                                   ;;(if (eqv? t0 'None) (list t1) (cons t1 t0))
+                                                                   (cons t1 t0)
+                                                                   (cons te1 te0)))
+                                                   (infer-record (mutable-set) (mutable-set) '() '()) el))
+  (define vec-type `(Vector ,@t2))
+  (infer-record a2 c2 vec-type `(has-type (vector ,@te2) ,vec-type)))
+
+(define (infer-vref e env)
+  ;;FIXME : Implement Me
+  (infer-record (mutable-set) (mutable-set) '() '()))
+
+(define (infer-vset e env)
+  ;;FIXME : Implement Me
+  (infer-record (mutable-set) (mutable-set) '() '()) )
 
 (define (infer-cond e env)
   (match-define `(if ,cnd ,thn ,els) e)
@@ -87,7 +101,7 @@
   (match-define (infer-record ae ce te tee) (infer-types els env))
   (set-union! ac at ae)
   (set-union! cc ct ce (set `(== ,tt ,te)))
-  (infer-record ac cc tt `(if ,tec ,tet ,tee)))
+  (infer-record ac cc tt `(has-type (if ,tec ,tet ,tee) ,tt)))
 
 ; [Var]
 (define (infer-var x)
@@ -148,7 +162,7 @@
 
 ; [Abs]
 (define (infer-def exp env)
-  (match-define `(define (,fname . ,fargs) ,body) exp)
+  (match-define `(,def-type (,fname . ,fargs) ,body) exp)
   (let* ([arg-vals (get-vars fargs '() '())]
          [arg-env (map (lambda (arg)
                          (let ([env-val (assoc arg (last arg-vals))])
@@ -171,7 +185,7 @@
     ;(displayln c)
     (set-union! ares a)
     (define ret-type `(-> ,@arg-vars ,t))
-    (infer-record ares c ret-type `(define (,fname ,@(foldr (lambda (x res)
+    (infer-record ares c ret-type `(,def-type (,fname ,@(foldr (lambda (x res)
                                                               (cons `(,(car x) : ,(cdr x))
                                                                     res))
                                                             `()
@@ -219,22 +233,15 @@
                 (match-define (infer-record ares cres tres te-res) res)
                 (set-union! ares a)
                 (set-union! cres c)
-                (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]
-               [`(,x : ,t0 ,e1)
-                (match-define (infer-record a c t te) (infer-types e1 env))
-                (match-define (infer-record ares cres tres te-res) res)
-                (set-union! ares a)
-                (set-union! cres c (set `(== ,t0 ,t)))
-                (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]))
-           (infer-record (mutable-set) (mutable-set) 'None '()) vars))
+                (set! tres (cons `(,x ,t) tres))
+                (infer-record ares cres tres (append `([,x ,te]) te-res))]))
+           (infer-record (mutable-set) (mutable-set) '() '()) vars))
   ;;(match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
   (match-define (infer-record a2 c2 t2 te2) (infer-types body env))
   ;(set-union! a1 a2)
   (set-union! c1 c2)
   (set-for-each a2 (lambda (a)
-                     (let ([aval (assoc (car a) (map (lambda (var)
-                                                       (match-let ((`((,x : ,t) ,b) var))
-                                                         (list x t))) te1))])
+                     (let ([aval (assoc (car a) t1)])
                        (if aval
                            (set-add! c1 `(implicit ,(cdr a) ,(last aval) ,env))
                            (set-add! a1 a)))))
@@ -260,8 +267,8 @@
 
 
 (define (generalize monos type)
-  (display "Generalize :")
-  (displayln (list 'scheme (set-subtract (free_vars type) monos) type))
+  ;(display "Generalize :")
+  ;(displayln (list 'scheme (set-subtract (free_vars type) monos) type))
   (list 'scheme (set-subtract (free_vars type) monos) type))
 
 
@@ -274,7 +281,7 @@
                   (cons (car v) (substitute subs1 (cdr v)))) subs2)))
     (foldl (lambda (v res)
              (when (dict-ref subs2 (car v) #f)
-               (error 'subs-union "Substitutions with same type vars"))
+               (error 'subs-union (format "Substitutions with same type vars ~a ~a" v subs2)))
              (set! s (cons v s))) '() subs1) s))
 
 
@@ -325,7 +332,7 @@
      (match-let ((`(-> . ,t1-types) t1)
                  (`(-> . ,t2-types) t2))
        (if (not (eq? (length t1-types) (length t2-types)))
-           (error "Types ~a and ~a are incompatible" t1 t2)
+           (error (format "Types ~a and ~a are incompatible" t1 t2))
            (foldl (lambda (p1 p2 s)
                     (set-union (unify (substitute s p1) (substitute s p2)) s))
                   '() t1-types t2-types)))]
@@ -347,6 +354,8 @@
   '((+ . (-> Integer Integer Integer))
     (- . (-> Integer Integer))
     (< . (-> "t5" "t5" Boolean))
+    (and . (-> Boolean Boolean Boolean))
+    (not . (-> Boolean Boolean))
     (eq? . (-> "t7" "t7" Boolean))))
 
 (define (str->sym val)
@@ -364,7 +373,7 @@
     [else (let ([f (assoc ty subs)])
             (if f
                 ;;(str->sym (cdr f))
-                (cdr f)
+                (annotate-type (cdr f) subs)
                 ;;(str->sym ty)
                 ty))]))
 
@@ -373,7 +382,7 @@
     [`(has-type ,expr ,ty) `(has-type ,(annotate-expr expr subs) ,(annotate-type ty subs))]
     [x #:when (or (symbol? x) (number? x) (boolean? x)) type-expr]
     [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
-    [`(define (,fname . ,fvars) : ,ty ,b) `(define (,fname ,@(foldr (lambda (val res)
+    [`(,def-type (,fname . ,fvars) : ,ty ,b) `(,def-type (,fname ,@(foldr (lambda (val res)
                                                                      (cons (annotate-expr val subs) res))
                                                                    '() fvars))
                                            : ,(annotate-type ty subs) ,(annotate-expr b subs))]
@@ -383,7 +392,7 @@
                              ,(annotate-expr b subs))]
     [`(let ,vars ,b) `(let ,(foldr (lambda (var res)
                                      (match-let ([`(,x ,e) var])
-                                       (append `((,@(annotate-expr x subs)
+                                       (append `((,x
                                                   ,(annotate-expr e subs))) res))) '() vars)
                         ,(annotate-expr b subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
@@ -395,7 +404,7 @@
   (reset-var-cnt)
   (match-define (infer-record fun-as fun-con fun-type fun-ty-ex)
     (foldl (lambda (bl res)
-             (match-define `(define (,fname . ,vars) ,body) bl)
+             (match-define `(,def-type (,fname . ,vars) ,body) bl)
              (match-let* (((infer-record as con ty ty-ex) (infer-types bl (set)))
                           ((infer-record ra rc rt rex) res))
                (set-union! ra as)
@@ -404,12 +413,15 @@
                (set! rex (cons ty-ex rex))
                (infer-record ra rc 'None rex)))
              (infer-record (mutable-set) (mutable-set) 'None '())
-             (drop-right exp 1)))
+             (drop-right (cdr exp) 1)))
   ;(displayln fun-ty-ex)
   ;(displayln fun-env)
   (match-define (infer-record assumptions constraints type type-expr) (infer-types (last exp) (set)))
   (set-union! constraints fun-con)
   (set! type-expr `(,@fun-ty-ex ,type-expr))
+  ;;(displayln type-expr)
+  ;;(newline)
+  ;;(displayln constraints)
   (define substitutions (solve (set->list constraints)))
   ;;(displayln type-expr)
   ;;(displayln "--- Input: ------------------------------------------------------")
@@ -445,7 +457,24 @@
 (define e12 '(if #f
                  (+ 3 5)
                  (- 5 3)))
-(define e13 '((define (id x y) x) (id 42 #f)))
+(define e13 '(program (define-inline (id x) x)
+              (let ([fun id])
+                (fun 42))))
+(define e14 '((define (hopefully-int)
+                (lambda (x) (let ([maybe-int (read)])
+                              (if (eq? maybe-int 42)
+                                  x
+                                  42))))
+              (define (hopefully-bool) (lambda (x) (and (not x) #t)))
+              (if (hopefully-bool)
+                  ((hopefully-int) 42)
+                  (+ ((hopefully-int) 42) 0))))
+(define e15 '((define (hopefully-int x) (let ([maybe-int (read)])
+				     (if (eq? maybe-int 42) x
+					42)))
+              (define (hopefully-bool x) (and (not x) #t))
+              (if (hopefully-bool #f) (hopefully-int 42)
+                  (+ ((hopefully-int) 42) 0))))
 
 
 
@@ -464,8 +493,8 @@
 ;; (p-infer e11 (box '()))
 ;; (p-infer e12 (box '()))
 ;;(infer-program e13)
-;; (p-infer e14 (box '()))
-;; (p-infer e15 (box '()))
+;;(infer-program e14)
+;;(infer-program e15)
 ;; (p-infer e16 (box '()))
 ;; (p-infer e17 (box '()))
 ;; (p-infer e18 (box '()))

@@ -23,7 +23,7 @@
            (loop (cdr ls) new-prog))))))
 
 (define expr '(
-(define-inline (id [x : Integer]) : Integer x)
+(define-inline (id x) x)
 (let ([fun id])
   (fun 42))
 
@@ -31,6 +31,6 @@
 )
 )
 
-(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r5-passes) expr)
+(test `(("typechecker1" ,infer-program ,interp-scheme) ,@r5-passes) expr)
 
 
