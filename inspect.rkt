@@ -24,11 +24,11 @@
 
 (define expr '(
 
-
-(let ([x 40])
-  (if (eq? 0 (read))
-      (+ x 1)
-      (+ x 2)))
+(define (mult [x : Integer] [y : Integer]) : Integer
+  (if (eq? 0 x)
+      0
+      (+ y (mult (+ (- 1) x) y))))
+(mult 2 1)
 
 )
 )

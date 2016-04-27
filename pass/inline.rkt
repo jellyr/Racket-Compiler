@@ -1,7 +1,7 @@
 #lang racket
 (require "../common.rkt")
 
-(provide inline-func)
+(provide inline-func inline-substution)
 
 
 (define (substution instr env def-env)
@@ -69,7 +69,7 @@
       prog
       `(program ,type . ,(map (lambda (x) (substution x '() def-env)) exprs))))
 
-
+(define inline-substution substution) 
 
 
 
