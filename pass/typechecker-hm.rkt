@@ -255,6 +255,7 @@
     [else (let ((constraint (car constraints)))
             (match constraint
               [`(== ,t1 ,t2) (let ((s (unify t1 t2)))
+                               ;;(displayln s)
                                (subs-union (solve (map (curry substitute_const s) (cdr constraints))) s))]
               [`(implicit ,t1 ,t2 ,monos) (if (set-empty? (set-intersect
                                                            (set-subtract (free_vars t2) monos)
@@ -272,31 +273,33 @@
   (list 'scheme (set-subtract (free_vars type) monos) type))
 
 
-(define (instantiate scheme)
-  ;;(displayln scheme)
-  (match-define `(scheme ,free-vars ,type) scheme)
-  (substitute (foldr (lambda (fv res)
-                       (cons fv (fresh "i"))) '() (set->list free-vars)) type))
+;; (define (instantiate scheme)
+;;   ;;(displayln scheme)
+;;   (match-define `(scheme ,free-vars ,type) scheme)
+;;   (substitute (foldr (lambda (fv res)
+;;                        (cons fv (fresh "i"))) '() (set->list free-vars)) type))
 ;;(for/list ([q qs]) (cons q (fresh "I")))
+
+(define (instantiate scheme)
+  (match-define `(scheme ,qs ,type) scheme)
+  (substitute (for/list ([q qs]) (cons q (fresh "I"))) type))
 
 (define (subs-union subs1 subs2)
   (let ((s (map (lambda (v)
                   (cons (car v) (substitute subs1 (cdr v)))) subs2)))
     (foldl (lambda (v res)
              (when (dict-ref subs2 (car v) #f)
-               (error 'subs-union (format "Substitutions with same type vars ~a ~a" v subs2)))
+               (error 'subs-union (format "Substitutions with same type vars ~a ~a" subs1 subs2)))
              (set! s (cons v s))) '() subs1) s))
-
 
 (define (substitute s type)
   ;(displayln s)
   (match type
     [(? type_con?) type]
-    [(? type_var?) (dict-ref s type type)]
+    [(? type_var?) (walk type s)]
     [(? type_vector?) `(,(car type) ,@(map (curry substitute s) (cdr type)))]
     [(? type_fun?) `(-> ,@(map (curry substitute s) (cdr type)))]
     [else (error 'substitute (format "unknown type: ~a" type))]))
-
 
 
 (define (substitute_const s constraint)
@@ -315,8 +318,10 @@
   (cond [(type_var? t) (set t)]
         [(type_fun? t) (let ([in-types (drop-right (cdr t) 1)]
                              [ret-type (last t)])
-                         (set-union (list->set (map free_vars in-types))
-                                    (free_vars ret-type)))]
+                         (foldr (lambda (v res)
+                                  (set-union v res))
+                                (free_vars ret-type)
+                                (map free_vars in-types)))]
         [(type_con? t) (set)]
         [else (error 'free_vars (format "Unknown type ~s" t))]))
 
@@ -335,6 +340,13 @@
                                              res)]))
          (set) constraints))
 
+(define walk
+  (lambda (x s)
+    (let ([val (assq x s)])
+      (cond
+       [(not val) x]
+       [(type_var? (cdr val)) (walk (cdr val) s)]
+       [else (cdr val)]))))
 
 (define (unify t1 t2)
   (cond
@@ -459,24 +471,27 @@
 ;; Test Cases
 ;; ========================================================================
 
-(define e1 'x)
+(define e1 '(program (define (app f x)
+                       (f x))
+                     (app (lambda (x) x) 42)))
 (define e2 '(program (lambda (x) x)))
-(define e3 '(x 2))
+(define e3 '(program  (((lambda (x)
+                          (lambda (y) x)) 42) 444)))
 (define e4 '(program ((lambda (x y) (+ x y)) 2 3)))
 (define e5 '(program (let ((x (+ 5 2))) x)))
-(define e6 '(let ((x 2) (y 5)) (+ x y)))
-(define e7 '((lambda (x) (let ((x x)) x)) 2))
+(define e6 '(program (let ((x 2) (y 5)) (+ x y))))
+(define e7 '(program ((lambda (x) (let ((x x)) x)) 2)))
 (define e8 '(program ((lambda (x) (let ((x 2)) (+ x x))) #f)))
 (define e9 '(program ((lambda (z) (lambda (x z) (let ((x 2)) (+ x z)))) 5)))
-(define e10 '(let ((x (lambda (x y) (+ x y)))) (x 5 2)))
-(define e11 '(let ((f (lambda (x) (lambda (y) (+ x 1)))))
-                (let ((g (f 2))) g)))
+(define e10 '(program (let ((x (lambda (x y) (+ x y)))) (x 5 2))))
+(define e11 '(program (let ((f (lambda (x) (lambda (y) (+ x 1)))))
+                (let ((g (f 2))) g))))
 (define e12 '(program (if 1
                           (+ 3 5)
                           (- 5))))
 (define e13 '(program (define-inline (id x) x)
-              (let ([fun id])
-                (fun 42))))
+                      (let ([fun id])
+                        (fun 42))))
 (define e14 '(program (define (hopefully-int)
                         (lambda (x)
                           (let ([maybe-int (read)])
@@ -490,36 +505,48 @@
                           (+ ((hopefully-int) 42) 0))))
 (define e15 '(program (define (doubleid x)
                         ((lambda (x) x) x))
-                         (doubleid 42)))
+                      (doubleid 42)))
+(define e16 '(program (define (f x)
+                        (let ([y 4])
+                          (lambda(z)
+                            (+ x (+ y z)))))
+                      (let ([g (f 5)])
+                        (let ([h (f 3)])
+                          (+ (g 11) (h 15))))))
+(define e17 '(program (define (make-wrapper in out)
+                        (lambda (fn)
+                          (lambda (x)
+                            (out (fn (in x))))))                      
+                      (define (add1 x) (+ x 1))
+                      (define (sub1 x) (+ x (- 1)))
+                      (define (constfun x) 42)
+                      (define (double x) (+ x x))
+                      (let ([wrapper (make-wrapper add1 sub1)])
+                        (let ([wrapconst (wrapper constfun)])
+                          (let ([wrapdub (wrapper double)])
+                            (let ([a (wrapdub 11)])
+                              (constfun 777)))))))
+(define e18 '(program ((lambda (x) (x x)) (lambda (x) (x x)))))
 
 
 
-;; (p-infer e1 (box '()))
-
+;;(infer-program e1)
 ;;(infer-program e2)
+;;(infer-program e3)
 ;;(infer-program e4)
 ;;(infer-program e5)
-;; ;;(p-infer #`#,(p-infer e4 (box '())) (box '()))
-;;(infer-program e2)
-;; ;;(p-infer #`#,(p-infer e6 '()) '())
-;; (p-infer e7 (box '()))
+;;(infer-program e6)
+;;(infer-program e7)
 ;;(infer-program e8)
 ;;(infer-program e9)
-;; ;;(p-infer #`#,(p-infer e9 '()) '())
-;; (p-infer e10 (box '()))
-;; (p-infer e11 (box '()))
+;(infer-program e10)
+;;(infer-program e11)
 ;;(infer-program e12)
 ;;(infer-program e13)
 ;;(infer-program e14)
 ;;(infer-program e15)
-;; (p-infer e16 (box '()))
-;; (p-infer e17 (box '()))
-;; (p-infer e18 (box '()))
-;; (p-infer e19 (box '()))
-;; (p-infer e20 (box '()))
+;;(infer-program e16)
+;;(infer-program e17)
+;;(infer-program e18)
 
-;;(display "Feeding back through:\n")
-;; (p-infer e2_)
-;; Expected output:
-;;  (lambda ((x:t1)) x)
 
