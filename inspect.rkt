@@ -24,7 +24,7 @@
 
 (define expr '(
 
-(define (mult [x : Integer] [y : Integer]) : Integer
+(define (mult x y)
   (if (eq? 0 x)
       0
       (+ y (mult (+ (- 1) x) y))))
@@ -40,6 +40,6 @@
 ; (app (lambda (x) x) 42)
 
 
-(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r5-passes) expr)
+(test `(("typechecker1" ,infer-program ,interp-scheme) ,@r5-passes) expr)
 
 

@@ -101,6 +101,9 @@
                             (has-type ,(+ e1^ e2^) Integer)) Integer) #t)]
         [`(+ (has-type ,e1^ Integer) (has-type ,e2^ Integer)) #:when (and (fixnum? e1^) (fixnum? e2^))
          (list `(has-type ,(+ e1^ e2^) Integer) #t)]
+        [`(+ (has-type ,e1^ Integer)
+             (has-type (+ (has-type ,e2^ Integer) ,e3) Integer)) #:when (and (fixnum? e1^) (fixnum? e2^))
+         (list `(has-type (+ (has-type ,(+ e1^ e2^) Integer) ,e3) Integer) #t)]
         [`(+ ,e1^ ,e2^)
          (match-define `(,e1 ,changed1) (recur e1^))
          (match-define `(,e2 ,changed2) (recur e2^))
@@ -117,8 +120,8 @@
          ;(display "if (decidable? conde env) :") (displayln decide)
          (if decide
              (let ([c-r (recur conde)])
-               (display "c-r: ") (displayln c-r)
-               (display "else :") (displayln els)
+               ;(display "c-r: ") (displayln c-r)
+               ;(display "else :") (displayln els)
                (if (cadar c-r)
                    (let ([t-r (recur thn)])
                      (list (car t-r) #t))
@@ -130,8 +133,8 @@
         [`(eq? (has-type ,e1^ ,t1) (has-type ,e2^ ,t2))
          (let ([e1-r (recur e1^)]
                [e2-r (recur e2^)])
-           (display "e1-r: ") (displayln e1-r)
-           (display "e2-r: ") (displayln e2-r)
+           ;(display "e1-r: ") (displayln e1-r)
+           ;(display "e2-r: ") (displayln e2-r)
            (if (equal? (car e1-r) (car e2-r))
                (list #t #f)
                (list #f #f)))]
@@ -177,9 +180,9 @@
                     [fargs (car fdata)]
                     [fbody (cdr fdata)]
                     [new-env (map (lambda (x y) `(,x . ,(cadar y))) fargs vars)])
-               (display "new-env: ") (displayln new-env)
+               ;(display "new-env: ") (displayln new-env)
                (match-define `((has-type ,expr ,t) ,changed) (partial-helper fbody (append new-env env) (add1 curdepth) def-env #t))
-               (display "expr: ")(displayln expr)
+               ;(display "expr: ")(displayln expr)
                (list expr #t)) ;; then
              (list instr #f))]
         [`((has-type ,funame ,ftype) . ,args) #:when (lookup funame def-env #f)
@@ -213,9 +216,9 @@
   ;(display "partial result: ") (displayln partial-result)
   (define result `(program ,ret-type ,@(map car partial-result)))
   (define changed (foldr (lambda (x r) (or x r)) #f (map cadr partial-result)))
-  (display "cur-level: ") (displayln level)
-  (display "result: ") (displayln result)
-  (display "changed: ") (displayln changed)
+  ;(display "cur-level: ") (displayln level)
+  ;(display "result: ") (displayln result)
+  ;(display "changed: ") (displayln changed)
   (if (and (> level 1) changed)
       (partial-with-level result (sub1 level))
       result))
@@ -223,4 +226,5 @@
 
 (define (partial prog)
   (partial-with-level prog 5))
+
 
