@@ -11,7 +11,7 @@
   (define recur (lambda (x) (substution x env def-env)))
   (match instr
     [`(has-type ,e^ ,type) (let ([recur-e (recur e^)])
-                             (if (and (pair? e^) (equal? (car recur-e) 'has-type))
+                             (if (and (pair? recur-e) (equal? (car recur-e) 'has-type))
                                  recur-e
                                  `(has-type ,recur-e ,type)))]
     [(? symbol?) (lookup instr env instr)]
@@ -28,8 +28,9 @@
          (let* ([vars (map recur args)]
                 [fargs (car fdata)]
                 [fbody (cdr fdata)]
-                [new-env (map (lambda (x y) `(,x . ,y)) fargs vars)])
+                [new-env (map (lambda (x y) `(,x . ,(cadr y))) fargs vars)])
            (match-define `(has-type ,expr ,t) (substution fbody (append new-env env) def-env))
+           ;(display "expr: ")(displayln expr)
            expr)
          ;; else
          `((has-type ,funame ,ftype) ,@(map recur args)))]
@@ -46,6 +47,7 @@
     [`(,def (,funame . ,var-defs) : ,ret-type ,body) #:when (or (equal? def 'define)
                                                                 (equal? def 'define-inline))
      `(define (,funame . ,var-defs) : ,ret-type ,(map recur body))]
+    
     [else instr]
     ))
 
