@@ -478,9 +478,11 @@
             ,@(str->sym (map (curryr annotate-expr substitutions) type-expr)))
   )
 
-;; ========================================================================
-;; Test Cases
-;; ========================================================================
+#|
+-----------------------------------------------------------
+                      Test Cases
+-----------------------------------------------------------
+|#
 
 (define e1 '(program (define (app f x)
                        (f x))
@@ -537,10 +539,6 @@
                           (let ([wrapdub (wrapper double)])
                             (let ([a (wrapdub 11)])
                               (constfun 777)))))))
-(define e18 '(program ((lambda (x) (x x)) (lambda (x) (x x)))))
-(define e19 '(program (define (x)
-                        (x))
-                      (x)))
 (define e20 '(program (let ([v (vector 20 22)])
                         (+ (vector-ref v 0) (vector-ref v 1)))))
 (define e21 '(program (let ([v (vector (vector 42) 21)])
@@ -586,7 +584,18 @@
                                           (+ (vector-ref r 0) 
                                           (+ (vector-ref s 0) 
                                           (+ (vector-ref t 0) 
-                                          (+ (vector-ref u 0) 21))))))))))))))))))))))))))))))))))))))))))))
+                                             (+ (vector-ref u 0) 21))))))))))))))))))))))))))))))))))))))))))))
+;; The Omega.
+(define e18 '(program ((lambda (x) (x x)) (lambda (x) (x x)))))
+;; This is a problem.
+(define e19 '(program (define (x)
+                        (x))
+                      (x)))
+;;Let polymorphism example
+(define e23 '(program (define (f x) x)
+                      (if (f #t)
+                          (f 2)
+                          (f 4))))
 
 
 
@@ -607,8 +616,10 @@
 ;; (infer-program e15)
 ;; (infer-program e16)
 ;; (infer-program e17)
-;; (infer-program e18)
-;; (infer-program e19)
 ;; (infer-program e20)
 ;; (infer-program e21)
 ;; (infer-program e22)
+;; (infer-program e18)
+;; (infer-program e19)
+;; (infer-program e23)
+
