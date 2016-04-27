@@ -12,9 +12,10 @@
 
 (define var-cnt 0)
 (define fun-env '())
+(define vec-env '())
 (define (reset-var-cnt) (set! var-cnt 0))
 (define (load-fun-env val) (set! fun-env (cons val fun-env)))
-
+(define (load-vec-env val) (set! vec-env (cons val vec-env)))
 
 (struct infer-record ([assumptions #:mutable]
                       [contraints #:mutable]
@@ -87,8 +88,13 @@
   (infer-record a2 c2 vec-type `(has-type (vector ,@te2) ,vec-type)))
 
 (define (infer-vref e env)
-  ;;FIXME : Implement Me
-  (infer-record (mutable-set) (mutable-set) '() '()))
+  (match-define `(vector-ref ,vec ,idx) e)
+  (match-define (infer-record va vc vt vex) (infer-types vec env))
+  (match-define (infer-record ia ic it iex) (infer-types idx env))
+  (set-union! va ia)
+  (set-union! vc ic (set `(== ,it Integer)))
+  (define ret-type (list-ref vt (add1 idx)))
+  (infer-record va vc ret-type `(has-type (vector-ref ,vex ,iex) ,ret-type)))
 
 (define (infer-vset e env)
   ;;FIXME : Implement Me
@@ -106,16 +112,17 @@
 ; [Var]
 (define (infer-var x)
   (let ([simple-type (dict-ref environment x #f)]
-        [def-type (dict-ref fun-env x #f)])
-    (if simple-type
-        (infer-record (mutable-set) (mutable-set) simple-type x)
-        (if def-type
-            (infer-record (mutable-set) (mutable-set) def-type `(has-type ,x ,def-type))
-            (let ([var (fresh x)])
+        [def-type (dict-ref fun-env x #f)]
+        [vec-type (dict-ref vec-env x #f)])
+    (cond
+      [simple-type (infer-record (mutable-set) (mutable-set) simple-type x)]
+      [def-type (infer-record (mutable-set) (mutable-set) def-type `(has-type ,x ,def-type))]
+      [vec-type (infer-record (mutable-set) (mutable-set) vec-type `(has-type ,x ,vec-type))]
+      [else (let ([var (fresh x)])
               (infer-record (mutable-set (cons x var))
                             (mutable-set)
                             var
-                            `(has-type ,x ,var)))))))
+                            `(has-type ,x ,var)))])))
 
 
 ; [Lit]
@@ -230,6 +237,9 @@
                [`(,x ,e1)
                 (match-define (infer-record a c t te) (infer-types e1 env))
                 ;(displayln (list a c t te))
+                (if (type_vector? t)
+                    (load-vec-env `(,x . ,t))
+                    (void))
                 (match-define (infer-record ares cres tres te-res) res)
                 (set-union! ares a)
                 (set-union! cres c)
@@ -527,26 +537,81 @@
                             (let ([a (wrapdub 11)])
                               (constfun 777)))))))
 (define e18 '(program ((lambda (x) (x x)) (lambda (x) (x x)))))
+(define e19 '(program (define (x)
+                        (x))
+                      (x)))
+(define e20 '(program (let ([v (vector 20 22)])
+                        (+ (vector-ref v 0) (vector-ref v 1)))))
+(define e21 '(program (let ([v (vector (vector 42) 21)])
+                        (vector-ref (vector-ref v 0) 0))))
+(define e22 '(program (let ([a (vector 1)])
+  (let ([b (vector 1)])
+    (let ([c (vector 1)])
+      (let ([d (vector 1)])
+        (let ([e (vector 1)])
+          (let ([f (vector 1)])
+            (let ([g (vector 1)])
+              (let ([h (vector 1)])
+                (let ([i (vector 1)])
+                  (let ([j (vector 1)])
+                    (let ([k (vector 1)])
+                      (let ([l (vector 1)])
+                        (let ([m (vector 1)])
+                          (let ([n (vector 1)])
+                            (let ([o (vector 1)])
+                              (let ([p (vector 1)])
+                                (let ([q (vector 1)])
+                                  (let ([r (vector 1)])
+                                    (let ([s (vector 1)])
+                                      (let ([t (vector 1)])
+                                        (let ([u (vector 1)])
+                                          (+ (vector-ref a 0)
+                                          (+ (vector-ref b 0) 
+                                          (+ (vector-ref c 0) 
+                                          (+ (vector-ref d 0) 
+                                          (+ (vector-ref e 0) 
+                                          (+ (vector-ref f 0) 
+                                          (+ (vector-ref g 0) 
+                                          (+ (vector-ref h 0) 
+                                          (+ (vector-ref i 0) 
+                                          (+ (vector-ref j 0) 
+                                          (+ (vector-ref k 0) 
+                                          (+ (vector-ref l 0) 
+                                          (+ (vector-ref m 0) 
+                                          (+ (vector-ref n 0) 
+                                          (+ (vector-ref o 0)
+                                          (+ (vector-ref p 0) 
+                                          (+ (vector-ref q 0) 
+                                          (+ (vector-ref r 0) 
+                                          (+ (vector-ref s 0) 
+                                          (+ (vector-ref t 0) 
+                                          (+ (vector-ref u 0) 21))))))))))))))))))))))))))))))))))))))))))))
 
 
 
-;;(infer-program e1)
-;;(infer-program e2)
-;;(infer-program e3)
-(infer-program e4)
-;;(infer-program e5)
-;;(infer-program e6)
-;;(infer-program e7)
-;;(infer-program e8)
-;;(infer-program e9)
-;(infer-program e10)
-;;(infer-program e11)
-;;(infer-program e12)
-;;(infer-program e13)
-;;(infer-program e14)
-;;(infer-program e15)
-;;(infer-program e16)
-;;(infer-program e17)
-;;(infer-program e18)
+;; (infer-program e1)
+;; (infer-program e2)
+;; (infer-program e3)
+;; (infer-program e4)
+;; (infer-program e5)
+;; (infer-program e6)
+;; (infer-program e7)
+;; (infer-program e8)
+;; (infer-program e9)
+;; (infer-program e10)
+;; (infer-program e11)
+;; (infer-program e12)
+;; (infer-program e13)
+;; (infer-program e14)
+;; (infer-program e15)
+;; (infer-program e16)
+;; (infer-program e17)
+;; (infer-program e18)
+;; (infer-program e19)
+;; (infer-program e20)
+;; (infer-program e21)
+;; (infer-program e22)
+
+
 
 
