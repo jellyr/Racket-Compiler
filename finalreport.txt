@@ -123,7 +123,12 @@ after inline:
 
 42
 
+### dummy: textbook example:
 
+(+ 1 (+ (read) 1))
+
+===> 
+(+ 2 (read))
 
 
 

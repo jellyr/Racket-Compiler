@@ -44,6 +44,8 @@
   (match instr
     [`(has-type ,e^ ,t) (decidable? e^)]
     [`(read) #f]
+    [`(vector-set! ,vec ,i ,var) #f]
+    [(? pair?) (foldr (lambda (x r) (and (decidable? x) r)) #t instr)]
     [else #t]))
 
 (define (partial-helper instr env curdepth)
@@ -70,6 +72,15 @@
          (list `(define (,funame . ,var-defs) : ,ret-type ,eval-e) changed)]
         
         ;; simple add, minus
+        [`(+ (has-type ,e1^ Integer)
+             (has-type (+ (has-type (read) Integer)
+                 (has-type ,e2^ Integer)) Integer)) #:when (and (fixnum? e1^) (fixnum? e2^))
+         (list `(has-type (+ (has-type (read) Integer)
+                             (has-type ,(+ e1^ e2^) Integer)) Integer) #t)]
+        [`(+ (has-type (+ (has-type (read) Integer)
+                 (has-type ,e2^ Integer)) Integer) (has-type ,e1^ Integer)) #:when (and (fixnum? e1^) (fixnum? e2^))
+         (list `(has-type (+ (has-type (read) Integer)
+                            (has-type ,(+ e1^ e2^) Integer)) Integer) #t)]
         [`(+ (has-type ,e1^ Integer) (has-type ,e2^ Integer)) #:when (and (fixnum? e1^) (fixnum? e2^))
          (list `(has-type ,(+ e1^ e2^) Integer) #t)]
         [`(+ ,e1^ ,e2^)
@@ -83,15 +94,19 @@
 
     ;;; if condition
         [`(if ,conde ,thn ,els)
-         (if conde
-             (list thn #t)
-             (list els #t))]
+         (if (decidable? conde)
+             (if conde
+                 (list thn #t)
+                 (list els #t))
+             (let ([thnr (recur thn)]
+                   [elsr (recur els)])
+               (list `(if ,conde ,(car thnr) ,(car elsr)) (and (cadr thnr) (cadr elsr)))))]
         
         
     ;;; let parameter estimate
 
         [`(let ([,var ,para]) ,body)
-         (display "(var-occurs? var body): ") (displayln (var-occurs? var body))
+         ;(display "(var-occurs? var body): ") (displayln (var-occurs? var body))
          (if (decidable? para)
              (if (var-occurs? var body)
                  (let* ([var-result (recur para)]
@@ -103,7 +118,16 @@
                  (let ([result (recur body)])
                    (list (car result) #t)))
              
+             (let ([result (recur body)])
+               (list `(let ([,var ,para]) ,(car result)) (cadr result)))
+             
              )]
+        [`((has-type (lambda: ,vars : ,ret-type ,body) ,lambtype) . ,args)
+         ;; decideable?
+         (let* ([eval-args (map car (map recur args))]
+                [new-env (map (lambda (v^ a^)
+                                `(,(car v^) . ,(cadr a^))) vars eval-args)])
+           (partial-helper body (append new-env env) (add1 curdepth)))]
         [else (list instr #f)]
         )))
 
@@ -115,12 +139,12 @@
   ;; (define defs (drop-right exprs 1))
   (define partial-result (map (lambda (x)
                                 (partial-helper x '() 1)) exprs))
-  (display "partial result: ") (displayln partial-result)
+  ;(display "partial result: ") (displayln partial-result)
   (define result `(program ,ret-type ,@(map car partial-result)))
   (define changed (foldr (lambda (x r) (or x r)) #f (map cadr partial-result)))
-  (display "cur-level: ") (displayln level)
-  (display "result: ") (displayln result)
-  (display "changed: ") (displayln changed)
+  ;(display "cur-level: ") (displayln level)
+  ;(display "result: ") (displayln result)
+  ; (display "changed: ") (displayln changed)
   (if (and (> level 1) changed)
       (partial-with-level result (sub1 level))
       result))

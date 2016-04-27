@@ -23,12 +23,23 @@
            (loop (cdr ls) new-prog))))))
 
 (define expr '(
-(let ([v (read)])
-  42)
+
+
+(let ([x 40])
+  (if (eq? 0 (read))
+      (+ x 1)
+      (+ x 2)))
 
 )
 )
 
-(test `(("typechecker1" ,infer-program ,interp-scheme) ,@r5-passes) expr)
+
+; (define (app f x)
+;   (f x))
+
+; (app (lambda (x) x) 42)
+
+
+(test `(("typechecker1" ,typechecker ,interp-scheme) ,@r5-passes) expr)
 
 
