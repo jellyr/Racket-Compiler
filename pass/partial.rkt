@@ -41,23 +41,34 @@
 
 ;; if this need?
 (define (decidable? instr env)
+  ;(displayln "================================ im in decidable ===============================")
+  ;(display "decidable? :") (displayln instr)
+  ;(display "env: ") (displayln env)
   (define recur (lambda (x) (decidable? x env)))
   (match instr
+    [(? fixnum?) #t]
+    [(? boolean?) #t]
     [`(has-type ,e^ ,t) (recur e^)]
     [`(read) #f]
     [(? symbol?) (not (equal? 'undecide (lookup instr env 'undecide)))]
     [`(vector-set! ,vec ,i ,var) #f]
+    [`(+ ,e1 ,e2) (and (recur e1) (recur e2))]
+    [`(- ,e1) (recur e1)]
+    [`(eq? ,e1 ,e2) (and (recur e1) (recur e2))]
+    [`(if ,c ,t ,e) (and (recur c) (recur t) (recur e))]
     [(? pair?) (foldr (lambda (x r) (and (recur x) r)) #t instr)]
     [else #t]))
 
-(define (partial-helper instr env curdepth def-env)
-  ;(display "curdepth: ") (displayln curdepth)
-  ;(display "env: ") (displayln env)
-  (display "instr: ") (displayln instr)
-  (define recur (lambda (x) (partial-helper x env (add1 curdepth) def-env)))
+(define (partial-helper instr env curdepth def-env in-def)
+  ;; (display "curdepth: ") (displayln curdepth)
+  ;; (display "env: ") (displayln env)
+  ;; (display "in-def:") (displayln in-def)
+  ;; (display "instr: ") (displayln instr)
+  (define recur (lambda (x) (partial-helper x env (add1 curdepth) def-env in-def)))
   (if (> curdepth maxdepth)
       (list instr #f)
       (match instr
+        [(? boolean?) (list instr #f)]
         [(? fixnum?) (list instr #f)]
         [(? symbol?) (if (lookup instr env #f)
                          (list (lookup instr env) #t)
@@ -70,10 +81,15 @@
 
         ;; define
         [`(define (,funame . ,var-defs) : ,ret-type ,body)
-         (match-define `(,eval-e ,changed) (recur body))
+         ;; need to rebuild the environment, for now i just put null here, but this is not correct
+         (match-define `(,eval-e ,changed) (partial-helper body '() (add1 curdepth) def-env #t))
          (list `(define (,funame . ,var-defs) : ,ret-type ,eval-e) changed)]
         
         ;; simple add, minus
+        [`(+ (has-type (- (has-type ,e1^ Integer)) Integer)
+             (has-type ,e2^ Integer)) #:when (and (fixnum? e1^) (fixnum? e2^))
+         ;(displayln "imhere")
+         (list `(has-type ,(- e2^ e1^) Integer) #t)]
         [`(+ (has-type ,e1^ Integer)
              (has-type (+ (has-type (read) Integer)
                  (has-type ,e2^ Integer)) Integer)) #:when (and (fixnum? e1^) (fixnum? e2^))
@@ -96,14 +112,29 @@
 
     ;;; if condition
         [`(if ,conde ,thn ,els)
-         (if (decidable? conde env)
-             (if conde
-                 (list thn #t)
-                 (list els #t))
+         ;(display "env: ") (displayln env)
+         (define decide (decidable? conde env))
+         ;(display "if (decidable? conde env) :") (displayln decide)
+         (if decide
+             (let ([c-r (recur conde)])
+               (display "c-r: ") (displayln c-r)
+               (display "else :") (displayln els)
+               (if (cadar c-r)
+                   (let ([t-r (recur thn)])
+                     (list (car t-r) #t))
+                   (let ([e-r (recur els)])
+                     (list (car e-r) #t))))
              (let ([thnr (recur thn)]
                    [elsr (recur els)])
                (list `(if ,conde ,(car thnr) ,(car elsr)) (and (cadr thnr) (cadr elsr)))))]
-        [`(eq? (has-type ,e1^ ,t1) )]
+        [`(eq? (has-type ,e1^ ,t1) (has-type ,e2^ ,t2))
+         (let ([e1-r (recur e1^)]
+               [e2-r (recur e2^)])
+           (display "e1-r: ") (displayln e1-r)
+           (display "e2-r: ") (displayln e2-r)
+           (if (equal? (car e1-r) (car e2-r))
+               (list #t #f)
+               (list #f #f)))]
         
         
     ;;; let parameter estimate
@@ -133,25 +164,33 @@
            (partial-helper body (append new-env env) (add1 curdepth)))]
 
         ;;; function call -> function is in def env
-        [`((has-type ,funame ,ftype) . ,args)#:when (lookup funame def-env #f)
+        [`((has-type ,funame ,ftype) . ,args)#:when (and (lookup funame def-env #f) (not in-def))
          
-         (displayln "============== im here ===================")
+         ;(displayln "============== im here ===================")
          
-         (display "args: ") (displayln args)
-         (display "(decidable? args env): ")(displayln (decidable? args env))
+         ;(display "args: ") (displayln args)
+         ;(display "(decidable? args env): ")(displayln (decidable? args env))
+         ;(display "env: ") (displayln env)
          (define fdata (lookup funame def-env #f))
-         (if (decidable? args env)
+         (if (and (decidable? args env) (not in-def))
              (let* ([vars (map recur args)]
                     [fargs (car fdata)]
                     [fbody (cdr fdata)]
                     [new-env (map (lambda (x y) `(,x . ,(cadar y))) fargs vars)])
                (display "new-env: ") (displayln new-env)
-               
-               (match-define `((has-type ,expr ,t) ,changed) (partial-helper fbody (append new-env env) (add1 curdepth) def-env))
+               (match-define `((has-type ,expr ,t) ,changed) (partial-helper fbody (append new-env env) (add1 curdepth) def-env #t))
                (display "expr: ")(displayln expr)
                (list expr #t)) ;; then
              (list instr #f))]
-        
+        [`((has-type ,funame ,ftype) . ,args) #:when (lookup funame def-env #f)
+         (if (decidable? args env)
+             (let* ([var-results (map recur args)]
+                    [var-instrs (map car var-results)]
+                    [var-changed (foldr (lambda (x r) (and (cadr x) r)) #t var-results)])
+               ;(displayln "is this wrong?")
+               ;(display "var-cahnged: ") (displayln var-changed)
+               (list `((has-type ,funame ,ftype) . ,var-instrs) var-changed))
+             (list instr #f))]
         
         [else (list instr #f)]
         )))
@@ -170,18 +209,18 @@
   (define defs (drop-right exprs 1))
   (define def-env (map def-env-gen defs))
   (define partial-result (map (lambda (x)
-                                (partial-helper x '() 1 def-env)) exprs))
+                                (partial-helper x '() 1 def-env #f)) exprs))
   ;(display "partial result: ") (displayln partial-result)
   (define result `(program ,ret-type ,@(map car partial-result)))
   (define changed (foldr (lambda (x r) (or x r)) #f (map cadr partial-result)))
-  ;(display "cur-level: ") (displayln level)
-  ;(display "result: ") (displayln result)
-  ; (display "changed: ") (displayln changed)
+  (display "cur-level: ") (displayln level)
+  (display "result: ") (displayln result)
+  (display "changed: ") (displayln changed)
   (if (and (> level 1) changed)
       (partial-with-level result (sub1 level))
       result))
 
 
 (define (partial prog)
-  (partial-with-level prog 1))
+  (partial-with-level prog 5))
 
