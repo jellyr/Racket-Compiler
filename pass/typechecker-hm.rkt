@@ -297,6 +297,7 @@
 (define (subs-union subs1 subs2)
   (let ((s (map (lambda (v)
                   (cons (car v) (substitute subs1 (cdr v)))) subs2)))
+    ;;(displayln s)
     (foldl (lambda (v res)
              (when (dict-ref subs2 (car v) #f)
                (error 'subs-union (format "Substitutions with same type vars ~a ~a" subs1 subs2)))
@@ -484,7 +485,7 @@
 (define e1 '(program (define (app f x)
                        (f x))
                      (app (lambda (x) x) 42)))
-(define e2 '(program (lambda (x) x)))
+(define e2 '(program ((lambda (x) x) 42)))
 (define e3 '(program  (((lambda (x)
                           (lambda (y) x)) 42) 444)))
 (define e4 '(program ((lambda (x y) (+ x y)) 2 3)))
@@ -611,7 +612,3 @@
 ;; (infer-program e20)
 ;; (infer-program e21)
 ;; (infer-program e22)
-
-
-
-
