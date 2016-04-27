@@ -402,7 +402,7 @@
   (match type-expr
     [`(has-type ,expr ,ty) `(has-type ,(annotate-expr expr subs) ,(annotate-type ty subs))]
     [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
-    [`(lambda ,x : ,ty ,b) `(lambda: ,@(map (curryr annotate-expr subs) x) 
+    [`(lambda ,x : ,ty ,b) `(lambda: ,(map (curryr annotate-expr subs) x) 
                               : ,(annotate-type ty subs)
                               ,(annotate-expr b subs))]
     [`(let ,vars ,b) `(let ,(foldr (lambda (var res)
@@ -533,7 +533,7 @@
 ;;(infer-program e1)
 ;;(infer-program e2)
 ;;(infer-program e3)
-;;(infer-program e4)
+(infer-program e4)
 ;;(infer-program e5)
 ;;(infer-program e6)
 ;;(infer-program e7)
