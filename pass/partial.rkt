@@ -142,8 +142,8 @@
   ;(display "partial result: ") (displayln partial-result)
   (define result `(program ,ret-type ,@(map car partial-result)))
   (define changed (foldr (lambda (x r) (or x r)) #f (map cadr partial-result)))
-  (display "cur-level: ") (displayln level)
-  (display "result: ") (displayln result)
+  ;(display "cur-level: ") (displayln level)
+  ;(display "result: ") (displayln result)
   ; (display "changed: ") (displayln changed)
   (if (and (> level 1) changed)
       (partial-with-level result (sub1 level))
@@ -153,5 +153,3 @@
 (define (partial prog)
   (partial-with-level prog 5))
 
-'(program (type Integer)
-          (if (eq? 0 (read)) 41 42))
