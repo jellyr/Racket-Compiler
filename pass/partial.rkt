@@ -49,9 +49,13 @@
     [(? fixnum?) #t]
     [(? boolean?) #t]
     [`(has-type ,e^ ,t) (recur e^)]
+    [`(and (has-type #f Boolean) (has-type ,e2^ ,t2)) #t]
+    [`(or (has-type #t Boolean) (has-type ,e2^ ,t2))  #t]
     [`(read) #f]
-    [(? symbol?) (not (equal? 'undecide (lookup instr env 'undecide)))]
+    [`(vector . ,arg) #f]
     [`(vector-set! ,vec ,i ,var) #f]
+    [`(vector-ref . ,arg) #f]
+    [(? symbol?) (not (equal? 'undecide (lookup instr env 'undecide)))]
     [`(+ ,e1 ,e2) (and (recur e1) (recur e2))]
     [`(- ,e1) (recur e1)]
     [`(eq? ,e1 ,e2) (and (recur e1) (recur e2))]
@@ -138,6 +142,10 @@
            (if (equal? (car e1-r) (car e2-r))
                (list #t #f)
                (list #f #f)))]
+        [`(and (has-type #f Boolean) (has-type ,e2^ ,t2))
+         (list #f #t)]
+        [`(or (has-type #t Boolean) (has-type ,e2^ ,t2))
+         (list #t #t)]
         
         
     ;;; let parameter estimate

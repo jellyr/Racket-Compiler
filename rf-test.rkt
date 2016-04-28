@@ -6,7 +6,7 @@
 ;;; for the final project test cases
 
 (interp-tests "final" infer-program
-                        r5-passes interp-scheme "rf" (range 0 1))
+                        r5-passes interp-scheme "rf" (range 0 6))
 
 
 (display "final project tests passed!") (newline) 
