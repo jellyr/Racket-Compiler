@@ -5,7 +5,7 @@
 
 ;;; for the final project test cases
 
-(interp-tests "final" typechecker
+(interp-tests "final" infer-program
                         r5-passes interp-scheme "rf" (range 0 1))
 
 

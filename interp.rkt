@@ -673,6 +673,8 @@
           [`(has-type ,e ,t) ((interp-scheme env) e)]
           [`(define (,f [,xs : ,ps] ...) : ,rt ,body)
            (cons f `(lambda ,xs ,body))]
+          [`(define-inline (,f [,xs : ,ps] ...) : ,rt ,body)
+           (cons f `(lambda ,xs ,body))]
           [`(function-ref ,f)
            (lookup f env)]
           [`(app ,f ,args ...)
@@ -813,6 +815,8 @@
                  ((send this interp-scheme new-env) body)]
                 [else (error "interp-scheme, expected function, not" f-val)]))]
           [`(define (,f [,xs : ,ps] ...) : ,rt ,body)
+           (mcons f `(lambda ,xs ,body))]
+          [`(define-inline (,f [,xs : ,ps] ...) : ,rt ,body)
            (mcons f `(lambda ,xs ,body))]
           [`(program (type ,ty) ,ds ... ,body)
            ((send this interp-scheme env) `(program ,@ds ,body))]

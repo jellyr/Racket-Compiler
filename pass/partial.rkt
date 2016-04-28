@@ -160,7 +160,6 @@
              
              )]
         [`((has-type (lambda: ,vars : ,ret-type ,body) ,lambtype) . ,args)
-         ;; decideable?
          (let* ([eval-args (map car (map recur args))]
                 [new-env (map (lambda (v^ a^)
                                 `(,(car v^) . ,(cadr a^))) vars eval-args)])
