@@ -28,7 +28,7 @@
   ;(display "var: ")(displayln var)
   (define recur (lambda (x) (var-occurs? var x)))
   (match instr
-    [var^ #:when(equal? var^ var) #t]
+    [var^ #:when(equal? var^ var) (call/cc (lambda (k) (k #t)))]
     [`(has-type ,e1 ,t) #:when (equal? e1 var) (call/cc (lambda (k) (k #t)))]
     [`(has-type ,e1 ,t) (recur e1)]
     [`(let ((,var (has-type ,para ,var-t))) ,b) (or (recur para) (recur b))]
@@ -150,7 +150,7 @@
                         [eval-var (car var-result)]
                         [var-changed (cadr var-result)]
                         [new-env (cons `(,var . ,eval-var) env)])
-                   (match-define `(,eval-e ,changed) (partial-helper body new-env (add1 curdepth)))
+                   (match-define `(,eval-e ,changed) (partial-helper body new-env (add1 curdepth) def-env in-def))
                    (list `(let ([,var ,eval-var]) ,eval-e) (or changed var-changed)))
                  (let ([result (recur body)])
                    (list (car result) #t)))
@@ -164,7 +164,7 @@
          (let* ([eval-args (map car (map recur args))]
                 [new-env (map (lambda (v^ a^)
                                 `(,(car v^) . ,(cadr a^))) vars eval-args)])
-           (partial-helper body (append new-env env) (add1 curdepth)))]
+           (partial-helper body (append new-env env) (add1 curdepth) def-env in-def))]
 
         ;;; function call -> function is in def env
         [`((has-type ,funame ,ftype) . ,args)#:when (and (lookup funame def-env #f) (not in-def))
@@ -207,7 +207,7 @@
 
 (define (partial-with-level prog level)
   
-  
+
   (match-define `(program ,ret-type . ,exprs) prog)
   (define defs (drop-right exprs 1))
   (define def-env (map def-env-gen defs))

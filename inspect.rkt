@@ -24,11 +24,12 @@
 
 (define expr '(
 
-(define (mult x y)
-  (if (eq? 0 x)
-      0
-      (+ y (mult (+ (- 1) x) y))))
-(mult 2 3)
+(define-inline (app f x)
+    (f x))
+
+(app (lambda (x) x) 42)
+
+
 
 )
 )
