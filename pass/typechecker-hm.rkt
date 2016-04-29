@@ -192,7 +192,7 @@
     ;(displayln c)
     (set-union! ares a)
     (define ret-type `(-> ,@arg-vars ,t))
-    (infer-record ares c ret-type `(,def-type (,fname ,@(foldl (lambda (x res)
+    (infer-record ares c ret-type `(,def-type (,fname ,@(foldr (lambda (x res)
                                                               (cons `(,(car x) : ,(cdr x))
                                                                     res))
                                                             `()
@@ -223,7 +223,7 @@
     ;;(displayln c)
     (set-union! ares a)
     (define ret-type `(-> ,@arg-type ,t))
-    (infer-record ares c ret-type `(has-type (lambda ,(foldl (lambda (x res)
+    (infer-record ares c ret-type `(has-type (lambda ,(foldr (lambda (x res)
                                                                (cons `(,(car x) : ,(cdr x)) res))
                                                              '()
                                                              arg-env) : ,t ,e) ,ret-type))))
@@ -462,7 +462,7 @@
   ;;(displayln constraints)
   (define substitutions (solve (set->list constraints)))
   ;;(displayln substitutions)
-  (displayln type-expr)
+  ;;(displayln type-expr)
   ;;(displayln "--- Input: ------------------------------------------------------")
   ;;(displayln exp)
   ;;(displayln "--- Output: -----------------------------------------------------")  
@@ -585,52 +585,10 @@
                                           (+ (vector-ref s 0) 
                                           (+ (vector-ref t 0) 
                                              (+ (vector-ref u 0) 21))))))))))))))))))))))))))))))))))))))))))))
-(define e24 '(program (define (big a b c d e f g h i j)
-        (+ d j))
-(define (big2 a b c d e f g h)
-        (+ d h))
-(let ([a (big 1 2 3 0 5 6 7 8 9 1)])
-  (let ([b 1])
-    (let ([c 1])
-      (let ([d 1])
-        (let ([e 1])
-          (let ([f 1])
-            (let ([g 1])
-              (let ([h 1])
-                (let ([i 1])
-                  (let ([j 1])
-                    (let ([k 1])
-                      (let ([l 1])
-                        (let ([m 1])
-                          (let ([n 1])
-                            (let ([o 1])
-                              (let ([p 1])
-                                (let ([q 1])
-                                  (let ([r 1])
-                                    (let ([s (big2 1 2 3 1 5 6 7 0)])
-                                      (let ([t 1])
-                                        (let ([u 1])
-                                          (+ a 
-                                          (+ b 
-                                          (+ c 
-                                          (+ d 
-                                          (+ e 
-                                          (+ f 
-                                          (+ g 
-                                          (+ h 
-                                          (+ i 
-                                          (+ j 
-                                          (+ k 
-                                          (+ l 
-                                          (+ m 
-                                          (+ n 
-                                          (+ o
-                                          (+ p 
-                                          (+ q 
-                                          (+ r 
-                                          (+ s 
-                                          (+ t 
-                                          (+ u 21))))))))))))))))))))))))))))))))))))))))))))
+(define e24 '(program (define-inline (app f x)
+    (f x))
+
+(app (lambda (x) x) 42)))
 ;; The Omega.
 (define e18 '(program ((lambda (x) (x x)) (lambda (x) (x x)))))
 ;; This is a problem.
@@ -665,7 +623,10 @@
 ;; (infer-program e20)
 ;; (infer-program e21)
 ;; (infer-program e22)
-(infer-program e24)
+;;(infer-program e24)
+
+
+
 ;; (infer-program e18)
 ;; (infer-program e19)
 ;; (infer-program e23)
