@@ -529,5 +529,3 @@
 ;; (infer-program e18)
 ;; (infer-program e19)
 ;; (infer-program e23)
-
-

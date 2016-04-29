@@ -9,4 +9,12 @@
                         r5-passes interp-scheme "rf" (range 0 10))
 
 
-(display "final project tests passed!") (newline) 
+(displayln "final project tests passed!") (newline) 
+
+
+
+(compiler-tests "final" infer-program
+                        r5-passes "rf" (range 0 10))
+
+
+(displayln "final project compiler tests passed!") (newline) 
