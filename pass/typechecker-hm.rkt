@@ -420,6 +420,9 @@
 
 (define (infer-program exp)
   (reset-var-cnt)
+  (set! fun-env '())
+  (set! vec-env '())
+  
   (match-define (infer-record fun-as fun-con fun-type fun-ty-ex)
     (foldr (lambda (bl res)
              (match-define `(,def-type (,fname . ,vars) ,body) bl)

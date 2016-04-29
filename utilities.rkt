@@ -355,9 +355,9 @@
     (debug "compiler-tests, testing:" test-name)
     (define type-error-expected (file-exists? (format "tests/~a.tyerr" test-name)))
     (define typechecks (compiler (format "tests/~a.rkt" test-name)))
-    ; (if (and (not typechecks) (not type-error-expected))
-    ;     (error (format "test ~a failed, unexpected type error" test-name)) 
-    ;     '())
+    (if (and (not typechecks) (not type-error-expected))
+        (error (format "test ~a failed, unexpected type error" test-name)) 
+        '())
     (if typechecks
         (if (system (format "gcc -g -std=c99 runtime.o tests/~a.s" test-name))
             (void) (exit))
