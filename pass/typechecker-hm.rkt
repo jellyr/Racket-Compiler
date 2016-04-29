@@ -156,31 +156,17 @@
       (set-union! c1 (set `(== ,t1 (-> ,@argtypes ,typevar))))
       (infer-record a1 c1 typevar `(has-type ,te1 ,typevar)))))
 
-(define (get-vars ls vars env)
-  (cond
-    [(< (length ls) 3) (list (append ls vars) env)]
-    [else (if (eq? ': (cadr ls))
-              (get-vars (cdddr ls)
-                        (cons (car ls) vars)
-                        (cons `(,(car ls) . ,(caddr ls)) env))
-              (get-vars (cdr ls)
-                        (cons (car ls) vars)
-                        env))]))
 
 ; [Abs]
 (define (infer-def exp env)
   (match-define `(,def-type (,fname . ,fargs) ,body) exp)
-  (let* ([arg-vals (get-vars fargs '() '())]
-         [arg-env (map (lambda (arg)
-                         (let ([env-val (assoc arg (last arg-vals))])
-                          (cons arg (if env-val
-                                        (cdr env-val)
-                                        (fresh "arg"))))) (car arg-vals))]
+  ;;(displayln fargs)
+  (let* ([arg-env (map (lambda (arg)
+                         (cons arg (fresh "arg"))) fargs)]
          [arg-vars (map cdr arg-env)]
-         [c (mutable-set)]
          [ares (mutable-set)])
-    ;(displayln arg-env)
-    ;(displayln arg-vars)
+    ;;(displayln arg-env)
+;;    (displayln arg-vals)
     (match-define (infer-record a c t e) (infer-types body (set-union env (list->set fargs))))
     ;(display a)
     ;(displayln c)
@@ -201,12 +187,8 @@
 ; [Abs]
 (define (infer-abs exp env)
   (match-define `(lambda ,args ,body) exp)
-  (let* ([arg-vals (get-vars args '() '())]
-         [arg-env (map (lambda (arg)
-                         (let ([env-val (assoc arg (last arg-vals))])
-                          (cons arg (if env-val
-                                        (cdr env-val)
-                                        (fresh "arg"))))) (car arg-vals))]
+  (let* ([arg-env (map (lambda (arg)
+                         (cons arg (fresh "arg"))) args)]
          [arg-type (map cdr arg-env)]
          [c (mutable-set)]
          [ares (mutable-set)])
@@ -412,7 +394,6 @@
 (define (annotate-expr type-expr subs)
   (match type-expr
     [`(has-type ,expr ,ty) `(has-type ,(annotate-expr expr subs) ,(annotate-type ty subs))]
-    [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
     [`(lambda ,x : ,ty ,b) `(lambda: ,(map (curryr annotate-expr subs) x) 
                               : ,(annotate-type ty subs)
                               ,(annotate-expr b subs))]
@@ -424,10 +405,9 @@
     [`(,def-type (,fname . ,fvars) : ,ty ,b)
      #:when (or (eq? def-type 'define)
                 (eq? def-type 'define-inline))
-     `(,def-type (,fname ,@(foldr (lambda (val res)
-                                    (cons (annotate-expr val subs) res))
-                                  '() fvars))
+     `(,def-type (,fname . ,(map (curryr annotate-expr subs) fvars))
         : ,(annotate-type ty subs) ,(annotate-expr b subs))]
+    [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
                          ,@(map (curryr annotate-expr subs) rand))]
     [x #:when (or (symbol? x) (number? x) (boolean? x)) type-expr]
@@ -441,7 +421,7 @@
 (define (infer-program exp)
   (reset-var-cnt)
   (match-define (infer-record fun-as fun-con fun-type fun-ty-ex)
-    (foldl (lambda (bl res)
+    (foldr (lambda (bl res)
              (match-define `(,def-type (,fname . ,vars) ,body) bl)
              (match-let* (((infer-record as con ty ty-ex) (infer-types bl (set)))
                           ((infer-record ra rc rt rex) res))
@@ -585,10 +565,13 @@
                                           (+ (vector-ref s 0) 
                                           (+ (vector-ref t 0) 
                                              (+ (vector-ref u 0) 21))))))))))))))))))))))))))))))))))))))))))))
-(define e24 '(program (define-inline (app f x)
-    (f x))
-
-(app (lambda (x) x) 42)))
+(define e24 '(program (define (big a b c d e f g h i j)
+        (+ d j))
+(define (big2 a b c d e f g h)
+        (+ d h))
+(let ([a (big 1 2 3 0 5 6 7 8 9 1)])
+  (let ([s (big2 1 2 3 1 5 6 7 0)])
+    (+ a s)))))
 ;; The Omega.
 (define e18 '(program ((lambda (x) (x x)) (lambda (x) (x x)))))
 ;; This is a problem.
@@ -624,9 +607,6 @@
 ;; (infer-program e21)
 ;; (infer-program e22)
 ;;(infer-program e24)
-
-
-
 ;; (infer-program e18)
 ;; (infer-program e19)
 ;; (infer-program e23)
